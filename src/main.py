@@ -22,7 +22,9 @@ def run_script(script_path, args=None):
     if args:
         command.extend(args)
     print('running:', ' '.join(command))
-    subprocess.run(command, cwd=ROOT_DIR, check=True)
+    env = os.environ.copy()
+    env['PYTHONPATH'] = ROOT_DIR + os.pathsep + env.get('PYTHONPATH', '')
+    subprocess.run(command, cwd=ROOT_DIR, env=env, check=True)
 
 
 if __name__ == '__main__':
