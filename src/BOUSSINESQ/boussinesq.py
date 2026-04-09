@@ -3,6 +3,7 @@ import torch
 
 
 class Boussinesq:
+    # container for boussinesq parameters and domain definitions
     def __init__(self, x_min, x_max, t_min, t_max, a, b, A=1):
         self.domain = {
             'x_min': torch.tensor(x_min),
@@ -15,7 +16,7 @@ class Boussinesq:
         self.A = A
 
     def ic(self, x):
-        """Initial condition: eta(x,0) = A*sech^2(x), u(x,0) = 0"""
+        # initial condition eta(x,0)=A*sech^2(x) and u(x,0)=0
         mid = (self.domain['x_max'] + self.domain['x_min']) / 2
         val = (x - mid)
         eta_0 = self.A / (torch.cosh(val)**2)
@@ -23,7 +24,7 @@ class Boussinesq:
         return eta_0, u_0
 
     def residual(self, model, x, t):
-        """Compute the PDE residual for the Boussinesq equations on points (x,t)."""
+        # compute boussinesq pde residuals for network predictions at (x,t)
         x = x.requires_grad_(True)
         t = t.requires_grad_(True)
 
@@ -48,6 +49,7 @@ class Boussinesq:
 
 
 class PseudoSpectralBoussinesq:
+    # pseudo-spectral solver using rk4 time integration in fourier space
     def __init__(self, boussinesq, Nx=256, Nt=1000, device='cpu'):
         self.Nx = Nx
         self.Nt = Nt
@@ -64,7 +66,7 @@ class PseudoSpectralBoussinesq:
         self.x = torch.linspace(self.x_min.item(), self.x_max.item(), Nx + 1, device=device)[:-1]
         self.dx = self.x[1] - self.x[0]
 
-        # FFT frequencies
+        # fft frequencies
         self.k = 2 * torch.pi * torch.fft.fftfreq(Nx, d=(self.x_max.item() - self.x_min.item()) / Nx).to(device)
         self.ik = 1j * self.k
         self.k2 = self.k ** 2
@@ -78,6 +80,7 @@ class PseudoSpectralBoussinesq:
         self.u_history = [u0.cpu().numpy()]
 
     def field(self, eta_hat, u_hat):
+        # compute time derivatives in spectral form from current fourier coefficients
         eta = torch.fft.ifft(eta_hat).real
         u = torch.fft.ifft(u_hat).real
 
@@ -98,6 +101,7 @@ class PseudoSpectralBoussinesq:
         return eta_t_hat, u_t_hat
 
     def RK4_step(self, eta_hat, u_hat):
+        # one rk4 time step for spectral coefficients
         dt = self.dt
         k1_eta, k1_u = self.field(eta_hat, u_hat)
         k2_eta, k2_u = self.field(eta_hat + 0.5 * dt * k1_eta, u_hat + 0.5 * dt * k1_u)
@@ -109,6 +113,7 @@ class PseudoSpectralBoussinesq:
         return eta_hat_new, u_hat_new
 
     def solve(self):
+        # integrate the pseudo-spectral solver and return solution histories
         eta_h, u_h = self.eta_hat, self.u_hat
 
         res_eta = np.zeros((self.Nt + 1, self.Nx), dtype=np.float32)

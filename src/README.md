@@ -1,13 +1,13 @@
 # FNO-BOUSSINESQ
 
-Fourier Neural Operator (FNO) for solving the Boussinesq equation.
+Fourier Neural Operator (FNO) and related physics-informed models for solving the Boussinesq equation.
 
 ## Structure
 
-- **boussinesq.py** - Boussinesq PDE solver (pseudospectral method)
-- **fno_model.py** - FNO2d model with spectral convolution layers
-- **dataset.py** - Dataset generation and I/O utilities
-- **main.py** - Training, evaluation, and visualization
+- **BOUSSINESQ/** - Boussinesq PDE solver, dataset utilities, and dataset generation script
+- **FNO/** - FNO implementation and an experiment script for training and evaluation
+- **PINO/** - PINO implementation and the corresponding experiment script
+- **PINN/** - PINN implementation and the corresponding experiment script
 
 ## Requirements
 
@@ -17,26 +17,29 @@ pip install torch numpy matplotlib
 
 ## Usage
 
-Run the full pipeline:
+Run the per-method experiments directly:
 
 ```bash
-python main.py
+python FNO/run_fno.py
+python PINO/run_pino.py
+python PINN/run_pinn.py
+python BOUSSINESQ/run_dataset.py
 ```
 
 This will:
-1. Generate dataset of Boussinesq solutions
-2. Train FNO model (5000 epochs)
-3. Save model checkpoint (`fno_model.pt`) and dataset (`dataset.pt`)
-4. Create training loss plot
-5. Generate comparison animation
-6. Evaluate prediction errors
+1. generate the dataset for FNO/PINO experiments
+2. train the chosen model
+3. save the model checkpoint and dataset under `RESULTS/`
+4. create training loss plots
+5. generate evaluation plots and animation outputs
 
 ## Output Files
 
-- `fno_model.pth` - Trained FNO model
-- `dataset.pt` - Training dataset
-- `training_loss.png` - Training loss history
-- `boussinesq_a=1.00_b=1.00.gif` - Animation comparing FNO vs ground truth
+- `RESULTS/fno/` - FNO experiment outputs
+- `RESULTS/pino/` - PINO experiment outputs
+- `RESULTS/pinn/` - PINN experiment outputs
+- `RESULTS/*.pth` - saved dataset and model files
+
 - `error_analysis.png` - Error analysis for multiple parameter values
 
 ## Model Details
