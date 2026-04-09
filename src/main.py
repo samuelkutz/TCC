@@ -6,19 +6,19 @@ import sys
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 PYTHON = sys.executable
 
-# task list pairs script labels with executable paths and args
+# task list pairs script labels with python module paths and args
 TASKS = [
-    ('fno', 'FNO/train_fno.py', []),
-    ('pino data', 'PINO/train_pino.py', ['--mode', 'data']),
-    ('pino no_data', 'PINO/train_pino.py', ['--mode', 'no_data']),
-    ('pinn data', 'PINN/train_pinn.py', ['--mode', 'data']),
-    ('pinn no_data', 'PINN/train_pinn.py', ['--mode', 'no_data']),
+    ('fno', 'FNO.train_fno', []),
+    ('pino data', 'PINO.train_pino', ['--mode', 'data']),
+    ('pino no_data', 'PINO.train_pino', ['--mode', 'no_data']),
+    ('pinn data', 'PINN.train_pinn', ['--mode', 'data']),
+    ('pinn no_data', 'PINN.train_pinn', ['--mode', 'no_data']),
 ]
 
 
 def run_script(script_path, args=None):
-    # run one python experiment script in the project root
-    command = [PYTHON, os.path.join(ROOT_DIR, script_path)]
+    # run one python experiment module in the project root
+    command = [PYTHON, '-m', script_path]
     if args:
         command.extend(args)
     print('running:', ' '.join(command))
