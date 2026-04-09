@@ -5,12 +5,12 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from BOUSSINESQ.dataset import generate_dataset, load_dataset, save_dataset
+from BOUSSINESQ.dataset import load_dataset
 from PINO.PINO import PINO2d, pino_loss
 from tools import RelativeL2_loss, save_model
 
 RESULTS_DIR = 'RESULTS'
-DATA_FILE = os.path.join(RESULTS_DIR, 'pino_dataset.pth')
+DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
 
 PINO_EPOCHS = 5000
 PINO_BATCH_SIZE = 16
@@ -48,10 +48,10 @@ if __name__ == '__main__':
         x_train, y_train = load_dataset(dataset_file)
         print(f'loaded dataset from {dataset_file}')
     else:
-        # generate dataset using boussinesq solver for pino parameter values
-        x_train, y_train = generate_dataset(PARAM_VALUES, device=device)
-        save_dataset(x_train, y_train, dataset_file)
-        print(f'generated dataset at {dataset_file}')
+        raise RuntimeError(
+            f'Dataset not found at {dataset_file}. '
+            'Generate it first using `python src/run_dataset.py`.'
+        )
 
     # build pino model and use relative l2 loss for evaluation
     model = PINO2d(modes1=MODES1, modes2=MODES2, width=WIDTH, out_channels=y_train.shape[1]).to(device)

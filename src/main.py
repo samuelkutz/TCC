@@ -28,6 +28,9 @@ def run_script(script_path, args=None):
 
 
 if __name__ == '__main__':
+    print('\n=== generating shared dataset ===')
+    run_script('run_dataset')
+
     # execute each experiment training script then its matching plot script
     for label, train_script, train_args in TASKS:
         print(f'\n=== training {label} ===')

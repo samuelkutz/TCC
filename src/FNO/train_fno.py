@@ -5,13 +5,12 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
-from BOUSSINESQ.dataset import generate_dataset, load_dataset, save_dataset
+from BOUSSINESQ.dataset import load_dataset
 from FNO.FNO import FNO2d
 from tools import RelativeL2_loss, save_model
 
 RESULTS_DIR = 'RESULTS'
-DATA_FILE = os.path.join(RESULTS_DIR, 'fno_dataset.pth')
+DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
 
 FNO_EPOCHS = 5000
 FNO_BATCH_SIZE = 16
@@ -39,10 +38,10 @@ if __name__ == '__main__':
         x_train, y_train = load_dataset(dataset_file)
         print(f'loaded dataset from {dataset_file}')
     else:
-        # create training dataset by solving boussinesq for each parameter value
-        x_train, y_train = generate_dataset(PARAM_VALUES, device=device)
-        save_dataset(x_train, y_train, dataset_file)
-        print(f'generated dataset at {dataset_file}')
+        raise RuntimeError(
+            f'Dataset not found at {dataset_file}. '
+            'Generate it first using `python src/run_dataset.py`.'
+        )
 
     # build fno model and use relative l2 loss for normalized predictions
     model = FNO2d(modes1=MODES1, modes2=MODES2, width=WIDTH).to(device)
