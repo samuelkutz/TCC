@@ -1,0 +1,70 @@
+\begin{document}
+
+\AddToShipoutPicture*{\BackgroundPic}
+
+% --- CAPA ---
+\clearpage
+\thispagestyle{empty}
+
+\begin{bfseries}
+\begin{center}
+
+\vspace{0.5cm} 
+UNIVERSIDADE FEDERAL DO PARANÁ \\
+
+\vspace{0.6cm}
+SAMUEL KUTZ PARANHOS \\
+\vspace{2.5cm}
+
+\vspace*{1cm}
+\textbf{\MakeUppercase{Scientific Machine Learning Methods for the \\ Nonlinear Boussinesq System of Equations}} \\
+
+\begin{minipage}[t]{0.45\textwidth} \hspace{2cm}
+\raggedright
+\end{minipage}
+\begin{minipage}[t]{0.5\textwidth}\hspace{2cm}
+\raggedright
+\vspace*{3cm}
+\begin{flushleft}
+\footnotesize  
+\justify
+\hspace{-0,35cm}
+\textnormal{}
+\end{flushleft}
+\end{minipage}
+
+\vspace*{3cm}
+\textbf{\MakeUppercase{CURITIBA}} \\
+\textbf{\MakeUppercase{\textnormal{2025}}}
+\end{center}
+\end{bfseries}
+
+\pagebreak
+% --- RESUMO ---
+\chapter*{ABSTRACT}
+Partial Differential Equations (PDEs) are the essential language of scientifc computing and many predictions, 
+studies and models are based on solving some kind of differential equation. In this work, we study the efficacy of 
+Scientific Machine Learning methods (SciML) for the Boussinesq System of PDEs, a shallow wave model based off the Euler Equations, 
+from classical Hydrodynamics. This study focused on understanding the relationship between the PDE parameters, its solution and the 
+SciML method performance, implementing Physics-Informed Neural Networks (PINNs) with and without data (semi-supervised) and 
+Fourier Neural Operators (FNOs) (purely supervised), analyzing through comparisons to the reference solutions coming from 
+pseudospectral classical discrete methods. We already understood that PINNs without data suffer from Spectral Bias, the tendency 
+of neural networks of first learning the low-frequency components of the solution during the optimization process, thus making 
+small details hard to learn. On the other hand, FNOs did not show Spectral Bias, even though it is known to exibit it too. (still more to do)
+
+\vspace{1cm}
+\noindent
+\textbf{Keywords:} Scientific Machine Learning; Partial Differential Equations; Boussinesq System
+
+\pagebreak
+
+\tableofcontents
+\pagebreak
+
+% --- CORPO DO TEXTO ---
+
+\include{chapters/01-introduction.tex} 
+
+\printbibliography
+
+\end{document}

@@ -1,0 +1,277 @@
+\chapter{INTRODUCTION}
+
+Since the start of the scientific thinking, mathematics has been of the key
+languages in which we can understand the world, and, Partial Differential
+Equations (PDEs) are one of the main dialects we use to model and to simplify
+nature's complexity.
+
+These equations do not always have simple closed-form solutions (that is, when
+they have), showing the need of approximated numerical solutions coming from
+numerical methods for PDEs in order to extract predictions, compare with data,
+build simulations and so on. These classical methods, widely studied for all
+types of equations, rely on discretizing the PDE's domain into regular grids
+and performing time steps.
+
+With the ascension of Machine Learning (ML) methods and the whole ecosystem of
+tools built around the field, a natural extesion is to build a bridge
+connecting numerical solution of PDEs with ML models, a field called Scientific
+Machine Learning (SciML).
+
+In this work, we aim to study the application of SciML methods for
+approximating the solution of the Boussinesq System of PDEs, a shallow water
+model for a water tank with small depth, coming from the Euler Equations model
+of Hydrodynamics. Our goal is to implement and evaluate the performance of two
+famous models of SciML: the Physics-Informed Neural Networks and the Fourier
+Neural Operators, which together represent the two main types of methods in
+SciML, investigating the impact of data and the PDE model (so called
+Physics-Informed) presence in training, revealing their advantages and
+limitations for each method.
+
+\pagebreak
+
+\section{Preliminaries}
+
+Let us present, in this section, the mathematical definition for each method we
+will study, as well as the Boussinesq System, which is our benchmark model of
+choice.
+
+\subsection{Multilayer Perceptrons}
+
+In this work, we focus on Multilayer Perceptrons (MLPs), popularized by
+\textcite{rumelhart1986}, which are, in essence, affine transformations
+parametrized by tunable weights and biases, followed by nonlinear
+transformations, in which an optimization process acts to fit a dataset of
+values from the supposed target function.
+
+Given a labeled dataset ${\{(x_i, u_i)\}}_{i=1}^{N_{data}}$, the objective is
+to fit the function $u_{\theta}(x)$ by minimizing a loss function, typically
+the Mean Squared Error (MSE). With $||.||_2$ denoting the Euclidian norm, we
+have the unconstrained optimization problem:
+\begin{align}
+    \text{MSE}(\theta) & = \frac{1}{N_{data}} \sum_{i=1}^{N_{data}} {|| u_{\theta}(x_i) - u_i ||}_2^2 \label{eq:data_loss_nn}
+\end{align}
+\noindent where $u_{\theta}$ is the Multilayer Perceptron (MLP) is a function $u_\theta: \mathbb{R}^{d_{in}} \to \mathbb{R}^{d_{out}}$ defined by the composition:
+\begin{align}
+    h^{(0)}       & = x \in \mathbb{R}^{d_{in}}, \label{eq:input}                                                                      \\
+    h^{(l)}       & = \sigma \left( W^{(l)} h^{(l-1)} + b^{(l)} \right) \in \mathbb{R}^{N} , \quad l = 1, \dots, L-1 \label{eq:hidden} \\
+    u_{\theta}(x) & = W^{(L)} h^{(L-1)} + b^{(L)} \in \mathbb{R}^{d_{out}}. \label{eq:output}
+\end{align}
+\noindent where $N, L \in \mathbb{N}$ denotes the number $N$ of neurons in each of $L$ layers, $W^{(1)} \in \mathbb{R}^{d_{in} \times N}$, $W^{(L-1)} \in \mathbb{R}^{N \times d_{out}}$ and $b^{(1)} \in \mathbb{R}^{N}$, $W^{(l)} \in \mathbb{R}^{N\times N}, b^{(l)} \in \mathbb{R}^{N} \text{ for } l = 2, ..., L - 2$ are the weight matrix and bias vector of layer $l$, respectively, and $\sigma: \mathbb{R} \to \mathbb{R}$ is a nonlinear sigmoidal activation function applied element-wise, in other words, sigmoidal meaning $\sigma(t) \to 1$ as $t \to +\infty$ and $\sigma(t) \to 0$ as $t \to -\infty$ and elemnent-wise meaning it is applied to each component of a vector. We denote $\theta = \ \{W^{(l)}, b^{(l)}\}_{l=1}^{L}$ to be all of the network parameters.
+
+A common result and of utmost importance is that, if the activation function is
+sigmoidal, then MLPs are universal approximators, meaning they can approximate
+any continuous function \cite{cybenko1989}.
+
+In Figure \ref{fig:MLP_depiction}, we show a common depiction of the neural
+networks. In this case, the input vector is the pair $(x,t) \in \mathbb{R}^2$
+and output is $(\eta_{\theta}(x,t), u_{\theta}(x,t)) \in \mathbb{R}^2$.
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}[
+            x=1cm,
+            y=1cm,
+            nnnode/.style={circle, draw, line width=0.8pt, minimum size=0.40cm, inner sep=0pt},
+            inout/.style={nnnode, fill=black, draw=black},
+            hidden/.style={nnnode, fill=gray, draw=gray},
+            conn/.style={draw=gray!70, line width=0.35pt}
+        ]
+
+        % Input
+        \node[inout] (x1) at (0,-2.4) {};
+        \node[inout] (x2) at (0,-3.2) {};
+        \node at (0,0.15) {\small Input $(x,t)$};
+
+        % Hidden layer 1
+        \foreach \i in {1,...,6} {
+                \node[hidden] (h1_\i) at (2.5,-0.8*\i) {};
+            }
+
+        % Hidden layer 2
+        \foreach \i in {1,...,6} {
+                \node[hidden] (h2_\i) at (5.0,-0.8*\i) {};
+            }
+        \node at (5.0,0.15) {\small Hidden layers};
+
+        % Hidden layer 3
+        \foreach \i in {1,...,6} {
+                \node[hidden] (h3_\i) at (7.5,-0.8*\i) {};
+            }
+
+        % Output
+        \node[inout] (out1) at (10.0,-2.4) {};
+        \node[inout] (out2) at (10.0,-3.2) {};
+        \node at (10.0,0.15) {\small  Output $(\eta_{\theta}, u_{\theta})$};
+
+        % Connections
+        \foreach \j in {1,...,6} {
+                \draw[conn] (x1) -- (h1_\j);
+                \draw[conn] (x2) -- (h1_\j);
+            }
+
+        \foreach \i in {1,...,6} {
+                \foreach \j in {1,...,6} {
+                        \draw[conn] (h1_\i) -- (h2_\j);
+                        \draw[conn] (h2_\i) -- (h3_\j);
+                    }
+            }
+
+        \foreach \i in {1,...,6} {
+                \draw[conn] (h3_\i) -- (out1);
+                \draw[conn] (h3_\i) -- (out2);
+            }
+
+    \end{tikzpicture}
+    \caption{Example of MLP architecture of input vector $(x, t)$, with $L=3$ hidden layers and $N=6$ neurons on each layer.}
+    \label{fig:MLP_depiction}
+    \autoriapropria
+\end{figure}
+
+\subsection{Physics-Informed Neural Networks}
+
+Introduced by \textcite{raissi2017}, Physics-Informed Neural Networks (PINNs)
+seeks to insert the PDE directly into the optimization process, forcing the
+neural network satisfy to the model equations and approximating the PDE
+solution.
+
+Consider the general PDE Initial Value Problem (IVP) form as:
+\begin{equation}\label{eq:generic_pde}
+    \left\{
+    \begin{aligned}
+        \mathcal{D}[u](x,t) & = 0, \quad \forall (x,t) \in \Omega \times (0,T], \\
+        u(x,0)              & = u_0(x), \quad x \in \Omega
+    \end{aligned}
+    \right.
+\end{equation}
+
+\noindent where $\mathcal{D}$ is a differential operator on $u$, $\Omega \times (0, T]$ is the PDE spatio-temporal domain and $u_0$ is the initial condition suitable for $\mathcal{D}$.
+
+The central idea for PINNs is to incorporate (\ref{eq:generic_pde}) into the
+loss function, taking place of a data loss similar to equation
+\ref{eq:data_loss_nn}.
+
+Consider the following:
+
+\begin{equation}
+    \text{MSE}_\mathcal{D} = \frac{1}{N_\mathcal{D}}\sum_{i=1}^{N_\mathcal{D}}
+    \left| \mathcal{D}[u_\theta](x_i,t_i)\right|^2,
+\end{equation}
+\noindent where $\{(x_i,t_i)\}_{i = 1}^{N_\mathcal{D}}$ are points in the PDEs spatio-temporal domain $\Omega \times (0, T]$.
+
+We can also force the MLP to fit the initial condition by
+
+\begin{equation}
+    \text{MSE}_0 = \frac{1}{N_0}\sum_{i=1}^{N_0} \left| u_\theta(x_i,0) - u_0(x_i) \right|^2,
+\end{equation}
+\noindent where $\{x_i\}_{i=1}^{N_0}$ are points in the $\Omega \times \{0\}$ domain ($T=0$).
+
+In \textcite{raissi2017}, the points $\{(x_i,t_i)\}_{i = 1}^{N_\mathcal{D}}$
+and $\{x_i\}_{i=1}^{N_0}$ are called collocation points at PDE's domain and
+initial condition, respectively.
+
+Thus, the loss function for PINNs is simply:
+
+\begin{equation}
+    \text{MSE} = \text{MSE}_\mathcal{D} + \text{MSE}_0 \label{eq:loss_pinn}
+\end{equation}
+
+Due to the compositional nature of MLPs, implementation of PINNs often use
+Automatic Differentiation (AD) \parencite{linnainmaa1970, paszke2019pytorch} to
+compute gradients. This technique takes advantage of Chain Rule derivatives to
+build a computational graph of derivatives until reaching basic terms with
+straightforward and exact derivatives.
+
+Also, common optimizers for the PINN loss (\ref{eq:loss_pinn}) include the
+Adaptive Moment Estimation (ADAM) \parencite{kingma2014adam} and the
+Limited-Memory Broyden-Fletcher-Goldfarb-Shanno (L-BFGS)
+\parencite{nocedal1980lbfgs}. These two algorithms were already used by
+\textcite{raissi2017}.
+
+\subsection{Fourier Neural Operators}
+
+Presented by \textcite{li2020fourier}, Fourier Neural Operator (FNO) aims to
+learn maps between function spaces, coming from Neural Operators (NOs), a
+generalizaiton of NNs for approximating maps between infinite-dimensional
+spaces.
+
+The target (potentially nonlinear) operator is defined by, given $D \in
+    \mathbb{R}^{d_{in}}$ a bounded, open set, $G^{\dagger} : \mathcal{A} [D,
+        \mathbb{R}^{d_{a}} ] \to \mathcal{U} [D, \mathbb{R}^{d_{u}}]$, where
+$\mathcal{A}$ and $\mathcal{U}$ Banach spaces, a potentially
+infinite-dimensional complete vector space with respect to some norm
+\parencite{kreyszig1978introductory},
+
+We will study the example coming from a parametrized PDE with real parameters,
+approximating the operator that takes a parameter value and outputs the PDE
+solution to that parameter.
+
+The Fourier Neural Operator, $G_\theta$, is an iterative architecture mimicking a Neural Network of the form equation \ref{eq:hidden}, meaning it composes linear operators followed by element-wise nonlinearities:
+\begin{equation}
+    G_\theta = Q \circ \sigma\Big(W_L + \mathcal{K}_L\Big) \circ \cdots \circ \sigma\Big(W_1 + \mathcal{K}_1\Big) \circ P.
+\end{equation}
+
+\noindent where, the lifting operator $P$ maps the input function $a(x,t) \in \mathcal{A} [D, \mathbb{R}^{d_{a}} ]$ to a higher-dimensional latent representation
+$P(a)(x,t) = v_0(x,t) \in \mathbb{R}^{d_c}$, where $d_c$ is the dimension of the so called channels, usually way higher than the original dimension of $u$; 
+the Spectral Layers, $\sigma\Big(W_l + \mathcal{K}_l\Big)$ for $l=1, \ldots, L-1$, in which $W_l \in \mathbb{R}^{d_c \times d_c} \text{ for } l=2, \ldots, L-2$ 
+is a skip-conection meant for simple matrix multiplations, $\mathcal{K}_l$ is an Integral operator.
+
+After the final layer, the projection operator $Q$ maps this representation back to $Q(v_\ell)(x,t)= u(x,t)$. Here, $\theta$ is meant to represent the many parameters of the $G_\theta$ operator, which will be defined along.
+
+Usually, $P$ and $Q$ are parametrized by a encoding/decoding shallow neural
+networks, with the goal of simply raising the input into a higher dimension.
+
+The core of the FNO is the stack of Spectral Layers. Each layer updates the
+last layer $v_\ell$ by linear transformations, followed by a non-linear
+point-wise activation $\sigma$:
+\begin{equation}
+    v_{\ell+1}(x,t) = \sigma \Big( (W_\ell\,v_\ell)(x,t) + (\mathcal{K}_\ell v_\ell)(x,t) \Big).
+\end{equation}
+Here, $W_\ell$ is a point-wise operator that applies a linear transformation to the channel dimension $d_c$ at each coordinate $(x,t)$. Also, $\mathcal{K}_\ell$ is a general integral operator (linear) acting via a kernel function $\kappa_\ell$:
+\begin{equation}
+    (\mathcal{K}_\ell v_\ell)(x,t) = \int_{D} \kappa_\ell(x, t, y, \tau)\,v_\ell(y,\tau)\,dy\,d\tau,
+\end{equation}
+where $\kappa_\ell$ is the learned kernel of the operator (usually a shallow neural network) and $D$ is the domain of the problem.
+
+The key point of FNO is to suppose that $\kappa_\ell(x, t, y,
+    \tau)=\kappa_\ell(x - y, t - \tau)$. This allows the integral to be computed
+efficiently through the frequency domain, since it becomes a convolution
+(assuming time is periodic, which in our problem it is):
+\begin{equation}
+    (\mathcal{K}_\ell v_\ell)(x,t) \overset{\text{FNO}}{=} \int_{D} \kappa_\ell(x - y, t - \tau)\,v_\ell(y,\tau)\,dy\,d\tau = \mathcal{F}^{-1} \Big( \mathcal{F}(\kappa_\ell) \cdot \mathcal{F}(v_\ell) \Big)(x,t).
+    \label{eq:fno_approximation}
+\end{equation}
+
+An inverse Fourier Transform then returns the result to the physical domain.
+The Fourier transform used in \eqref{eq:fno_approximation} is simply the
+Fourier series, which is defined in the following.
+
+\subsection{Learning the Kernel in the Frequency Domain}
+To see how FNO learns the kernel, we examine how the convolution is calculated
+using the Fourier Series. For a periodic function $f(x)$ on $[0, 2\pi]$, its
+series representation is:
+\[
+    f(x) = \sum_{k \in \mathbb{Z}} \hat{f}_k \, e^{ikx}, \quad \text{where} \quad \hat{f}_k = \frac{1}{2\pi} \int_0^{2\pi} f(x) e^{-ikx} dx.
+\]
+One can check that the convolution results in the point-wise product of
+frequencies:
+\begin{align*}
+    (\kappa * v)(x) & = \int_0^{2\pi} \kappa(x-y) v(y) dy                                \\
+                    & = \sum_{k \in \mathbb{Z}} (2\pi \hat{\kappa}_k \hat{v}_k) e^{ikx}.
+\end{align*}
+This is the central idea of FNO. Instead of learning the kernel function $\kappa_\ell$ in the physical domain, FNOs directly parametrizes its Fourier coefficients, discarding learning the whole kernel as a neural net. The learnable complex-valued weights $R_{\ell,k}$ are precisely this parametrization:
+\[
+    R_{\ell,k} \approx 2\pi \hat{\kappa}_{\ell,k}.
+\]
+In practice, computationally, this operation is performed only on a truncated
+set of the most important, low-frequency modes, where $|k| \le k_{\max}$, which
+is a hyperparameter.
+
+\subsection{Loss Function}
+
+The training objective is to minimize the error between the network's
+prediction $G_\theta(c_i)$ and the observed solution $u_i$ from the dataset.
+The loss function used is the relative $L^2$-norm. For functions, this is
+defined on the continuous domain $D$:
+\begin{equation}
+    \mathcal{L}(\theta) = \frac{1}{N} \sum_{i=1}^N \frac{\| G_\theta(c_i) - u_i \|_{L^2(D)}}{\| u_i \|_{L^2(D)}}.
+\end{equation}
+However, in the implementation, both $G_\theta(c_i)$ and $u_i$ are discretized as matrices (grid 64x64) converted into vectors, much how is done in works with images, with the relative error calculated with the usual $L^2$-norm.
