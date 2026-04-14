@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from timeit import default_timer
 
 
 class PINN(nn.Module):
@@ -105,6 +106,7 @@ class PINN(nn.Module):
         self.Boussinesq = boussinesq
         self.optimizer = self._build_optimizer()
         history = []
+        start_time = default_timer()
 
         for ep in range(epochs):
             self.train()
@@ -120,9 +122,13 @@ class PINN(nn.Module):
             history.append(loss.item())
 
             if (ep + 1) % print_interval == 0 or ep == epochs - 1:
+                elapsed = default_timer() - start_time
                 print(
-                    f'Epoch {ep + 1}/{epochs}: total_loss={loss.item():.4e}, '
-                    f'pde_loss={pde_loss.item():.4e}, ic_loss={ic_loss.item():.4e}, data_loss={data_loss.item():.4e}'
+                    f'epoch {ep + 1}, elapsed {elapsed:.1f}s, '
+                    f'total_loss {loss.item():.4e}, '
+                    f'pde_loss {pde_loss.item():.4e}, '
+                    f'ic_loss {ic_loss.item():.4e}, '
+                    f'data_loss {data_loss.item():.4e}'
                 )
 
         return history
