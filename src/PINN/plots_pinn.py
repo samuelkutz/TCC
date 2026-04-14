@@ -12,16 +12,16 @@ RESULTS_DIR = 'RESULTS'
 
 def eval_pinn(mode='data'):
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
-    artifacts_file = os.path.join(RESULTS_DIR, 'pinn', 'models', f'{label}_artifacts.pth')
-    artifacts = torch.load(artifacts_file, map_location='cpu')
-    params = artifacts['params']
-    model_file = artifacts['model_file']
+    model_metadata_file = os.path.join(RESULTS_DIR, 'pinn', 'models', f'{label}_model_metadata.pth')
+    model_metadata = torch.load(model_metadata_file, map_location='cpu')
+    params = model_metadata['params']
+    model_file = model_metadata['model_file']
 
-    outdir = os.path.dirname(os.path.dirname(artifacts_file))
+    outdir = os.path.dirname(os.path.dirname(model_metadata_file))
     os.makedirs(outdir, exist_ok=True)
 
     plot_training_statistics(
-        [artifacts['train_history']],
+        [model_metadata['train_history']],
         [label],
         outdir=outdir,
         filename=f'{label}_training_statistics.png',

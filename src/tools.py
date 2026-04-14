@@ -31,6 +31,21 @@ def load_model(filepath, model, device='cpu'):
     return model
 
 
+def save_dataset(x_train, y_train, filepath='dataset.pth'):
+    # save dataset tensors to a pytorch .pth file
+    torch.save({
+        'x_train': x_train,
+        'y_train': y_train
+    }, filepath)
+    print(f"Dataset saved to {filepath}")
+
+
+def load_dataset(filepath='dataset.pth'):
+    # load dataset tensors from a pytorch .pth file
+    data = torch.load(filepath)
+    return data['x_train'], data['y_train']
+
+
 class L2_loss(object):
     # standard l2 loss for model output compared to target data
     def __init__(self, eps=1e-10):

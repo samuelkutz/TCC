@@ -56,7 +56,7 @@ def train_pinn(mode='data'):
     model_file = os.path.join(model_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
-    artifacts = {
+    model_metadata = {
         'train_history': history,
         'params': {
             'epochs': PINN_EPOCHS,
@@ -73,9 +73,9 @@ def train_pinn(mode='data'):
         'model_file': model_file,
         'mode': mode,
     }
-    artifacts_file = os.path.join(model_dir, f'{label}_artifacts.pth')
-    torch.save(artifacts, artifacts_file)
-    print(f'pinn artifacts saved to {artifacts_file}')
+    model_metadata_file = os.path.join(model_dir, f'{label}_model_metadata.pth')
+    torch.save(model_metadata, model_metadata_file)
+    print(f'pinn model metadata saved to {model_metadata_file}')
 
 
 def train_pinn_data():

@@ -52,18 +52,3 @@ def generate_dataset(param_values, Nx_high=256, Nt_high=256, nx_fno=64, nt_fno=6
     y_train = torch.from_numpy(output_data).permute(0, 3, 1, 2)
 
     return x_train, y_train
-
-
-def save_dataset(x_train, y_train, filepath='dataset.pth'):
-    # save dataset tensors to a pytorch .pth file
-    torch.save({
-        'x_train': x_train,
-        'y_train': y_train
-    }, filepath)
-    print(f"Dataset saved to {filepath}")
-
-
-def load_dataset(filepath='dataset.pth'):
-    # load dataset tensors from a pytorch .pth file
-    data = torch.load(filepath)
-    return data['x_train'], data['y_train']

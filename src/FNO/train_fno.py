@@ -4,9 +4,8 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from BOUSSINESQ.dataset import load_dataset
+from tools import RelativeL2_loss, save_model, load_dataset
 from FNO.FNO import FNO2d
-from tools import RelativeL2_loss, save_model
 
 RESULTS_DIR = 'RESULTS'
 DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
@@ -71,7 +70,7 @@ def train_fno(dataset_file=DATA_FILE):
     model_file = os.path.join(model_dir, 'fno_weights.pth')
     save_model(model, filepath=model_file)
 
-    artifacts = {
+    model_metadata = {
         'train_history': train_history,
         'params': {
             'epochs': FNO_EPOCHS,
@@ -85,8 +84,8 @@ def train_fno(dataset_file=DATA_FILE):
         'model_file': model_file,
         'dataset_file': dataset_file,
     }
-    torch.save(artifacts, os.path.join(model_dir, 'fno_artifacts.pth'))
-    print(f'fno artifacts saved to {os.path.join(model_dir, "fno_artifacts.pth")}')
+    torch.save(model_metadata, os.path.join(model_dir, 'fno_model_metadata.pth'))
+    print(f'fno model metadata saved to {os.path.join(model_dir, "fno_model_metadata.pth")}')
 
 
 if __name__ == '__main__':

@@ -4,9 +4,8 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from BOUSSINESQ.dataset import load_dataset
+from tools import RelativeL2_loss, save_model, load_dataset
 from PINO.PINO import PINO2d, pino_loss
-from tools import RelativeL2_loss, save_model
 
 RESULTS_DIR = 'RESULTS'
 DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
@@ -91,7 +90,7 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
     model_file = os.path.join(model_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
-    artifacts = {
+    model_metadata = {
         'train_history': train_history,
         'params': {
             'epochs': PINO_EPOCHS,
@@ -112,9 +111,9 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
         'dataset_file': dataset_file,
         'mode': mode,
     }
-    artifacts_file = os.path.join(model_dir, f'{label}_artifacts.pth')
-    torch.save(artifacts, artifacts_file)
-    print(f'pino artifacts saved to {artifacts_file}')
+    model_metadata_file = os.path.join(model_dir, f'{label}_model_metadata.pth')
+    torch.save(model_metadata, model_metadata_file)
+    print(f'pino model metadata saved to {model_metadata_file}')
 
 
 def train_pino_data():

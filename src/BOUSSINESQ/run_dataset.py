@@ -1,7 +1,8 @@
 import os
 import numpy as np
 
-from BOUSSINESQ.dataset import generate_dataset, save_dataset
+from BOUSSINESQ.dataset import generate_dataset
+from tools import save_dataset
 
 DEFAULT_DATA_FILE = os.path.join('RESULTS', 'boussinesq_dataset.pth')
 DEFAULT_DEVICE = 'cpu'
