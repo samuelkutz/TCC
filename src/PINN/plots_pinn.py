@@ -1,4 +1,3 @@
-import argparse
 import os
 import numpy as np
 import torch
@@ -10,13 +9,9 @@ from plots import plot_training_statistics, plot_relative_error_panel, save_solu
 
 RESULTS_DIR = 'RESULTS'
 
-if __name__ == '__main__':
-    # parse evaluation mode and load saved artifacts for pinn
-    parser = argparse.ArgumentParser(description='plot pinn training results and evaluation')
-    parser.add_argument('--mode', choices=['data', 'no_data'], default='data')
-    args = parser.parse_args()
 
-    label = 'pinn' if args.mode == 'data' else 'pinn_no_data'
+def eval_pinn(mode='data'):
+    label = 'pinn' if mode == 'data' else 'pinn_no_data'
     artifacts_file = os.path.join(RESULTS_DIR, 'pinn', 'models', f'{label}_artifacts.pth')
     artifacts = torch.load(artifacts_file, map_location='cpu')
     params = artifacts['params']
@@ -25,7 +20,6 @@ if __name__ == '__main__':
     outdir = os.path.dirname(os.path.dirname(artifacts_file))
     os.makedirs(outdir, exist_ok=True)
 
-    # plot training curve from saved artifacts
     plot_training_statistics(
         [artifacts['train_history']],
         [label],
@@ -41,7 +35,6 @@ if __name__ == '__main__':
         x_sol, t_sol, eta_sol, u_sol = solver.solve()
         data = {'x': x_sol, 't': t_sol, 'eta': eta_sol, 'u': u_sol}
 
-    # recreate pinn model for evaluation and restore weights
     model = PINN(
         input_size=2,
         output_size=2,
@@ -58,7 +51,7 @@ if __name__ == '__main__':
     )
     load_model(model_file, model, device=device)
 
-    print(f'start pinn evaluation ({args.mode})')
+    print(f'start pinn evaluation ({mode})')
     x_pred = np.linspace(-30.0, 30.0, params['train_resolution'], dtype=np.float32)
     t_pred = np.linspace(0.0, 15.0, params['train_resolution'], dtype=np.float32)
     X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
@@ -98,3 +91,7 @@ if __name__ == '__main__':
         filename=f'{label}_animation_a{params["param_value"]:.3f}_res{params["train_resolution"]}.gif',
         title=f'{label} animation a={params["param_value"]:.3f} res={params["train_resolution"]}',
     )
+
+
+if __name__ == '__main__':
+    eval_pinn()

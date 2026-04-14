@@ -102,6 +102,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir='RESULTS', filename='
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
     rel_spec = compute_relative_error(true_spec, pred_spec)
+    rel_spec = np.clip(rel_spec, 0.0, 1.0)
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5), constrained_layout=True)
     im0 = axes[0].imshow(true_spec.T,
@@ -120,7 +121,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir='RESULTS', filename='
                           aspect='auto',
                           cmap='inferno',
                           vmin=0.0,
-                          vmax=np.max(rel_spec))
+                          vmax=1.0)
     axes[1].set_title('Relative X-spectrum Error')
     axes[1].set_xlabel('Spatial frequency kx')
     plt.colorbar(im1, ax=axes[1], label='Relative Error')
@@ -142,13 +143,19 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
     indices = [int(np.argmin(np.abs(t - ti))) for ti in times]
 
     rel_error = compute_relative_error(eta_true, eta_pred)
-    time_relative_norm = np.linalg.norm(np.abs(eta_true - eta_pred), axis=0) / (np.linalg.norm(eta_true, axis=0) + 1e-8)
+    rel_error = np.clip(rel_error, 0.0, 1.0)
+    time_relative_norm = np.clip(
+        np.linalg.norm(np.abs(eta_true - eta_pred), axis=0) / (np.linalg.norm(eta_true, axis=0) + 1e-8),
+        0.0,
+        1.0,
+    )
 
     dx = x[1] - x[0] if len(x) > 1 else 1.0
     kx = np.fft.rfftfreq(len(x), d=dx)
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
     rel_spec = np.abs(pred_spec - true_spec) / (true_spec + 1e-12)
+    rel_spec = np.clip(rel_spec, 0.0, 1.0)
 
     fig, axes = plt.subplots(3, 2, figsize=(14, 14), constrained_layout=True)
 
@@ -161,13 +168,17 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
         ax.set_ylabel('η(x,t)')
         ax.grid(True, alpha=0.3)
         if idx == 0:
-            ax.legend(fontsize='small')
+            ax.legend(fontsize='small', loc='best')
 
-    im = axes[1, 0].imshow(rel_error.T,
-                           extent=[x[0], x[-1], t[0], t[-1]],
-                           origin='lower',
-                           aspect='auto',
-                           cmap='magma')
+    im = axes[1, 0].imshow(
+        rel_error.T,
+        extent=[x[0], x[-1], t[0], t[-1]],
+        origin='lower',
+        aspect='auto',
+        cmap='magma',
+        vmin=0.0,
+        vmax=1.0,
+    )
     axes[1, 0].set_title('Relative Error Heatmap')
     axes[1, 0].set_xlabel('Space (x)')
     axes[1, 0].set_ylabel('Time (t)')
@@ -181,14 +192,23 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
     axes[1, 1].set_ylabel('Relative Error')
     axes[1, 1].grid(True, alpha=0.3)
     mean_err = np.mean(time_relative_norm)
-    axes[1, 1].text(0.5, 0.9, f'Mean: {mean_err:.2e}', transform=axes[1, 1].transAxes,
-                    ha='center', va='center', bbox=dict(facecolor='white', alpha=0.8))
+    axes[1, 1].text(
+        0.5,
+        0.9,
+        f'Mean: {mean_err:.2e}',
+        transform=axes[1, 1].transAxes,
+        ha='center',
+        va='center',
+        bbox=dict(facecolor='white', alpha=0.8),
+    )
 
-    im2 = axes[2, 0].imshow(true_spec.T,
-                            extent=[kx[0], kx[-1], t[0], t[-1]],
-                            origin='lower',
-                            aspect='auto',
-                            cmap='viridis')
+    im2 = axes[2, 0].imshow(
+        true_spec.T,
+        extent=[kx[0], kx[-1], t[0], t[-1]],
+        origin='lower',
+        aspect='auto',
+        cmap='viridis',
+    )
     axes[2, 0].set_title('True X-spectrum over time')
     axes[2, 0].set_xlabel('Spatial frequency kx')
     axes[2, 0].set_ylabel('Time')
@@ -196,13 +216,15 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
     cax2 = divider2.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im2, cax=cax2, label='Amplitude')
 
-    im3 = axes[2, 1].imshow(rel_spec.T,
-                            extent=[kx[0], kx[-1], t[0], t[-1]],
-                            origin='lower',
-                            aspect='auto',
-                            cmap='inferno',
-                            vmin=0.0,
-                            vmax=np.max(rel_spec))
+    im3 = axes[2, 1].imshow(
+        rel_spec.T,
+        extent=[kx[0], kx[-1], t[0], t[-1]],
+        origin='lower',
+        aspect='auto',
+        cmap='inferno',
+        vmin=0.0,
+        vmax=1.0,
+    )
     axes[2, 1].set_title('Relative X-spectrum Error')
     axes[2, 1].set_xlabel('Spatial frequency kx')
     divider3 = make_axes_locatable(axes[2, 1])
@@ -210,6 +232,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
     plt.colorbar(im3, cax=cax3, label='Relative Error')
 
     fig.suptitle(title)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fig.savefig(outpath, dpi=150)
     print(f'Relative error summary saved to {outpath}')
     plt.close()
@@ -259,8 +282,17 @@ def plot_error_heatmap(x, t, eta_true, eta_pred, outdir='RESULTS', filename='err
     outpath = os.path.join(outdir, filename)
 
     rel_diff = compute_relative_error(eta_true, eta_pred)
+    rel_diff = np.clip(rel_diff, 0.0, 1.0)
     fig, ax = plt.subplots(figsize=(10, 5))
-    im = ax.imshow(rel_diff.T, extent=[x[0], x[-1], t[0], t[-1]], origin='lower', aspect='auto', cmap='inferno')
+    im = ax.imshow(
+        rel_diff.T,
+        extent=[x[0], x[-1], t[0], t[-1]],
+        origin='lower',
+        aspect='auto',
+        cmap='inferno',
+        vmin=0.0,
+        vmax=1.0,
+    )
     ax.set_title(title)
     ax.set_xlabel('Space (x)')
     ax.set_ylabel('Time (t)')

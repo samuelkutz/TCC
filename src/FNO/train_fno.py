@@ -1,4 +1,3 @@
-import argparse
 import os
 import numpy as np
 import torch
@@ -21,29 +20,23 @@ WIDTH = 32
 PRINT_INTERVAL = 500
 PARAM_VALUES = np.arange(0.1, 5.01, 0.5)
 
-if __name__ == '__main__':
-    # parse dataset file path for fno training
-    parser = argparse.ArgumentParser(description='train fno model and save artifacts')
-    parser.add_argument('--dataset-file', default=DATA_FILE)
-    args = parser.parse_args()
 
+def train_fno(dataset_file=DATA_FILE):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(RESULTS_DIR, exist_ok=True)
     outdir = os.path.join(RESULTS_DIR, 'fno')
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
-    dataset_file = args.dataset_file
     if os.path.exists(dataset_file):
         x_train, y_train = load_dataset(dataset_file)
         print(f'loaded dataset from {dataset_file}')
     else:
         raise RuntimeError(
             f'Dataset not found at {dataset_file}. '
-            'Generate it first using `python src/run_dataset.py`.'
+            'Generate it first using `python src/BOUSSINESQ/run_dataset.py`.'
         )
 
-    # build fno model and use relative l2 loss for normalized predictions
     model = FNO2d(modes1=MODES1, modes2=MODES2, width=WIDTH).to(device)
     optimizer = Adam(model.parameters(), lr=FNO_LR)
     loss_fn = RelativeL2_loss()
@@ -75,7 +68,6 @@ if __name__ == '__main__':
             elapsed = default_timer() - start_time
             print(f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, relative l2 loss {epoch_loss:.4e}')
 
-    # save trained fno weights and training artifacts for later evaluation
     model_file = os.path.join(model_dir, 'fno_weights.pth')
     save_model(model, filepath=model_file)
 
@@ -95,3 +87,7 @@ if __name__ == '__main__':
     }
     torch.save(artifacts, os.path.join(model_dir, 'fno_artifacts.pth'))
     print(f'fno artifacts saved to {os.path.join(model_dir, "fno_artifacts.pth")}')
+
+
+if __name__ == '__main__':
+    train_fno()

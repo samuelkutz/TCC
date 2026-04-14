@@ -1,4 +1,3 @@
-import argparse
 import os
 import numpy as np
 import torch
@@ -12,13 +11,9 @@ RESULTS_DIR = 'RESULTS'
 EVAL_PARAMS = [0.1, 2.75, 5.75]
 RESOLUTIONS = [256, 128, 64]
 
-if __name__ == '__main__':
-    # parse evaluation mode and load pino artifacts
-    parser = argparse.ArgumentParser(description='plot pino training results and evaluation')
-    parser.add_argument('--mode', choices=['data', 'no_data'], default='data')
-    args = parser.parse_args()
 
-    label = 'pino' if args.mode == 'data' else 'pino_no_data'
+def eval_pino(mode='data'):
+    label = 'pino' if mode == 'data' else 'pino_no_data'
     artifacts_file = os.path.join(RESULTS_DIR, 'pino', 'models', f'{label}_artifacts.pth')
     artifacts = torch.load(artifacts_file, map_location='cpu')
     params = artifacts['params']
@@ -27,7 +22,6 @@ if __name__ == '__main__':
     outdir = os.path.dirname(os.path.dirname(artifacts_file))
     os.makedirs(outdir, exist_ok=True)
 
-    # plot the saved relative training curve for pino
     plot_training_statistics(
         [artifacts['train_history']],
         [label],
@@ -44,7 +38,7 @@ if __name__ == '__main__':
     ).to(device)
     load_model(model_file, model, device=device)
 
-    print(f'start pino evaluation ({args.mode})')
+    print(f'start pino evaluation ({mode})')
     for val in EVAL_PARAMS:
         resolutions = RESOLUTIONS if val == EVAL_PARAMS[1] else [256]
         for res in resolutions:
@@ -91,3 +85,7 @@ if __name__ == '__main__':
                     filename=f'{label}_animation_a{val:.3f}_res{res}.gif',
                     title=f'{label} animation a={val:.3f} res={res}',
                 )
+
+
+if __name__ == '__main__':
+    eval_pino()

@@ -1,4 +1,3 @@
-import argparse
 import os
 import numpy as np
 import torch
@@ -20,13 +19,8 @@ PINN_DATA_WEIGHT = 1.0
 PINN_TRAIN_RESOLUTION = 256
 PARAM_VALUE = 2.55
 
-if __name__ == '__main__':
-    # parse whether training uses supervised data or only physics constraints
-    parser = argparse.ArgumentParser(description='train pinn model and save artifacts')
-    parser.add_argument('--mode', choices=['data', 'no_data'], default='data')
-    args = parser.parse_args()
 
-    mode = args.mode
+def train_pinn(mode='data'):
     data_weight = PINN_DATA_WEIGHT if mode == 'data' else 0.0
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
 
@@ -36,13 +30,11 @@ if __name__ == '__main__':
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
-    # generate reference solution for supervised data if requested
     bsq = Boussinesq(-30, 30, 0, 15, PARAM_VALUE, PARAM_VALUE)
     solver = PseudoSpectralBoussinesq(bsq, Nx=PINN_TRAIN_RESOLUTION, Nt=PINN_TRAIN_RESOLUTION, device=device)
     x_sol, t_sol, eta_sol, u_sol = solver.solve()
     data = {'x': x_sol, 't': t_sol, 'eta': eta_sol, 'u': u_sol} if data_weight > 0 else None
 
-    # build pinn model with physics constraint and optional data loss
     model = PINN(
         input_size=2,
         output_size=2,
@@ -61,7 +53,6 @@ if __name__ == '__main__':
     print(f'starting pinn training ({mode})...')
     history = model.run_train_loop(bsq, epochs=PINN_EPOCHS, seed=None, print_interval=500)
 
-    # save trained network weights for later evaluation
     model_file = os.path.join(model_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
@@ -85,3 +76,15 @@ if __name__ == '__main__':
     artifacts_file = os.path.join(model_dir, f'{label}_artifacts.pth')
     torch.save(artifacts, artifacts_file)
     print(f'pinn artifacts saved to {artifacts_file}')
+
+
+def train_pinn_data():
+    return train_pinn('data')
+
+
+def train_pinn_no_data():
+    return train_pinn('no_data')
+
+
+if __name__ == '__main__':
+    train_pinn()

@@ -1,37 +1,19 @@
-import argparse
 import os
 import numpy as np
 
 from BOUSSINESQ.dataset import generate_dataset, save_dataset
 
+DEFAULT_DATA_FILE = os.path.join('RESULTS', 'boussinesq_dataset.pth')
+DEFAULT_DEVICE = 'cpu'
+DEFAULT_PARAM_VALUES = list(np.arange(0.1, 5.01, 0.5))
 
-def main():
-    parser = argparse.ArgumentParser(description='Generate the shared Boussinesq dataset.')
-    parser.add_argument(
-        '--dataset-file',
-        default=os.path.join('RESULTS', 'boussinesq_dataset.pth'),
-        help='Path where the generated dataset will be saved.',
-    )
-    parser.add_argument(
-        '--device',
-        default='cpu',
-        choices=['cpu', 'cuda'],
-        help='Device used for dataset generation.',
-    )
-    parser.add_argument(
-        '--param-values',
-        nargs='+',
-        type=float,
-        default=list(np.arange(0.1, 5.01, 0.5)),
-        help='List of parameter values for dataset generation.',
-    )
-    args = parser.parse_args()
 
-    os.makedirs(os.path.dirname(args.dataset_file) or '.', exist_ok=True)
-    x_train, y_train = generate_dataset(args.param_values, device=args.device)
-    save_dataset(x_train, y_train, args.dataset_file)
-    print(f'dataset written to {args.dataset_file}')
+def run_dataset(dataset_file=DEFAULT_DATA_FILE, device=DEFAULT_DEVICE, param_values=DEFAULT_PARAM_VALUES):
+    os.makedirs(os.path.dirname(dataset_file) or '.', exist_ok=True)
+    x_train, y_train = generate_dataset(param_values, device=device)
+    save_dataset(x_train, y_train, dataset_file)
+    print(f'dataset written to {dataset_file}')
 
 
 if __name__ == '__main__':
-    main()
+    run_dataset()

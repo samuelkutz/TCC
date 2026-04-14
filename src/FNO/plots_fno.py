@@ -1,4 +1,3 @@
-import argparse
 import os
 import numpy as np
 import torch
@@ -12,20 +11,18 @@ RESULTS_DIR = 'RESULTS'
 EVAL_PARAMS = [0.1, 2.75, 5.75]
 RESOLUTIONS = [256, 128, 64]
 
-if __name__ == '__main__':
-    # parse path to saved fno artifacts for evaluation
-    parser = argparse.ArgumentParser(description='plot fno training results and evaluation')
-    parser.add_argument('--artifact-file', default=os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_artifacts.pth'))
-    args = parser.parse_args()
 
-    artifacts = torch.load(args.artifact_file, map_location='cpu')
+def eval_fno(artifact_file=None):
+    if artifact_file is None:
+        artifact_file = os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_artifacts.pth')
+
+    artifacts = torch.load(artifact_file, map_location='cpu')
     params = artifacts['params']
     model_file = artifacts['model_file']
 
-    outdir = os.path.dirname(os.path.dirname(args.artifact_file))
+    outdir = os.path.dirname(os.path.dirname(artifact_file))
     os.makedirs(outdir, exist_ok=True)
 
-    # plot the saved training loss history for fno
     plot_training_statistics(
         [artifacts['train_history']],
         ['fno'],
@@ -33,7 +30,6 @@ if __name__ == '__main__':
         filename='fno_training_statistics.png',
     )
 
-    # restore fno model weights before generating test predictions
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = FNO2d(modes1=params['modes1'], modes2=params['modes2'], width=params['width']).to(device)
     load_model(model_file, model, device=device)
@@ -85,3 +81,7 @@ if __name__ == '__main__':
                     filename=f'fno_animation_a{val:.3f}_res{res}.gif',
                     title=f'fno animation a={val:.3f} res={res}',
                 )
+
+
+if __name__ == '__main__':
+    eval_fno()

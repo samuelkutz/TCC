@@ -1,4 +1,3 @@
-import argparse
 import os
 import numpy as np
 import torch
@@ -26,14 +25,8 @@ WIDTH = 32
 PRINT_INTERVAL = 500
 PARAM_VALUES = np.arange(0.1, 5.01, 0.5)
 
-if __name__ == '__main__':
-    # parse training mode and dataset path for pino
-    parser = argparse.ArgumentParser(description='train pino model and save artifacts')
-    parser.add_argument('--mode', choices=['data', 'no_data'], default='data')
-    parser.add_argument('--dataset-file', default=DATA_FILE)
-    args = parser.parse_args()
 
-    mode = args.mode
+def train_pino(mode='data', dataset_file=DATA_FILE):
     data_weight = PINO_DATA_WEIGHT if mode == 'data' else 0.0
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
@@ -43,17 +36,15 @@ if __name__ == '__main__':
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
-    dataset_file = args.dataset_file
     if os.path.exists(dataset_file):
         x_train, y_train = load_dataset(dataset_file)
         print(f'loaded dataset from {dataset_file}')
     else:
         raise RuntimeError(
             f'Dataset not found at {dataset_file}. '
-            'Generate it first using `python src/run_dataset.py`.'
+            'Generate it first using `python src/BOUSSINESQ/run_dataset.py`.'
         )
 
-    # build pino model and use relative l2 loss for evaluation
     model = PINO2d(modes1=MODES1, modes2=MODES2, width=WIDTH, out_channels=y_train.shape[1]).to(device)
     optimizer = Adam(model.parameters(), lr=PINO_LR)
     loss_fn = RelativeL2_loss()
@@ -97,7 +88,6 @@ if __name__ == '__main__':
             elapsed = default_timer() - start_time
             print(f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, relative l2 loss {epoch_rel:.4e}')
 
-    # persist trained pino weights and metadata for plotting
     model_file = os.path.join(model_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
@@ -125,3 +115,15 @@ if __name__ == '__main__':
     artifacts_file = os.path.join(model_dir, f'{label}_artifacts.pth')
     torch.save(artifacts, artifacts_file)
     print(f'pino artifacts saved to {artifacts_file}')
+
+
+def train_pino_data():
+    return train_pino('data')
+
+
+def train_pino_no_data():
+    return train_pino('no_data')
+
+
+if __name__ == '__main__':
+    train_pino()
