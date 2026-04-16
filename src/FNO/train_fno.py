@@ -67,11 +67,16 @@ def train_fno(dataset_file=DATA_FILE):
             elapsed = default_timer() - start_time
             print(f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, relative l2 loss {epoch_loss:.4e}')
 
+    training_duration = default_timer() - start_time
+    final_loss = train_history[-1] if train_history else None
+
     model_file = os.path.join(model_dir, 'fno_weights.pth')
     save_model(model, filepath=model_file)
 
     model_metadata = {
         'train_history': train_history,
+        'training_duration': training_duration,
+        'final_loss': final_loss,
         'params': {
             'epochs': FNO_EPOCHS,
             'batch_size': FNO_BATCH_SIZE,

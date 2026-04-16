@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import torch
+from timeit import default_timer
 
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from PINN.PINN import PINN
@@ -51,13 +52,18 @@ def train_pinn(mode='data'):
     )
 
     print(f'starting pinn training ({mode})...')
+    start_time = default_timer()
     history = model.run_train_loop(bsq, epochs=PINN_EPOCHS, seed=None, print_interval=500)
+    training_duration = default_timer() - start_time
+    final_loss = history[-1] if len(history) > 0 else None
 
     model_file = os.path.join(model_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
     model_metadata = {
         'train_history': history,
+        'training_duration': training_duration,
+        'final_loss': final_loss,
         'params': {
             'epochs': PINN_EPOCHS,
             'neurons': PINN_NEURONS,

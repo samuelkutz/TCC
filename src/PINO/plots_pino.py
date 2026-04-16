@@ -27,6 +27,8 @@ def eval_pino(mode='data'):
         [label],
         outdir=outdir,
         filename=f'{label}_training_statistics.png',
+        duration_seconds=model_metadata.get('training_duration'),
+        final_loss=model_metadata.get('final_loss'),
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

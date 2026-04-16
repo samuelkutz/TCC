@@ -93,11 +93,16 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
                 f'relative l2 loss {epoch_rel:.4e}, data_loss {epoch_data:.4e}'
             )
 
+    training_duration = default_timer() - start_time
+    final_loss = train_history[-1] if train_history else None
+
     model_file = os.path.join(model_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
     model_metadata = {
         'train_history': train_history,
+        'training_duration': training_duration,
+        'final_loss': final_loss,
         'params': {
             'epochs': PINO_EPOCHS,
             'batch_size': PINO_BATCH_SIZE,

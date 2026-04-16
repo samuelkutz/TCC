@@ -15,25 +15,46 @@ def _ensure_outdir(outdir):
 
 
 # plot training loss
-def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None):
+def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, duration_seconds=None, final_loss=None):
     _ensure_outdir(outdir)
     if filename is None:
         filename = 'training_loss.png'
     outpath = os.path.join(outdir, filename)
 
-    plt.figure()
-    plt.plot(train_loss_history, lw=1.8)
-    plt.title('Training Loss History')
-    plt.xlabel('Epoch')
-    plt.ylabel('Relative L2 Loss')
-    plt.grid(True, alpha=0.4)
-    plt.savefig(outpath, dpi=150)
+    epochs = np.arange(1, len(train_loss_history) + 1)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(epochs, train_loss_history, color='#1f77b4', lw=2.2)
+    ax.set_title('Training Loss History', fontsize=14)
+    ax.set_xlabel('Epoch', fontsize=12)
+    ax.set_ylabel('Relative L2 Loss', fontsize=12)
+    ax.grid(True, alpha=0.35)
+    ax.tick_params(axis='both', which='major', labelsize=10)
+
+    annotation_lines = []
+    if duration_seconds is not None:
+        annotation_lines.append(f'Training time: {duration_seconds:.1f}s')
+    if final_loss is not None:
+        annotation_lines.append(f'Final loss: {final_loss:.2e}')
+    if annotation_lines:
+        ax.text(
+            0.98,
+            0.98,
+            '\n'.join(annotation_lines),
+            transform=ax.transAxes,
+            ha='right',
+            va='top',
+            fontsize=10,
+            bbox=dict(facecolor='white', alpha=0.85, edgecolor='gray', boxstyle='round,pad=0.4'),
+        )
+
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=150)
     print(f'Training loss plot saved to {outpath}')
-    plt.close()
+    plt.close(fig)
 
 
 # plot training statistics across seeds
-def plot_training_statistics(histories, labels, outdir='RESULTS', filename='training_statistics.png', log_scale=True):
+def plot_training_statistics(histories, labels, outdir='RESULTS', filename='training_statistics.png', log_scale=True, duration_seconds=None, final_loss=None):
     # compare multiple loss curves and show mean ± std over epochs
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
@@ -41,27 +62,46 @@ def plot_training_statistics(histories, labels, outdir='RESULTS', filename='trai
     histories_np = np.array(histories)
     mean_history = np.mean(histories_np, axis=0)
     std_history = np.std(histories_np, axis=0)
-    epochs = np.arange(len(mean_history))
+    epochs = np.arange(1, len(mean_history) + 1)
 
-    plt.figure(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(10, 5))
     for history, label in zip(histories, labels):
-        plt.plot(epochs, history, alpha=0.35, label=label)
+        ax.plot(epochs, history, alpha=0.35, lw=1.5, label=label)
 
-    plt.plot(epochs, mean_history, color='black', lw=2.5, label='Mean')
-    plt.fill_between(epochs, mean_history - std_history, mean_history + std_history,
-                     color='black', alpha=0.15, label='Std Dev')
+    ax.plot(epochs, mean_history, color='black', lw=2.7, label='Mean')
+    ax.fill_between(epochs, mean_history - std_history, mean_history + std_history,
+                    color='black', alpha=0.18, label='Std Dev')
 
-    plt.title('Training Relative L2 Loss Across Runs')
-    plt.xlabel('Epoch')
-    plt.ylabel('Relative L2 Loss')
-    plt.grid(True, alpha=0.3)
+    ax.set_title('Training Relative L2 Loss', fontsize=14)
+    ax.set_xlabel('Epoch', fontsize=12)
+    ax.set_ylabel('Relative L2 Loss', fontsize=12)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(axis='both', which='major', labelsize=10)
     if log_scale:
-        plt.yscale('log')
-    plt.legend(fontsize='small')
-    plt.tight_layout()
-    plt.savefig(outpath, dpi=150)
+        ax.set_yscale('log')
+    ax.legend(fontsize='small', loc='upper right')
+
+    annotation_lines = []
+    if duration_seconds is not None:
+        annotation_lines.append(f'Training time: {duration_seconds:.1f}s')
+    if final_loss is not None:
+        annotation_lines.append(f'Final loss: {final_loss:.2e}')
+    if annotation_lines:
+        ax.text(
+            0.98,
+            0.98,
+            '\n'.join(annotation_lines),
+            transform=ax.transAxes,
+            ha='right',
+            va='top',
+            fontsize=10,
+            bbox=dict(facecolor='white', alpha=0.85, edgecolor='gray', boxstyle='round,pad=0.4'),
+        )
+
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=150)
     print(f'Training statistics plot saved to {outpath}')
-    plt.close()
+    plt.close(fig)
 
 
 # spectral relative error metrics
@@ -97,7 +137,9 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir='RESULTS', filename='
     x = np.asarray(x)
     t = np.asarray(t)
     dx = x[1] - x[0] if len(x) > 1 else 1.0
-    kx = np.fft.rfftfreq(len(x), d=dx)
+    # convert cycle frequency to angular wavenumber for a periodic domain [-L, L]
+    # kx = 2*pi*m / domain_length, which is consistent with the solver's spectral derivatives.
+    kx = 2.0 * np.pi * np.fft.rfftfreq(len(x), d=dx)
 
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
@@ -111,7 +153,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir='RESULTS', filename='
                           aspect='auto',
                           cmap='viridis')
     axes[0].set_title('True X-spectrum over time')
-    axes[0].set_xlabel('Spatial frequency kx')
+    axes[0].set_xlabel('Wavenumber kx')
     axes[0].set_ylabel('Time')
     plt.colorbar(im0, ax=axes[0], label='Amplitude')
 
@@ -151,7 +193,8 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
     )
 
     dx = x[1] - x[0] if len(x) > 1 else 1.0
-    kx = np.fft.rfftfreq(len(x), d=dx)
+    # use angular wavenumber consistent with the solver: kx = 2*pi*m / domain_length
+    kx = 2.0 * np.pi * np.fft.rfftfreq(len(x), d=dx)
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
     rel_spec = np.abs(pred_spec - true_spec) / (true_spec + 1e-12)
@@ -210,7 +253,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
         cmap='viridis',
     )
     axes[2, 0].set_title('True X-spectrum over time')
-    axes[2, 0].set_xlabel('Spatial frequency kx')
+    axes[2, 0].set_xlabel('Wavenumber kx')
     axes[2, 0].set_ylabel('Time')
     divider2 = make_axes_locatable(axes[2, 0])
     cax2 = divider2.append_axes('right', size='5%', pad=0.05)

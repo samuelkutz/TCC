@@ -28,6 +28,8 @@ def eval_fno(model_metadata_file=None):
         ['fno'],
         outdir=outdir,
         filename='fno_training_statistics.png',
+        duration_seconds=model_metadata.get('training_duration'),
+        final_loss=model_metadata.get('final_loss'),
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
