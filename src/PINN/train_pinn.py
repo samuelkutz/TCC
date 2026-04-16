@@ -50,6 +50,9 @@ def train_pinn(mode='data'):
         data_weight=data_weight,
         device=device,
     )
+    num_params = sum(p.numel() for p in model.parameters())
+
+    print(f'Model parameter count: {num_params:,}')
 
     print(f'starting pinn training ({mode})...')
     start_time = default_timer()
@@ -64,6 +67,7 @@ def train_pinn(mode='data'):
         'train_history': history,
         'training_duration': training_duration,
         'final_loss': final_loss,
+        'num_params': num_params,
         'params': {
             'epochs': PINN_EPOCHS,
             'neurons': PINN_NEURONS,

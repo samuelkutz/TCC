@@ -15,7 +15,7 @@ def _ensure_outdir(outdir):
 
 
 # plot training loss
-def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, duration_seconds=None, final_loss=None):
+def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, duration_seconds=None, final_loss=None, num_params=None):
     _ensure_outdir(outdir)
     if filename is None:
         filename = 'training_loss.png'
@@ -31,6 +31,8 @@ def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, dura
     ax.tick_params(axis='both', which='major', labelsize=10)
 
     annotation_lines = []
+    if num_params is not None:
+        annotation_lines.append(f'Parameters: {num_params:,}')
     if duration_seconds is not None:
         annotation_lines.append(f'Training time: {duration_seconds:.1f}s')
     if final_loss is not None:
@@ -54,7 +56,7 @@ def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, dura
 
 
 # plot training statistics across seeds
-def plot_training_statistics(histories, labels, outdir='RESULTS', filename='training_statistics.png', log_scale=True, duration_seconds=None, final_loss=None):
+def plot_training_statistics(histories, labels, outdir='RESULTS', filename='training_statistics.png', log_scale=True, duration_seconds=None, final_loss=None, num_params=None):
     # compare multiple loss curves and show mean ± std over epochs
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
@@ -82,6 +84,8 @@ def plot_training_statistics(histories, labels, outdir='RESULTS', filename='trai
     ax.legend(fontsize='small', loc='upper right')
 
     annotation_lines = []
+    if num_params is not None:
+        annotation_lines.append(f'Parameters: {num_params:,}')
     if duration_seconds is not None:
         annotation_lines.append(f'Training time: {duration_seconds:.1f}s')
     if final_loss is not None:
