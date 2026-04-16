@@ -37,6 +37,8 @@ def train_fno(dataset_file=DATA_FILE):
         )
 
     model = FNO2d(modes1=MODES1, modes2=MODES2, width=WIDTH).to(device)
+    num_params = sum(p.numel() for p in model.parameters())
+    print(f'Model parameter count: {num_params:,}')
     optimizer = Adam(model.parameters(), lr=FNO_LR)
     loss_fn = RelativeL2_loss()
 
@@ -77,6 +79,7 @@ def train_fno(dataset_file=DATA_FILE):
         'train_history': train_history,
         'training_duration': training_duration,
         'final_loss': final_loss,
+        'num_params': num_params,
         'params': {
             'epochs': FNO_EPOCHS,
             'batch_size': FNO_BATCH_SIZE,

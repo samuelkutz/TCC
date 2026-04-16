@@ -45,6 +45,8 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
         )
 
     model = PINO2d(modes1=MODES1, modes2=MODES2, width=WIDTH, out_channels=y_train.shape[1]).to(device)
+    num_params = sum(p.numel() for p in model.parameters())
+    print(f'Model parameter count: {num_params:,}')
     optimizer = Adam(model.parameters(), lr=PINO_LR)
     loss_fn = RelativeL2_loss()
 
@@ -103,6 +105,7 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
         'train_history': train_history,
         'training_duration': training_duration,
         'final_loss': final_loss,
+        'num_params': num_params,
         'params': {
             'epochs': PINO_EPOCHS,
             'batch_size': PINO_BATCH_SIZE,
