@@ -200,7 +200,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
     rel_spec = np.abs(pred_spec - true_spec) / (true_spec + 1e-12)
     rel_spec = np.clip(rel_spec, 0.0, 1.0)
 
-    fig, axes = plt.subplots(3, 2, figsize=(14, 14), constrained_layout=True)
+    fig, axes = plt.subplots(3, 2, figsize=(14, 14), constrained_layout=False)
 
     for idx, time_index in enumerate(indices):
         ax = axes[0, idx]
@@ -275,7 +275,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
     plt.colorbar(im3, cax=cax3, label='Relative Error')
 
     fig.suptitle(title)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.subplots_adjust(top=0.95, bottom=0.03, hspace=0.35, wspace=0.28)
     fig.savefig(outpath, dpi=150)
     print(f'Relative error summary saved to {outpath}')
     plt.close()
