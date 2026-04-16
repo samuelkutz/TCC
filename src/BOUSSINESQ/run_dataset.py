@@ -9,7 +9,7 @@ from tools import save_dataset
 DATASET_FILE = os.path.join('RESULTS', 'boussinesq_dataset.pth')
 DEVICE = 'cpu'
 PARAM_VALUES = list(np.arange(0.1, 3.01, 0.5))
-X_LIMIT = 30.0
+X_LIMIT = 60.0
 T_LIMIT = 15.0
 NX_HIGH = 256
 NT_HIGH = 256

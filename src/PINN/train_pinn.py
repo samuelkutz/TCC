@@ -27,7 +27,7 @@ def train_pinn(mode='data'):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(RESULTS_DIR, exist_ok=True)
-    outdir = os.path.join(RESULTS_DIR, 'pinn')
+    outdir = os.path.join(RESULTS_DIR, 'pinn', 'with_data' if mode == 'data' else 'no_data')
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
@@ -50,9 +50,6 @@ def train_pinn(mode='data'):
         data_weight=data_weight,
         device=device,
     )
-    num_params = sum(p.numel() for p in model.parameters())
-
-    print(f'Model parameter count: {num_params:,}')
 
     print(f'starting pinn training ({mode})...')
     start_time = default_timer()
@@ -67,7 +64,6 @@ def train_pinn(mode='data'):
         'train_history': history,
         'training_duration': training_duration,
         'final_loss': final_loss,
-        'num_params': num_params,
         'params': {
             'epochs': PINN_EPOCHS,
             'neurons': PINN_NEURONS,

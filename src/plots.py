@@ -15,7 +15,7 @@ def _ensure_outdir(outdir):
 
 
 # plot training loss
-def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, duration_seconds=None, final_loss=None, num_params=None):
+def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, duration_seconds=None, final_loss=None):
     _ensure_outdir(outdir)
     if filename is None:
         filename = 'training_loss.png'
@@ -31,19 +31,17 @@ def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, dura
     ax.tick_params(axis='both', which='major', labelsize=10)
 
     annotation_lines = []
-    if num_params is not None:
-        annotation_lines.append(f'Parameters: {num_params:,}')
     if duration_seconds is not None:
         annotation_lines.append(f'Training time: {duration_seconds:.1f}s')
     if final_loss is not None:
         annotation_lines.append(f'Final loss: {final_loss:.2e}')
     if annotation_lines:
         ax.text(
-            0.98,
+            0.02,
             0.98,
             '\n'.join(annotation_lines),
             transform=ax.transAxes,
-            ha='right',
+            ha='left',
             va='top',
             fontsize=10,
             bbox=dict(facecolor='white', alpha=0.85, edgecolor='gray', boxstyle='round,pad=0.4'),
@@ -55,24 +53,17 @@ def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, dura
     plt.close(fig)
 
 
-# plot training statistics across seeds
-def plot_training_statistics(histories, labels, outdir='RESULTS', filename='training_statistics.png', log_scale=True, duration_seconds=None, final_loss=None, num_params=None):
-    # compare multiple loss curves and show mean ± std over epochs
+# plot training statistics across runs
+def plot_training_statistics(histories, labels, outdir='RESULTS', filename='training_statistics.png', log_scale=True, duration_seconds=None, final_loss=None):
+    # compare multiple loss curves for the given runs
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
-    histories_np = np.array(histories)
-    mean_history = np.mean(histories_np, axis=0)
-    std_history = np.std(histories_np, axis=0)
-    epochs = np.arange(1, len(mean_history) + 1)
+    epochs = np.arange(1, len(histories[0]) + 1)
 
     fig, ax = plt.subplots(figsize=(10, 5))
     for history, label in zip(histories, labels):
-        ax.plot(epochs, history, alpha=0.35, lw=1.5, label=label)
-
-    ax.plot(epochs, mean_history, color='black', lw=2.7, label='Mean')
-    ax.fill_between(epochs, mean_history - std_history, mean_history + std_history,
-                    color='black', alpha=0.18, label='Std Dev')
+        ax.plot(epochs, history, alpha=0.85, lw=2.0, label=label)
 
     ax.set_title('Training Relative L2 Loss', fontsize=14)
     ax.set_xlabel('Epoch', fontsize=12)
@@ -81,22 +72,21 @@ def plot_training_statistics(histories, labels, outdir='RESULTS', filename='trai
     ax.tick_params(axis='both', which='major', labelsize=10)
     if log_scale:
         ax.set_yscale('log')
-    ax.legend(fontsize='small', loc='upper right')
+    if len(labels) > 1:
+        ax.legend(fontsize='small', loc='upper right')
 
     annotation_lines = []
-    if num_params is not None:
-        annotation_lines.append(f'Parameters: {num_params:,}')
     if duration_seconds is not None:
         annotation_lines.append(f'Training time: {duration_seconds:.1f}s')
     if final_loss is not None:
         annotation_lines.append(f'Final loss: {final_loss:.2e}')
     if annotation_lines:
         ax.text(
-            0.98,
+            0.02,
             0.98,
             '\n'.join(annotation_lines),
             transform=ax.transAxes,
-            ha='right',
+            ha='left',
             va='top',
             fontsize=10,
             bbox=dict(facecolor='white', alpha=0.85, edgecolor='gray', boxstyle='round,pad=0.4'),
