@@ -4,9 +4,8 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from BOUSSINESQ.dataset import load_dataset
+from tools import RelativeL2_loss, save_model, load_dataset
 from PINO.PINO import PINO2d, pino_loss
-from tools import RelativeL2_loss, save_model
 
 RESULTS_DIR = 'RESULTS'
 DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
@@ -32,7 +31,7 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(RESULTS_DIR, exist_ok=True)
-    outdir = os.path.join(RESULTS_DIR, 'pino')
+    outdir = os.path.join(RESULTS_DIR, 'pino', 'with_data' if mode == 'data' else 'no_data')
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
@@ -46,6 +45,8 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
         )
 
     model = PINO2d(modes1=MODES1, modes2=MODES2, width=WIDTH, out_channels=y_train.shape[1]).to(device)
+    num_params = sum(p.numel() for p in model.parameters())
+    print(f'Model parameter count: {num_params:,}')
     optimizer = Adam(model.parameters(), lr=PINO_LR)
     loss_fn = RelativeL2_loss()
 
@@ -59,6 +60,7 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
         model.train()
         epoch_rel = 0.0
 
+        epoch_data = 0.0
         for batch_x, batch_y in train_loader:
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
@@ -80,19 +82,30 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
                 pred = model(batch_x)
                 rel = loss_fn(pred, batch_y).item()
             epoch_rel += rel
+            epoch_data += loss_data.item()
 
         epoch_rel /= len(train_loader)
+        epoch_data /= len(train_loader)
         train_history.append(epoch_rel)
 
         if (epoch + 1) % PRINT_INTERVAL == 0 or epoch == PINO_EPOCHS - 1:
             elapsed = default_timer() - start_time
-            print(f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, relative l2 loss {epoch_rel:.4e}')
+            print(
+                f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, '
+                f'relative l2 loss {epoch_rel:.4e}, data_loss {epoch_data:.4e}'
+            )
+
+    training_duration = default_timer() - start_time
+    final_loss = train_history[-1] if train_history else None
 
     model_file = os.path.join(model_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
-    artifacts = {
+    model_metadata = {
         'train_history': train_history,
+        'training_duration': training_duration,
+        'final_loss': final_loss,
+        'num_params': num_params,
         'params': {
             'epochs': PINO_EPOCHS,
             'batch_size': PINO_BATCH_SIZE,
@@ -112,9 +125,9 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
         'dataset_file': dataset_file,
         'mode': mode,
     }
-    artifacts_file = os.path.join(model_dir, f'{label}_artifacts.pth')
-    torch.save(artifacts, artifacts_file)
-    print(f'pino artifacts saved to {artifacts_file}')
+    model_metadata_file = os.path.join(model_dir, f'{label}_model_metadata.pth')
+    torch.save(model_metadata, model_metadata_file)
+    print(f'pino model metadata saved to {model_metadata_file}')
 
 
 def train_pino_data():

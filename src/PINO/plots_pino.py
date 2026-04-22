@@ -14,19 +14,23 @@ RESOLUTIONS = [256, 128, 64]
 
 def eval_pino(mode='data'):
     label = 'pino' if mode == 'data' else 'pino_no_data'
-    artifacts_file = os.path.join(RESULTS_DIR, 'pino', 'models', f'{label}_artifacts.pth')
-    artifacts = torch.load(artifacts_file, map_location='cpu')
-    params = artifacts['params']
-    model_file = artifacts['model_file']
+    subdir = 'with_data' if mode == 'data' else 'no_data'
+    model_metadata_file = os.path.join(RESULTS_DIR, 'pino', subdir, 'models', f'{label}_model_metadata.pth')
+    model_metadata = torch.load(model_metadata_file, map_location='cpu')
+    params = model_metadata['params']
+    model_file = model_metadata['model_file']
 
-    outdir = os.path.dirname(os.path.dirname(artifacts_file))
+    outdir = os.path.dirname(os.path.dirname(model_metadata_file))
     os.makedirs(outdir, exist_ok=True)
 
     plot_training_statistics(
-        [artifacts['train_history']],
+        [model_metadata['train_history']],
         [label],
         outdir=outdir,
         filename=f'{label}_training_statistics.png',
+        duration_seconds=model_metadata.get('training_duration'),
+        final_loss=model_metadata.get('final_loss'),
+        num_params=model_metadata.get('num_params'),
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

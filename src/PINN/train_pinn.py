@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import torch
+from timeit import default_timer
 
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from PINN.PINN import PINN
@@ -26,7 +27,7 @@ def train_pinn(mode='data'):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(RESULTS_DIR, exist_ok=True)
-    outdir = os.path.join(RESULTS_DIR, 'pinn')
+    outdir = os.path.join(RESULTS_DIR, 'pinn', 'with_data' if mode == 'data' else 'no_data')
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
@@ -49,15 +50,23 @@ def train_pinn(mode='data'):
         data_weight=data_weight,
         device=device,
     )
+    num_params = sum(p.numel() for p in model.parameters())
+    print(f'Model parameter count: {num_params:,}')
 
     print(f'starting pinn training ({mode})...')
+    start_time = default_timer()
     history = model.run_train_loop(bsq, epochs=PINN_EPOCHS, seed=None, print_interval=500)
+    training_duration = default_timer() - start_time
+    final_loss = history[-1] if len(history) > 0 else None
 
     model_file = os.path.join(model_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
-    artifacts = {
+    model_metadata = {
         'train_history': history,
+        'training_duration': training_duration,
+        'final_loss': final_loss,
+        'num_params': num_params,
         'params': {
             'epochs': PINN_EPOCHS,
             'neurons': PINN_NEURONS,
@@ -73,9 +82,9 @@ def train_pinn(mode='data'):
         'model_file': model_file,
         'mode': mode,
     }
-    artifacts_file = os.path.join(model_dir, f'{label}_artifacts.pth')
-    torch.save(artifacts, artifacts_file)
-    print(f'pinn artifacts saved to {artifacts_file}')
+    model_metadata_file = os.path.join(model_dir, f'{label}_model_metadata.pth')
+    torch.save(model_metadata, model_metadata_file)
+    print(f'pinn model metadata saved to {model_metadata_file}')
 
 
 def train_pinn_data():

@@ -4,9 +4,8 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from BOUSSINESQ.dataset import load_dataset
+from tools import RelativeL2_loss, save_model, load_dataset
 from FNO.FNO import FNO2d
-from tools import RelativeL2_loss, save_model
 
 RESULTS_DIR = 'RESULTS'
 DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
@@ -38,6 +37,8 @@ def train_fno(dataset_file=DATA_FILE):
         )
 
     model = FNO2d(modes1=MODES1, modes2=MODES2, width=WIDTH).to(device)
+    num_params = sum(p.numel() for p in model.parameters())
+    print(f'Model parameter count: {num_params:,}')
     optimizer = Adam(model.parameters(), lr=FNO_LR)
     loss_fn = RelativeL2_loss()
 
@@ -68,11 +69,17 @@ def train_fno(dataset_file=DATA_FILE):
             elapsed = default_timer() - start_time
             print(f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, relative l2 loss {epoch_loss:.4e}')
 
+    training_duration = default_timer() - start_time
+    final_loss = train_history[-1] if train_history else None
+
     model_file = os.path.join(model_dir, 'fno_weights.pth')
     save_model(model, filepath=model_file)
 
-    artifacts = {
+    model_metadata = {
         'train_history': train_history,
+        'training_duration': training_duration,
+        'final_loss': final_loss,
+        'num_params': num_params,
         'params': {
             'epochs': FNO_EPOCHS,
             'batch_size': FNO_BATCH_SIZE,
@@ -85,8 +92,8 @@ def train_fno(dataset_file=DATA_FILE):
         'model_file': model_file,
         'dataset_file': dataset_file,
     }
-    torch.save(artifacts, os.path.join(model_dir, 'fno_artifacts.pth'))
-    print(f'fno artifacts saved to {os.path.join(model_dir, "fno_artifacts.pth")}')
+    torch.save(model_metadata, os.path.join(model_dir, 'fno_model_metadata.pth'))
+    print(f'fno model metadata saved to {os.path.join(model_dir, "fno_model_metadata.pth")}')
 
 
 if __name__ == '__main__':

@@ -12,22 +12,25 @@ EVAL_PARAMS = [0.1, 2.75, 5.75]
 RESOLUTIONS = [256, 128, 64]
 
 
-def eval_fno(artifact_file=None):
-    if artifact_file is None:
-        artifact_file = os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_artifacts.pth')
+def eval_fno(model_metadata_file=None):
+    if model_metadata_file is None:
+        model_metadata_file = os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_model_metadata.pth')
 
-    artifacts = torch.load(artifact_file, map_location='cpu')
-    params = artifacts['params']
-    model_file = artifacts['model_file']
+    model_metadata = torch.load(model_metadata_file, map_location='cpu')
+    params = model_metadata['params']
+    model_file = model_metadata['model_file']
 
-    outdir = os.path.dirname(os.path.dirname(artifact_file))
+    outdir = os.path.dirname(os.path.dirname(model_metadata_file))
     os.makedirs(outdir, exist_ok=True)
 
     plot_training_statistics(
-        [artifacts['train_history']],
+        [model_metadata['train_history']],
         ['fno'],
         outdir=outdir,
         filename='fno_training_statistics.png',
+        duration_seconds=model_metadata.get('training_duration'),
+        final_loss=model_metadata.get('final_loss'),
+        num_params=model_metadata.get('num_params'),
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

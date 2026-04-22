@@ -1,0 +1,134 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from timeit import default_timer
+
+
+class PINN(nn.Module):
+    # physics-informed neural network for boussinesq residuals and ic constraints
+    def __init__(self, input_size, output_size, neurons, hidden_layers,
+                 Boussinesq, domain_points=3000, ic_points=500,
+                 optimizer_name='Adam', lr=1e-3, data=None, data_weight=1.0,
+                 device='cpu'):
+        super(PINN, self).__init__()
+        self.device = torch.device(device)
+        self.input_size = input_size
+        self.output_size = output_size
+        self.neurons = neurons
+        self.hidden_layers = hidden_layers
+        self.Boussinesq = Boussinesq
+        self.domain_points = domain_points
+        self.ic_points = ic_points
+        self.optimizer_name = optimizer_name
+        self.lr = lr
+        self.data = data
+        self.data_weight = data_weight
+
+        layers = [nn.Linear(input_size, neurons), nn.Tanh()]
+        for _ in range(hidden_layers - 1):
+            layers.extend([nn.Linear(neurons, neurons), nn.Tanh()])
+        layers.append(nn.Linear(neurons, output_size))
+
+        self.net = nn.Sequential(*layers)
+        self.to(self.device)
+        self.optimizer = self._build_optimizer()
+
+    def _build_optimizer(self):
+        # create optimizer for network parameters using selected lr
+        if self.optimizer_name.lower() == 'sgd':
+            return optim.SGD(self.parameters(), lr=self.lr)
+        return optim.Adam(self.parameters(), lr=self.lr)
+
+    def forward(self, x, t):
+        # map (x,t) to network output [eta, u] using fully connected layers
+        if x.ndim == 1:
+            x = x.unsqueeze(-1)
+        if t.ndim == 1:
+            t = t.unsqueeze(-1)
+
+        xt = torch.cat([x, t], dim=-1).to(self.device)
+        output = self.net(xt)
+        return output[..., 0:1], output[..., 1:2]
+
+    def _sample_domain(self, n_points):
+        x_min = self.Boussinesq.domain['x_min']
+        x_max = self.Boussinesq.domain['x_max']
+        t_min = self.Boussinesq.domain['t_min']
+        t_max = self.Boussinesq.domain['t_max']
+
+        x = torch.rand(n_points, 1, device=self.device) * (x_max - x_min) + x_min
+        t = torch.rand(n_points, 1, device=self.device) * (t_max - t_min) + t_min
+        return x, t
+
+    def _initial_condition_loss(self):
+        # enforce eta(x,0)=eta0 and u(x,0)=u0 at initial time t=0
+        x0 = torch.linspace(self.Boussinesq.domain['x_min'],
+                            self.Boussinesq.domain['x_max'],
+                            self.ic_points, device=self.device).unsqueeze(-1)
+        t0 = torch.zeros_like(x0)
+        eta_pred, u_pred = self(x0, t0)
+        eta_true, u_true = self.Boussinesq.ic(x0)
+        return torch.mean((eta_pred - eta_true) ** 2 + (u_pred - u_true) ** 2)
+
+    def _data_loss(self):
+        # supervised data loss for observed eta and u values from generated solution
+        if self.data is None or self.data_weight <= 0.0:
+            return torch.tensor(0.0, device=self.device)
+
+        x_data = torch.from_numpy(self.data['x']).float().to(self.device)
+        t_data = torch.from_numpy(self.data['t']).float().to(self.device)
+        X, T = torch.meshgrid(x_data, t_data, indexing='xy')
+        X_flat = X.reshape(-1, 1)
+        T_flat = T.reshape(-1, 1)
+
+        sample_size = min(X_flat.shape[0], self.domain_points)
+        idx = torch.randperm(X_flat.shape[0], device=self.device)[:sample_size]
+        x_samples = X_flat[idx]
+        t_samples = T_flat[idx]
+
+        eta_true = torch.from_numpy(self.data['eta'].T).float().to(self.device).reshape(-1, 1)[idx]
+        u_true = torch.from_numpy(self.data['u'].T).float().to(self.device).reshape(-1, 1)[idx]
+
+        eta_pred, u_pred = self(x_samples, t_samples)
+        return torch.mean((eta_pred - eta_true) ** 2 + (u_pred - u_true) ** 2)
+
+    def _pde_loss(self):
+        # estimate PDE residual loss from sampled interior domain points
+        x_f, t_f = self._sample_domain(self.domain_points)
+        res_eq_1, res_eq_2 = self.Boussinesq.residual(self, x_f, t_f)
+        return torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2)
+
+    def run_train_loop(self, boussinesq, epochs=3000, seed=None, print_interval=500):
+        # train network on pde residual + ic loss + optional supervised data loss
+        if seed is not None:
+            torch.manual_seed(seed)
+
+        self.Boussinesq = boussinesq
+        self.optimizer = self._build_optimizer()
+        history = []
+        start_time = default_timer()
+
+        for ep in range(epochs):
+            self.train()
+            self.optimizer.zero_grad()
+
+            pde_loss = self._pde_loss()
+            ic_loss = self._initial_condition_loss()
+            data_loss = self._data_loss()
+            loss = pde_loss + 0.1 * ic_loss + self.data_weight * data_loss
+
+            loss.backward()
+            self.optimizer.step()
+            history.append(loss.item())
+
+            if (ep + 1) % print_interval == 0 or ep == epochs - 1:
+                elapsed = default_timer() - start_time
+                print(
+                    f'epoch {ep + 1}, elapsed {elapsed:.1f}s, '
+                    f'total_loss {loss.item():.4e}, '
+                    f'pde_loss {pde_loss.item():.4e}, '
+                    f'ic_loss {ic_loss.item():.4e}, '
+                    f'data_loss {data_loss.item():.4e}'
+                )
+
+        return history
