@@ -18,11 +18,26 @@ PINN_OPTIMIZER = 'Adam'
 PINN_LR = 1e-3
 PINN_DATA_WEIGHT = 1.0
 PINN_TRAIN_RESOLUTION = 256
+PINN_X_LIMIT = 60.0
+PINN_T_LIMIT = 15.0
 PARAM_VALUE = 2.55
 
 
-def train_pinn(mode='data'):
-    data_weight = PINN_DATA_WEIGHT if mode == 'data' else 0.0
+def train_pinn(mode='data',
+               x_limit=PINN_X_LIMIT,
+               t_limit=PINN_T_LIMIT,
+               train_resolution=PINN_TRAIN_RESOLUTION,
+               param_value=PARAM_VALUE,
+               epochs=PINN_EPOCHS,
+               neurons=PINN_NEURONS,
+               hidden_layers=PINN_HIDDEN_LAYERS,
+               domain_points=PINN_DOMAIN_POINTS,
+               ic_points=PINN_IC_POINTS,
+               optimizer_name=PINN_OPTIMIZER,
+               lr=PINN_LR,
+               data_weight=PINN_DATA_WEIGHT,
+               ): 
+    data_weight = data_weight if mode == 'data' else 0.0
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -31,21 +46,21 @@ def train_pinn(mode='data'):
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
-    bsq = Boussinesq(-30, 30, 0, 15, PARAM_VALUE, PARAM_VALUE)
-    solver = PseudoSpectralBoussinesq(bsq, Nx=PINN_TRAIN_RESOLUTION, Nt=PINN_TRAIN_RESOLUTION, device=device)
+    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, param_value, param_value)
+    solver = PseudoSpectralBoussinesq(bsq, Nx=train_resolution, Nt=train_resolution, device=device)
     x_sol, t_sol, eta_sol, u_sol = solver.solve()
     data = {'x': x_sol, 't': t_sol, 'eta': eta_sol, 'u': u_sol} if data_weight > 0 else None
 
     model = PINN(
         input_size=2,
         output_size=2,
-        neurons=PINN_NEURONS,
-        hidden_layers=PINN_HIDDEN_LAYERS,
+        neurons=neurons,
+        hidden_layers=hidden_layers,
         Boussinesq=bsq,
-        domain_points=PINN_DOMAIN_POINTS,
-        ic_points=PINN_IC_POINTS,
-        optimizer_name=PINN_OPTIMIZER,
-        lr=PINN_LR,
+        domain_points=domain_points,
+        ic_points=ic_points,
+        optimizer_name=optimizer_name,
+        lr=lr,
         data=data,
         data_weight=data_weight,
         device=device,
@@ -68,16 +83,18 @@ def train_pinn(mode='data'):
         'final_loss': final_loss,
         'num_params': num_params,
         'params': {
-            'epochs': PINN_EPOCHS,
-            'neurons': PINN_NEURONS,
-            'hidden_layers': PINN_HIDDEN_LAYERS,
-            'domain_points': PINN_DOMAIN_POINTS,
-            'ic_points': PINN_IC_POINTS,
-            'optimizer_name': PINN_OPTIMIZER,
-            'lr': PINN_LR,
+            'epochs': epochs,
+            'neurons': neurons,
+            'hidden_layers': hidden_layers,
+            'domain_points': domain_points,
+            'ic_points': ic_points,
+            'optimizer_name': optimizer_name,
+            'lr': lr,
             'data_weight': data_weight,
-            'train_resolution': PINN_TRAIN_RESOLUTION,
-            'param_value': PARAM_VALUE,
+            'train_resolution': train_resolution,
+            'param_value': param_value,
+            'x_limit': x_limit,
+            't_limit': t_limit,
         },
         'model_file': model_file,
         'mode': mode,

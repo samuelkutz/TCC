@@ -13,8 +13,8 @@ DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
 PINO_EPOCHS = 5000
 PINO_BATCH_SIZE = 16
 PINO_LR = 1e-3
-PINO_DX = 0.46875
-PINO_DT = 0.1171875
+PINO_X_LIMIT = 60.0
+PINO_T_LIMIT = 15.0
 PINO_PHYS_WEIGHT = 1.0
 PINO_IC_WEIGHT = 1.0
 PINO_DATA_WEIGHT = 1.0
@@ -25,8 +25,21 @@ PRINT_INTERVAL = 500
 PARAM_VALUES = np.arange(0.1, 5.01, 0.5)
 
 
-def train_pino(mode='data', dataset_file=DATA_FILE):
-    data_weight = PINO_DATA_WEIGHT if mode == 'data' else 0.0
+def train_pino(mode='data',
+               dataset_file=DATA_FILE,
+               x_limit=PINO_X_LIMIT,
+               t_limit=PINO_T_LIMIT,
+               epochs=PINO_EPOCHS,
+               batch_size=PINO_BATCH_SIZE,
+               lr=PINO_LR,
+               phys_weight=PINO_PHYS_WEIGHT,
+               ic_weight=PINO_IC_WEIGHT,
+               data_weight=PINO_DATA_WEIGHT,
+               modes1=MODES1,
+               modes2=MODES2,
+               width=WIDTH,
+               print_interval=PRINT_INTERVAL):
+    data_weight = data_weight if mode == 'data' else 0.0
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -44,14 +57,20 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
             'Generate it first using `python src/BOUSSINESQ/run_dataset.py`.'
         )
 
-    model = PINO2d(modes1=MODES1, modes2=MODES2, width=WIDTH, out_channels=y_train.shape[1]).to(device)
+    nx = x_train.shape[2]
+    nt = x_train.shape[3]
+    dx = 2.0 * x_limit / nx
+    dt = t_limit / (nt - 1)
+    print(f'computed physics spacing dx={dx:.6f}, dt={dt:.6f} for x_limit={x_limit}, t_limit={t_limit}')
+
+    model = PINO2d(modes1=modes1, modes2=modes2, width=width, out_channels=y_train.shape[1]).to(device)
     num_params = sum(p.numel() for p in model.parameters())
     print(f'Model parameter count: {num_params:,}')
-    optimizer = Adam(model.parameters(), lr=PINO_LR)
+    optimizer = Adam(model.parameters(), lr=lr)
     loss_fn = RelativeL2_loss()
 
     dataset = torch.utils.data.TensorDataset(x_train, y_train)
-    train_loader = torch.utils.data.DataLoader(dataset, batch_size=PINO_BATCH_SIZE, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     train_history = []
     start_time = default_timer()
@@ -69,8 +88,8 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
                 model=model,
                 batch_x=batch_x,
                 batch_y=batch_y,
-                dx=PINO_DX,
-                dt=PINO_DT,
+                dx=dx,
+                dt=dt,
                 phys_weight=PINO_PHYS_WEIGHT,
                 ic_weight=PINO_IC_WEIGHT,
                 data_weight=data_weight,
@@ -88,7 +107,7 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
         epoch_data /= len(train_loader)
         train_history.append(epoch_rel)
 
-        if (epoch + 1) % PRINT_INTERVAL == 0 or epoch == PINO_EPOCHS - 1:
+        if (epoch + 1) % print_interval == 0 or epoch == epochs - 1:
             elapsed = default_timer() - start_time
             print(
                 f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, '
@@ -107,17 +126,19 @@ def train_pino(mode='data', dataset_file=DATA_FILE):
         'final_loss': final_loss,
         'num_params': num_params,
         'params': {
-            'epochs': PINO_EPOCHS,
-            'batch_size': PINO_BATCH_SIZE,
-            'lr': PINO_LR,
-            'dx': PINO_DX,
-            'dt': PINO_DT,
-            'phys_weight': PINO_PHYS_WEIGHT,
-            'ic_weight': PINO_IC_WEIGHT,
+            'epochs': epochs,
+            'batch_size': batch_size,
+            'lr': lr,
+            'x_limit': x_limit,
+            't_limit': t_limit,
+            'dx': dx,
+            'dt': dt,
+            'phys_weight': phys_weight,
+            'ic_weight': ic_weight,
             'data_weight': data_weight,
-            'modes1': MODES1,
-            'modes2': MODES2,
-            'width': WIDTH,
+            'modes1': modes1,
+            'modes2': modes2,
+            'width': width,
             'out_channels': y_train.shape[1],
             'dataset_file': dataset_file,
         },

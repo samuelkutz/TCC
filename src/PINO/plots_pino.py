@@ -8,14 +8,23 @@ from tools import load_model
 from plots import plot_training_statistics, plot_relative_error_panel, save_solution_gif, compute_spectral_relative_error
 
 RESULTS_DIR = 'RESULTS'
+DOMAIN_X_LIMIT = 60.0
+DOMAIN_T_LIMIT = 15.0
 EVAL_PARAMS = [0.1, 2.75, 5.75]
 RESOLUTIONS = [256, 128, 64]
 
 
-def eval_pino(mode='data'):
+def eval_pino(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0, eval_params=None, resolutions=None):
     label = 'pino' if mode == 'data' else 'pino_no_data'
     subdir = 'with_data' if mode == 'data' else 'no_data'
-    model_metadata_file = os.path.join(RESULTS_DIR, 'pino', subdir, 'models', f'{label}_model_metadata.pth')
+    if model_metadata_file is None:
+        model_metadata_file = os.path.join(RESULTS_DIR, 'pino', subdir, 'models', f'{label}_model_metadata.pth')
+
+    if eval_params is None:
+        eval_params = EVAL_PARAMS
+    if resolutions is None:
+        resolutions = RESOLUTIONS
+
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
     params = model_metadata['params']
     model_file = model_metadata['model_file']
@@ -43,10 +52,10 @@ def eval_pino(mode='data'):
     load_model(model_file, model, device=device)
 
     print(f'start pino evaluation ({mode})')
-    for val in EVAL_PARAMS:
-        resolutions = RESOLUTIONS if val == EVAL_PARAMS[1] else [256]
-        for res in resolutions:
-            bsq = Boussinesq(-30, 30, 0, 15, val, val)
+    for val in eval_params:
+        use_resolutions = resolutions if val == eval_params[1] else [256]
+        for res in use_resolutions:
+            bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val)
             solver = PseudoSpectralBoussinesq(bsq, Nx=res, Nt=res - 1, device=device)
             x, t, eta_true, u_true = solver.solve()
 
@@ -74,7 +83,7 @@ def eval_pino(mode='data'):
                 t,
                 eta_true_t,
                 eta_pred,
-                times=[0.0, 15.0],
+                times=[0.0, t_limit],
                 outdir=outdir,
                 filename=f'{label}_summary_a{val:.3f}_res{res}.png',
                 title=f'{label} relative error a={val:.3f} res={res}',

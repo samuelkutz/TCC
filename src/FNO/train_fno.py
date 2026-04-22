@@ -20,7 +20,14 @@ PRINT_INTERVAL = 500
 PARAM_VALUES = np.arange(0.1, 5.01, 0.5)
 
 
-def train_fno(dataset_file=DATA_FILE):
+def train_fno(dataset_file=DATA_FILE,
+              epochs=FNO_EPOCHS,
+              batch_size=FNO_BATCH_SIZE,
+              lr=FNO_LR,
+              modes1=MODES1,
+              modes2=MODES2,
+              width=WIDTH,
+              print_interval=PRINT_INTERVAL):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(RESULTS_DIR, exist_ok=True)
     outdir = os.path.join(RESULTS_DIR, 'fno')
@@ -36,14 +43,14 @@ def train_fno(dataset_file=DATA_FILE):
             'Generate it first using `python src/BOUSSINESQ/run_dataset.py`.'
         )
 
-    model = FNO2d(modes1=MODES1, modes2=MODES2, width=WIDTH).to(device)
+    model = FNO2d(modes1=modes1, modes2=modes2, width=width).to(device)
     num_params = sum(p.numel() for p in model.parameters())
     print(f'Model parameter count: {num_params:,}')
-    optimizer = Adam(model.parameters(), lr=FNO_LR)
+    optimizer = Adam(model.parameters(), lr=lr)
     loss_fn = RelativeL2_loss()
 
     dataset = torch.utils.data.TensorDataset(x_train, y_train)
-    train_loader = torch.utils.data.DataLoader(dataset, batch_size=FNO_BATCH_SIZE, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     train_history = []
     start_time = default_timer()
@@ -65,7 +72,7 @@ def train_fno(dataset_file=DATA_FILE):
         epoch_loss /= len(train_loader)
         train_history.append(epoch_loss)
 
-        if (epoch + 1) % PRINT_INTERVAL == 0 or epoch == FNO_EPOCHS - 1:
+        if (epoch + 1) % print_interval == 0 or epoch == epochs - 1:
             elapsed = default_timer() - start_time
             print(f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, relative l2 loss {epoch_loss:.4e}')
 
@@ -81,12 +88,12 @@ def train_fno(dataset_file=DATA_FILE):
         'final_loss': final_loss,
         'num_params': num_params,
         'params': {
-            'epochs': FNO_EPOCHS,
-            'batch_size': FNO_BATCH_SIZE,
-            'lr': FNO_LR,
-            'modes1': MODES1,
-            'modes2': MODES2,
-            'width': WIDTH,
+            'epochs': epochs,
+            'batch_size': batch_size,
+            'lr': lr,
+            'modes1': modes1,
+            'modes2': modes2,
+            'width': width,
             'dataset_file': dataset_file,
         },
         'model_file': model_file,

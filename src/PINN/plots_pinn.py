@@ -8,12 +8,15 @@ from tools import load_model
 from plots import plot_training_statistics, plot_relative_error_panel, save_solution_gif, compute_spectral_relative_error
 
 RESULTS_DIR = 'RESULTS'
+PINN_X_LIMIT = 60.0
+PINN_T_LIMIT = 15.0
 
 
-def eval_pinn(mode='data'):
+def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0):
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
     subdir = 'with_data' if mode == 'data' else 'no_data'
-    model_metadata_file = os.path.join(RESULTS_DIR, 'pinn', subdir, 'models', f'{label}_model_metadata.pth')
+    if model_metadata_file is None:
+        model_metadata_file = os.path.join(RESULTS_DIR, 'pinn', subdir, 'models', f'{label}_model_metadata.pth')
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
     params = model_metadata['params']
     model_file = model_metadata['model_file']
@@ -32,7 +35,7 @@ def eval_pinn(mode='data'):
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    bsq = Boussinesq(-30, 30, 0, 15, params['param_value'], params['param_value'])
+    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, params['param_value'], params['param_value'])
     data = None
     if params['data_weight'] > 0:
         solver = PseudoSpectralBoussinesq(bsq, Nx=params['train_resolution'], Nt=params['train_resolution'], device=device)
@@ -56,8 +59,8 @@ def eval_pinn(mode='data'):
     load_model(model_file, model, device=device)
 
     print(f'start pinn evaluation ({mode})')
-    x_pred = np.linspace(-30.0, 30.0, params['train_resolution'], dtype=np.float32)
-    t_pred = np.linspace(0.0, 15.0, params['train_resolution'], dtype=np.float32)
+    x_pred = np.linspace(-x_limit, x_limit, params['train_resolution'], dtype=np.float32)
+    t_pred = np.linspace(0.0, t_limit, params['train_resolution'], dtype=np.float32)
     X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
     x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
     t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
@@ -67,7 +70,7 @@ def eval_pinn(mode='data'):
         eta_pred, _ = model(x_tensor, t_tensor)
     eta_pred = eta_pred.cpu().numpy().reshape(params['train_resolution'], params['train_resolution']).T
 
-    bsq_eval = Boussinesq(-30, 30, 0, 15, params['param_value'], params['param_value'])
+    bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, params['param_value'], params['param_value'])
     solver_eval = PseudoSpectralBoussinesq(bsq_eval, Nx=params['train_resolution'], Nt=params['train_resolution'] - 1, device=device)
     x, t, eta_true, u_true = solver_eval.solve()
     eta_true_t = eta_true.T
@@ -81,7 +84,7 @@ def eval_pinn(mode='data'):
         t_pred,
         eta_true_t,
         eta_pred,
-        times=[0.0, 15.0],
+        times=[0.0, t_limit],
         outdir=outdir,
         filename=f'{label}_summary_a{params["param_value"]:.3f}_res{params["train_resolution"]}.png',
         title=f'{label} relative error a={params["param_value"]:.3f} res={params["train_resolution"]}',
