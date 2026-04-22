@@ -3,37 +3,34 @@ import torch
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 
 
-def generate_dataset(param_values, Nx_high=256, Nt_high=256, nx_fno=64, nt_fno=64,
-                     x_limit=30.0, t_limit=15.0, device='cpu'):
-    # generate training dataset by solving high-resolution boussinesq cases and downsampling
+def generate_dataset(param_values, nx, nt, x_limit=30.0, t_limit=15.0, device='cpu'):
+    # generate training dataset by solving the boussinesq equation directly at the
+    # target dataset resolution, rather than downsampling from a previously
+    # generated high-resolution solution.
     """
     Generate Boussinesq dataset for FNO training.
     
-    Returns: x_train (N, 4, nx_fno, nt_fno), y_train (N, 2, nx_fno, nt_fno)
+    Returns: x_train (N, 4, nx, nt), y_train (N, 2, nx, nt)
     """
     n_cases = len(param_values)
     
-    input_data = np.zeros((n_cases, nx_fno, nt_fno, 4), dtype=np.float32)
-    output_data = np.zeros((n_cases, nx_fno, nt_fno, 2), dtype=np.float32)
+    input_data = np.zeros((n_cases, nx, nt, 4), dtype=np.float32)
+    output_data = np.zeros((n_cases, nx, nt, 2), dtype=np.float32)
 
     for i, val in enumerate(param_values):
-        # solve boussinesq equation for each parameter case
+        # solve boussinesq equation directly at the target dataset resolution
         bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val)
-        solver = PseudoSpectralBoussinesq(bsq, Nx=Nx_high, Nt=Nt_high, device=device)
+        solver = PseudoSpectralBoussinesq(bsq, Nx=nx, Nt=nt - 1, device=device)
         x_sol, t_sol, eta_sol, u_sol = solver.solve()
 
-        # downsample to fno input resolution with uniform index selection
-        idx_x = np.round(np.linspace(0, Nx_high - 1, nx_fno, endpoint=True)).astype(int)
-        idx_t = np.round(np.linspace(0, Nt_high, nt_fno, endpoint=True)).astype(int)
-
-        eta_sub = eta_sol[idx_t, :][:, idx_x].T
-        u_sub = u_sol[idx_t, :][:, idx_x].T
+        eta_sub = eta_sol.T
+        u_sub = u_sol.T
 
         # input channels correspond to eta0, u0, alpha, beta
-        ch0 = np.tile(eta_sub[:, 0:1], (1, nt_fno))
-        ch1 = np.tile(u_sub[:, 0:1], (1, nt_fno))
-        ch2 = np.ones((nx_fno, nt_fno)) * val
-        ch3 = np.ones((nx_fno, nt_fno)) * val
+        ch0 = np.tile(eta_sub[:, 0:1], (1, nt))
+        ch1 = np.tile(u_sub[:, 0:1], (1, nt))
+        ch2 = np.ones((nx, nt)) * val
+        ch3 = np.ones((nx, nt)) * val
 
         input_data[i, ..., 0] = ch0
         input_data[i, ..., 1] = ch1

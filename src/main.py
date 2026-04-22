@@ -15,11 +15,9 @@ DATASET_FILE = 'RESULTS/boussinesq_dataset.pth'
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 PARAM_VALUES = list(np.arange(0.1, 3.0, 0.3))
 X_LIMIT = 60.0
-T_LIMIT = 15.0
-NX_HIGH = 256
-NT_HIGH = 256
-NX_FNO = 128
-NT_FNO = 128
+T_LIMIT = 30.0
+NX = 128
+NT = 128
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
@@ -79,10 +77,8 @@ def main():
         param_values=PARAM_VALUES,
         x_limit=X_LIMIT,
         t_limit=T_LIMIT,
-        Nx_high=NX_HIGH,
-        Nt_high=NT_HIGH,
-        nx_fno=NX_FNO,
-        nt_fno=NT_FNO,
+        nx=NX,
+        nt=NT,
     )
 
     print('\n=== training fno ===')
