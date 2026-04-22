@@ -13,13 +13,13 @@ from PINN.plots_pinn import eval_pinn
 # Experiment configuration for the full workflow.
 DATASET_FILE = 'RESULTS/boussinesq_dataset.pth'
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-PARAM_VALUES = list(np.arange(0.1, 3.01, 0.5))
+PARAM_VALUES = list(np.arange(0.1, 3.0, 0.3))
 X_LIMIT = 60.0
 T_LIMIT = 15.0
 NX_HIGH = 256
 NT_HIGH = 256
-NX_FNO = 64
-NT_FNO = 64
+NX_FNO = 128
+NT_FNO = 128
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
@@ -65,9 +65,9 @@ PINN_CONFIG = {
 
 EVAL_CONFIG = {
     'x_limit': X_LIMIT,
-    't_limit': T_LIMIT,
+    't_limit': T_LIMIT + 5.0,
     'eval_params': [0.1, 2.75, 5.75],
-    'resolutions': [256, 128, 64],
+    'resolutions': [512, 256, 128],
 }
 
 

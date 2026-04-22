@@ -1,5 +1,4 @@
 import os
-import numpy as np
 import torch
 from timeit import default_timer
 
@@ -9,34 +8,21 @@ from tools import save_model
 
 RESULTS_DIR = 'RESULTS'
 
-PINN_EPOCHS = 5000
-PINN_NEURONS = 64
-PINN_HIDDEN_LAYERS = 4
-PINN_DOMAIN_POINTS = 3000
-PINN_IC_POINTS = 500
-PINN_OPTIMIZER = 'Adam'
-PINN_LR = 1e-3
-PINN_DATA_WEIGHT = 1.0
-PINN_TRAIN_RESOLUTION = 256
-PINN_X_LIMIT = 60.0
-PINN_T_LIMIT = 15.0
-PARAM_VALUE = 2.55
-
 
 def train_pinn(mode='data',
-               x_limit=PINN_X_LIMIT,
-               t_limit=PINN_T_LIMIT,
-               train_resolution=PINN_TRAIN_RESOLUTION,
-               param_value=PARAM_VALUE,
-               epochs=PINN_EPOCHS,
-               neurons=PINN_NEURONS,
-               hidden_layers=PINN_HIDDEN_LAYERS,
-               domain_points=PINN_DOMAIN_POINTS,
-               ic_points=PINN_IC_POINTS,
-               optimizer_name=PINN_OPTIMIZER,
-               lr=PINN_LR,
-               data_weight=PINN_DATA_WEIGHT,
-               ): 
+               x_limit=60.0,
+               t_limit=15.0,
+               train_resolution=256,
+               param_value=2.55,
+               epochs=5000,
+               neurons=64,
+               hidden_layers=4,
+               domain_points=3000,
+               ic_points=500,
+               optimizer_name='Adam',
+               lr=1e-3,
+               data_weight=1.0,
+               print_interval=500):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
 
@@ -70,7 +56,7 @@ def train_pinn(mode='data',
 
     print(f'starting pinn training ({mode})...')
     start_time = default_timer()
-    history = model.run_train_loop(bsq, epochs=PINN_EPOCHS, seed=None, print_interval=500)
+    history = model.run_train_loop(bsq, epochs=epochs, seed=None, print_interval=print_interval)
     training_duration = default_timer() - start_time
     final_loss = history[-1] if len(history) > 0 else None
 

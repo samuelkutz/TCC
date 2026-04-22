@@ -12,11 +12,17 @@ PINN_X_LIMIT = 60.0
 PINN_T_LIMIT = 15.0
 
 
-def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0):
+def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0,
+              eval_params=None, resolutions=None):
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
     subdir = 'with_data' if mode == 'data' else 'no_data'
     if model_metadata_file is None:
         model_metadata_file = os.path.join(RESULTS_DIR, 'pinn', subdir, 'models', f'{label}_model_metadata.pth')
+    if eval_params is None:
+        eval_params = [0.1, 2.75, 5.75]
+    if resolutions is None:
+        resolutions = [256, 128, 64]
+
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
     params = model_metadata['params']
     model_file = model_metadata['model_file']
@@ -58,9 +64,17 @@ def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0)
     )
     load_model(model_file, model, device=device)
 
-    print(f'start pinn evaluation ({mode})')
-    x_pred = np.linspace(-x_limit, x_limit, params['train_resolution'], dtype=np.float32)
-    t_pred = np.linspace(0.0, t_limit, params['train_resolution'], dtype=np.float32)
+    if len(eval_params) == 0:
+        raise ValueError('eval_params must contain at least one value for PINN evaluation')
+    if len(resolutions) == 0:
+        raise ValueError('resolutions must contain at least one value for PINN evaluation')
+
+    test_param = sorted(eval_params)[len(eval_params) // 2]
+    test_res = sorted(resolutions)[len(resolutions) // 2]
+
+    print(f'start pinn evaluation ({mode}) on alpha=beta={test_param} with resolution={test_res}')
+    x_pred = np.linspace(-x_limit, x_limit, test_res, dtype=np.float32)
+    t_pred = np.linspace(0.0, t_limit, test_res, dtype=np.float32)
     X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
     x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
     t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
@@ -68,16 +82,16 @@ def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0)
     model.eval()
     with torch.no_grad():
         eta_pred, _ = model(x_tensor, t_tensor)
-    eta_pred = eta_pred.cpu().numpy().reshape(params['train_resolution'], params['train_resolution']).T
+    eta_pred = eta_pred.cpu().numpy().reshape(test_res, test_res).T
 
-    bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, params['param_value'], params['param_value'])
-    solver_eval = PseudoSpectralBoussinesq(bsq_eval, Nx=params['train_resolution'], Nt=params['train_resolution'] - 1, device=device)
+    bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, test_param, test_param)
+    solver_eval = PseudoSpectralBoussinesq(bsq_eval, Nx=test_res, Nt=test_res - 1, device=device)
     x, t, eta_true, u_true = solver_eval.solve()
     eta_true_t = eta_true.T
 
     rel_error = np.linalg.norm(eta_true_t - eta_pred) / (np.linalg.norm(eta_true_t) + 1e-8)
     spec_error = compute_spectral_relative_error(eta_true_t, eta_pred)
-    print(f'val={params["param_value"]:.3f} res={params["train_resolution"]} rel_error={rel_error:.4e} spec_error={spec_error:.4e}')
+    print(f'val={test_param:.3f} res={test_res} rel_error={rel_error:.4e} spec_error={spec_error:.4e}')
 
     plot_relative_error_panel(
         x_pred,
@@ -86,8 +100,8 @@ def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0)
         eta_pred,
         times=[0.0, t_limit],
         outdir=outdir,
-        filename=f'{label}_summary_a{params["param_value"]:.3f}_res{params["train_resolution"]}.png',
-        title=f'{label} relative error a={params["param_value"]:.3f} res={params["train_resolution"]}',
+        filename=f'{label}_summary_a{test_param:.3f}_res{test_res}.png',
+        title=f'{label} relative error a={test_param:.3f} res={test_res}',
     )
     save_solution_gif(
         x_pred,
@@ -95,8 +109,8 @@ def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0)
         eta_true_t,
         eta_pred,
         outdir=outdir,
-        filename=f'{label}_animation_a{params["param_value"]:.3f}_res{params["train_resolution"]}.gif',
-        title=f'{label} animation a={params["param_value"]:.3f} res={params["train_resolution"]}',
+        filename=f'{label}_animation_a{test_param:.3f}_res{test_res}.gif',
+        title=f'{label} animation a={test_param:.3f} res={test_res}',
     )
 
 

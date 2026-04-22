@@ -1,5 +1,4 @@
 import os
-import numpy as np
 import torch
 from timeit import default_timer
 from torch.optim import Adam
@@ -8,26 +7,16 @@ from tools import RelativeL2_loss, save_model, load_dataset
 from FNO.FNO import FNO2d
 
 RESULTS_DIR = 'RESULTS'
-DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
-
-FNO_EPOCHS = 5000
-FNO_BATCH_SIZE = 16
-FNO_LR = 1e-3
-MODES1 = 16
-MODES2 = 16
-WIDTH = 32
-PRINT_INTERVAL = 500
-PARAM_VALUES = np.arange(0.1, 5.01, 0.5)
 
 
-def train_fno(dataset_file=DATA_FILE,
-              epochs=FNO_EPOCHS,
-              batch_size=FNO_BATCH_SIZE,
-              lr=FNO_LR,
-              modes1=MODES1,
-              modes2=MODES2,
-              width=WIDTH,
-              print_interval=PRINT_INTERVAL):
+def train_fno(dataset_file='RESULTS/boussinesq_dataset.pth',
+              epochs=5000,
+              batch_size=16,
+              lr=1e-3,
+              modes1=16,
+              modes2=16,
+              width=32,
+              print_interval=500):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(RESULTS_DIR, exist_ok=True)
     outdir = os.path.join(RESULTS_DIR, 'fno')
@@ -55,7 +44,7 @@ def train_fno(dataset_file=DATA_FILE,
     train_history = []
     start_time = default_timer()
     print('starting fno training...')
-    for epoch in range(FNO_EPOCHS):
+    for epoch in range(epochs):
         model.train()
         epoch_loss = 0.0
 

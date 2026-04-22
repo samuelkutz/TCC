@@ -1,5 +1,4 @@
 import os
-import numpy as np
 import torch
 from timeit import default_timer
 from torch.optim import Adam
@@ -8,37 +7,22 @@ from tools import RelativeL2_loss, save_model, load_dataset
 from PINO.PINO import PINO2d, pino_loss
 
 RESULTS_DIR = 'RESULTS'
-DATA_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
-
-PINO_EPOCHS = 5000
-PINO_BATCH_SIZE = 16
-PINO_LR = 1e-3
-PINO_X_LIMIT = 60.0
-PINO_T_LIMIT = 15.0
-PINO_PHYS_WEIGHT = 1.0
-PINO_IC_WEIGHT = 1.0
-PINO_DATA_WEIGHT = 1.0
-MODES1 = 16
-MODES2 = 16
-WIDTH = 32
-PRINT_INTERVAL = 500
-PARAM_VALUES = np.arange(0.1, 5.01, 0.5)
 
 
 def train_pino(mode='data',
-               dataset_file=DATA_FILE,
-               x_limit=PINO_X_LIMIT,
-               t_limit=PINO_T_LIMIT,
-               epochs=PINO_EPOCHS,
-               batch_size=PINO_BATCH_SIZE,
-               lr=PINO_LR,
-               phys_weight=PINO_PHYS_WEIGHT,
-               ic_weight=PINO_IC_WEIGHT,
-               data_weight=PINO_DATA_WEIGHT,
-               modes1=MODES1,
-               modes2=MODES2,
-               width=WIDTH,
-               print_interval=PRINT_INTERVAL):
+               dataset_file='RESULTS/boussinesq_dataset.pth',
+               x_limit=60.0,
+               t_limit=15.0,
+               epochs=5000,
+               batch_size=16,
+               lr=1e-3,
+               phys_weight=1.0,
+               ic_weight=1.0,
+               data_weight=1.0,
+               modes1=16,
+               modes2=16,
+               width=32,
+               print_interval=500):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
@@ -75,7 +59,7 @@ def train_pino(mode='data',
     train_history = []
     start_time = default_timer()
     print(f'starting pino training ({mode})...')
-    for epoch in range(PINO_EPOCHS):
+    for epoch in range(epochs):
         model.train()
         epoch_rel = 0.0
 
@@ -90,8 +74,8 @@ def train_pino(mode='data',
                 batch_y=batch_y,
                 dx=dx,
                 dt=dt,
-                phys_weight=PINO_PHYS_WEIGHT,
-                ic_weight=PINO_IC_WEIGHT,
+                phys_weight=phys_weight,
+                ic_weight=ic_weight,
                 data_weight=data_weight,
             )
             loss.backward()
