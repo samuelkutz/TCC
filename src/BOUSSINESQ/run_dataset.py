@@ -11,8 +11,7 @@ DEFAULT_DEVICE = 'cpu'
 DEFAULT_PARAM_VALUES = list(np.arange(0.1, 3.01, 0.5))
 DEFAULT_X_LIMIT = 60.0
 DEFAULT_T_LIMIT = 15.0
-DEFAULT_NX = 64
-DEFAULT_NT = 64
+DEFAULT_DATASET_RES = 64
 
 # quanto de informação precisa para capturar?
 
@@ -21,12 +20,11 @@ def run_dataset(dataset_file,
                 param_values,
                 x_limit,
                 t_limit,
-                nx,
-                nt):
-    if any(v is None for v in [dataset_file, device, param_values, x_limit, t_limit, nx, nt]):
+                dataset_res):
+    if any(v is None for v in [dataset_file, device, param_values, x_limit, t_limit, dataset_res]):
         raise ValueError(
             'run_dataset requires explicit values for dataset_file, device, param_values, '
-            'x_limit, t_limit, nx, and nt.'
+            'x_limit, t_limit, and dataset_res.'
         )
 
     os.makedirs(os.path.dirname(dataset_file) or '.', exist_ok=True)
@@ -35,12 +33,12 @@ def run_dataset(dataset_file,
     print(f'  device: {device}')
     print(f'  param_values: {param_values}')
     print(f'  x_limit: {x_limit}, t_limit: {t_limit}')
-    print(f'  nx: {nx}, nt: {nt}')
+    print(f'  dataset_res: {dataset_res}')
 
     x_train, y_train = generate_dataset(
         param_values,
-        nx=nx,
-        nt=nt,
+        nx=dataset_res,
+        nt=dataset_res,
         x_limit=x_limit,
         t_limit=t_limit,
         device=device,
@@ -56,6 +54,5 @@ if __name__ == '__main__':
         param_values=DEFAULT_PARAM_VALUES,
         x_limit=DEFAULT_X_LIMIT,
         t_limit=DEFAULT_T_LIMIT,
-        nx=DEFAULT_NX,
-        nt=DEFAULT_NT,
+        dataset_res=DEFAULT_DATASET_RES,
     )

@@ -13,15 +13,14 @@ from PINN.plots_pinn import eval_pinn
 # Experiment configuration for the full workflow.
 DATASET_FILE = 'RESULTS/boussinesq_dataset.pth'
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-PARAM_VALUES = list(np.arange(0.1, 3.0, 0.3))
+PARAM_VALUES = list(np.linspace(0.1, 3.0, 10, dtype=np.float32))
 X_LIMIT = 60.0
 T_LIMIT = 30.0
-NX = 128
-NT = 128
+DATASET_RES = 256
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
-    'epochs': 5000,
+    'epochs': 10000,
     'batch_size': 16,
     'lr': 1e-3,
     'modes1': 16,
@@ -34,7 +33,7 @@ PINO_CONFIG = {
     'dataset_file': DATASET_FILE,
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
-    'epochs': 5000,
+    'epochs': 10000,
     'batch_size': 16,
     'lr': 1e-3,
     'phys_weight': 1.0,
@@ -51,7 +50,7 @@ PINN_CONFIG = {
     't_limit': T_LIMIT,
     'train_resolution': 256,
     'param_value': 2.75,
-    'epochs': 5000,
+    'epochs': 10000,
     'neurons': 64,
     'hidden_layers': 4,
     'domain_points': 3000,
@@ -77,8 +76,7 @@ def main():
         param_values=PARAM_VALUES,
         x_limit=X_LIMIT,
         t_limit=T_LIMIT,
-        nx=NX,
-        nt=NT,
+        dataset_res=DATASET_RES,
     )
 
     print('\n=== training fno ===')
