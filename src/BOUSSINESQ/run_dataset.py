@@ -11,11 +11,12 @@ DEVICE = 'cpu'
 PARAM_VALUES = list(np.arange(0.1, 3.01, 0.5))
 X_LIMIT = 60.0
 T_LIMIT = 15.0
-NX_HIGH = 256
+NX_HIGH = 256 # aumentar em comparação a x limite
 NT_HIGH = 256
 NX_FNO = 64
 NT_FNO = 64
 
+# quanto de informação precisa para capturar? 
 
 def run_dataset(dataset_file=DATASET_FILE,
                 device=DEVICE,
