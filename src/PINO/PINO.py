@@ -29,9 +29,9 @@ class PINO2d(nn.Module):
 
     def get_grid(self, shape, device):
         batchsize, size_x, size_y = shape[0], shape[2], shape[3]
-        gridx = torch.linspace(0, 1, size_x, dtype=torch.float, device=device)
+        gridx = torch.linspace(-1, 1, size_x, dtype=torch.float, device=device)
         gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, size_y])
-        gridy = torch.linspace(0, 1, size_y, dtype=torch.float, device=device)
+        gridy = torch.linspace(-1, 1, size_y, dtype=torch.float, device=device)
         gridy = gridy.reshape(1, 1, size_y).repeat([batchsize, size_x, 1])
         return torch.stack((gridx, gridy), dim=3)
 
@@ -174,13 +174,31 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
 
     eta0 = batch_x[:, 0:1, :, 0:1]
     u0 = batch_x[:, 1:2, :, 0:1]
-    eta_pred0 = eta_pred_norm[:, :, :, 0:1]
-    u_pred0 = u_pred_norm[:, :, :, 0:1]
-    loss_ic = torch.mean((u_pred0 - u0) ** 2 + (eta_pred0 - eta0) ** 2)
+    eta0_phys = unnormalize_tensor(
+        eta0,
+        norm_stats['input_min'][:, 0:1, :, :],
+        norm_stats['input_max'][:, 0:1, :, :],
+        norm_stats['eps'],
+    )
+    u0_phys = unnormalize_tensor(
+        u0,
+        norm_stats['input_min'][:, 1:2, :, :],
+        norm_stats['input_max'][:, 1:2, :, :],
+        norm_stats['eps'],
+    )
+    eta_pred0_phys = eta_pred[:, :, :, 0:1]
+    u_pred0_phys = u_pred[:, :, :, 0:1]
+    loss_ic = torch.mean((u_pred0_phys - u0_phys) ** 2 + (eta_pred0_phys - eta0_phys) ** 2)
 
-    diff = pred - batch_y
+    batch_y_phys = unnormalize_tensor(
+        batch_y,
+        norm_stats['output_min'],
+        norm_stats['output_max'],
+        norm_stats['eps'],
+    )
+    diff = torch.cat((eta_pred, u_pred), dim=1) - batch_y_phys
     sq_sum = torch.sqrt(torch.sum(diff * diff, dim=[1, 2, 3]) + 1e-12)
-    target_norm = torch.sqrt(torch.sum(batch_y * batch_y, dim=[1, 2, 3]) + 1e-12)
+    target_norm = torch.sqrt(torch.sum(batch_y_phys * batch_y_phys, dim=[1, 2, 3]) + 1e-12)
     loss_data = torch.mean(sq_sum / (target_norm + 1e-12))
 
     loss = phys_weight * loss_pde + ic_weight * loss_ic + data_weight * loss_data

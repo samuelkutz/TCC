@@ -7,7 +7,7 @@ from tools import RelativeL2_loss, compute_norm_stats, load_dataset, normalize_d
 from PINO.PINO import PINO2d, pino_loss
 
 
-def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir='RESULTS'):
+def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
@@ -55,7 +55,9 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
     for epoch in range(epochs):
         model.train()
         epoch_rel = 0.0
-
+        epoch_loss = 0.0
+        epoch_pde = 0.0
+        epoch_ic = 0.0
         epoch_data = 0.0
         for batch_x, batch_y in train_loader:
             batch_x = batch_x.to(device)
@@ -80,16 +82,26 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
                 rel = loss_fn(pred, batch_y).item()
             epoch_rel += rel
             epoch_data += loss_data.item()
+            epoch_loss += loss.item()
+            epoch_pde += loss_pde.item()
+            epoch_ic += loss_ic.item()
 
         epoch_rel /= len(train_loader)
         epoch_data /= len(train_loader)
+        epoch_loss /= len(train_loader)
+        epoch_pde /= len(train_loader)
+        epoch_ic /= len(train_loader)
         train_history.append(epoch_rel)
 
         if (epoch + 1) % print_interval == 0 or epoch == epochs - 1:
             elapsed = default_timer() - start_time
             print(
                 f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, '
-                f'relative l2 loss {epoch_rel:.4e}, data_loss {epoch_data:.4e}'
+                f'total_loss {epoch_loss:.4e}, '
+                f'pde_loss {epoch_pde:.4e}, '
+                f'ic_loss {epoch_ic:.4e}, '
+                f'data_loss {epoch_data:.4e}, '
+                f'relative_l2 {epoch_rel:.4e}'
             )
 
     training_duration = default_timer() - start_time
@@ -130,28 +142,43 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
     print(f'pino model metadata saved to {model_metadata_file}')
 
 
-def train_pino_data():
-    return train_pino('data')
-
-
-def train_pino_no_data():
-    return train_pino('no_data')
-
-
-if __name__ == '__main__':
-    train_pino(
+def train_pino_data(dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir):
+    return train_pino(
         'data',
-        'RESULTS/boussinesq_dataset.pth',
-        60.0,
-        15.0,
-        5000,
-        16,
-        1e-3,
-        1.0,
-        1.0,
-        1.0,
-        16,
-        16,
-        32,
-        500,
+        dataset_file,
+        x_limit,
+        t_limit,
+        epochs,
+        batch_size,
+        lr,
+        phys_weight,
+        ic_weight,
+        data_weight,
+        modes1,
+        modes2,
+        width,
+        print_interval,
+        results_dir,
     )
+
+
+def train_pino_no_data(dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir):
+    return train_pino(
+        'no_data',
+        dataset_file,
+        x_limit,
+        t_limit,
+        epochs,
+        batch_size,
+        lr,
+        phys_weight,
+        ic_weight,
+        data_weight,
+        modes1,
+        modes2,
+        width,
+        print_interval,
+        results_dir,
+    )
+
+

@@ -15,10 +15,8 @@ def _ensure_outdir(outdir):
 
 
 # plot training loss
-def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, duration_seconds=None, final_loss=None, num_params=None):
+def plot_training_loss(train_loss_history, outdir, filename, duration_seconds=None, final_loss=None, num_params=None):
     _ensure_outdir(outdir)
-    if filename is None:
-        filename = 'training_loss.png'
     outpath = os.path.join(outdir, filename)
 
     epochs = np.arange(1, len(train_loss_history) + 1)
@@ -56,7 +54,7 @@ def plot_training_loss(train_loss_history, outdir='RESULTS', filename=None, dura
 
 
 # plot training statistics across runs
-def plot_training_statistics(histories, labels, outdir='RESULTS', filename='training_statistics.png', log_scale=True, duration_seconds=None, final_loss=None, num_params=None):
+def plot_training_statistics(histories, labels, outdir, filename, log_scale=True, duration_seconds=None, final_loss=None, num_params=None):
     # compare multiple loss curves for the given runs
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
@@ -127,7 +125,7 @@ def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3)
     return np.nan_to_num(rel_error, posinf=1e3, neginf=0.0)
 
 
-def plot_spectral_summary(eta_true, eta_pred, x, t, outdir='RESULTS', filename='spectral_summary.png', title='Spectrum Comparison'):
+def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
     # plot true spectrum and its relative difference over spatial frequencies kx
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
@@ -172,7 +170,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir='RESULTS', filename='
     plt.close()
 
 
-def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESULTS', filename='relative_error_summary.png', title='Relative Error Summary'):
+def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename, title):
     # plot solution, pointwise error, and spectrum comparison for selected times
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
@@ -280,7 +278,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times=None, outdir='RESU
 
 
 # plot solution snapshots for several instants
-def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir='RESULTS', filename='solution_snapshots.png', title='Solution Snapshots'):
+def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, title):
     # create snapshots of eta(x,t) and relative error at chosen time instants
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
@@ -317,7 +315,7 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir='RESULTS', f
     plt.close()
 
 
-def plot_error_heatmap(x, t, eta_true, eta_pred, outdir='RESULTS', filename='error_heatmap.png', title='Relative Error Heatmap'):
+def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):
     # render a heatmap of relative error over space and time
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
@@ -346,7 +344,7 @@ def plot_error_heatmap(x, t, eta_true, eta_pred, outdir='RESULTS', filename='err
     plt.close()
 
 
-def save_solution_gif(x, t, eta_true, eta_pred, outdir='RESULTS', filename='solution_animation.gif', title='Solution Animation'):
+def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title):
     # create animation of predicted and true eta(x,t) over time
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)

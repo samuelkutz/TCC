@@ -115,7 +115,7 @@ class PINN(nn.Module):
             pde_loss = self._pde_loss()
             ic_loss = self._initial_condition_loss()
             data_loss = self._data_loss()
-            loss = pde_loss + 0.1 * ic_loss + self.data_weight * data_loss
+            loss = pde_loss + ic_loss + self.data_weight * data_loss
 
             loss.backward()
             self.optimizer.step()

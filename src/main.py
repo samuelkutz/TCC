@@ -62,6 +62,7 @@ PINN_CONFIG = {
     'optimizer_name': 'Adam',
     'lr': 1e-3,
     'data_weight': 1.0,
+    'print_interval': 500,
     'results_dir': RESULTS_DIR,
 }
 
@@ -71,6 +72,7 @@ EVAL_CONFIG = {
     'eval_params': [0.1, 2.75, 5.75],
     'resolutions': [int(DATASET_RES / 2), DATASET_RES, DATASET_RES * 2],
 }
+
 FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_model_metadata.pth')
 PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pino', 'with_data', 'models', 'pino_model_metadata.pth')
 PINO_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pino', 'no_data', 'models', 'pino_no_data_model_metadata.pth')
@@ -79,42 +81,42 @@ PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pinn', 'no_data', 'model
 
 
 def main():
-    # print('\n=== generating shared dataset ===')
-    # run_dataset(
-    #     dataset_file=DATASET_FILE,
-    #     device=DEVICE,
-    #     param_values=PARAM_VALUES,
-    #     x_limit=X_LIMIT,
-    #     t_limit=T_LIMIT,
-    #     dataset_res=DATASET_RES,
-    # )
+    print('\n=== generating shared dataset ===')
+    run_dataset(
+        dataset_file=DATASET_FILE,
+        device=DEVICE,
+        param_values=PARAM_VALUES,
+        x_limit=X_LIMIT,
+        t_limit=T_LIMIT,
+        dataset_res=DATASET_RES,
+    )
 
 
-    # print('\n=== training fno ===')
-    # train_fno(**FNO_CONFIG)
-    # print('\n=== plotting fno ===')
-    # eval_fno(
-    #     model_metadata_file=FNO_METADATA_FILE,
-    #     **EVAL_CONFIG,
-    # )
+    print('\n=== training fno ===')
+    train_fno(**FNO_CONFIG)
+    print('\n=== plotting fno ===')
+    eval_fno(
+        model_metadata_file=FNO_METADATA_FILE,
+        **EVAL_CONFIG,
+    )
 
-    # print('\n=== training pino with data ===')
-    # train_pino('data', **PINO_CONFIG)
-    # print('\n=== plotting pino with data ===')
-    # eval_pino(
-    #     'data',
-    #     PINO_WITH_DATA_METADATA_FILE,
-    #     **EVAL_CONFIG,
-    # )
+    print('\n=== training pino with data ===')
+    train_pino('data', **PINO_CONFIG)
+    print('\n=== plotting pino with data ===')
+    eval_pino(
+        'data',
+        PINO_WITH_DATA_METADATA_FILE,
+        **EVAL_CONFIG,
+    )
 
-    # print('\n=== training pino without data ===')
-    # train_pino('no_data', **PINO_CONFIG)
-    # print('\n=== plotting pino without data ===')
-    # eval_pino(
-    #     'no_data',
-    #     PINO_NO_DATA_METADATA_FILE,
-    #     **EVAL_CONFIG,
-    # 
+    print('\n=== training pino without data ===')
+    train_pino('no_data', **PINO_CONFIG)
+    print('\n=== plotting pino without data ===')
+    eval_pino(
+        'no_data',
+        PINO_NO_DATA_METADATA_FILE,
+        **EVAL_CONFIG,
+    )
 
     print('\n=== training pinn with data ===')
     train_pinn('data', **PINN_CONFIG)

@@ -75,9 +75,9 @@ class FNO2d(nn.Module):
 
     def get_grid(self, shape, device):
         batchsize, size_x, size_y = shape[0], shape[2], shape[3]
-        gridx = torch.linspace(0, 1, size_x, dtype=torch.float, device=device)
+        gridx = torch.linspace(-1, 1, size_x, dtype=torch.float, device=device)
         gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, size_y])
-        gridy = torch.linspace(0, 1, size_y, dtype=torch.float, device=device)
+        gridy = torch.linspace(-1, 1, size_y, dtype=torch.float, device=device)
         gridy = gridy.reshape(1, 1, size_y).repeat([batchsize, size_x, 1])
         return torch.stack((gridx, gridy), dim=3)
 

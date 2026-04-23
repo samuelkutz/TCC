@@ -7,7 +7,7 @@ from PINN.PINN import PINN
 from tools import save_model
 
 
-def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval, results_dir='RESULTS'):
+def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval, results_dir):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
 
@@ -75,28 +75,43 @@ def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, ne
     print(f'pinn model metadata saved to {model_metadata_file}')
 
 
-def train_pinn_data():
-    return train_pinn('data')
-
-
-def train_pinn_no_data():
-    return train_pinn('no_data')
-
-
-if __name__ == '__main__':
-    train_pinn(
+def train_pinn_data(x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval, results_dir):
+    return train_pinn(
         'data',
-        60.0,
-        15.0,
-        256,
-        2.55,
-        5000,
-        64,
-        4,
-        3000,
-        500,
-        'Adam',
-        1e-3,
-        1.0,
-        500,
+        x_limit,
+        t_limit,
+        train_resolution,
+        param_value,
+        epochs,
+        neurons,
+        hidden_layers,
+        domain_points,
+        ic_points,
+        optimizer_name,
+        lr,
+        data_weight,
+        print_interval,
+        results_dir,
     )
+
+
+def train_pinn_no_data(x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval, results_dir):
+    return train_pinn(
+        'no_data',
+        x_limit,
+        t_limit,
+        train_resolution,
+        param_value,
+        epochs,
+        neurons,
+        hidden_layers,
+        domain_points,
+        ic_points,
+        optimizer_name,
+        lr,
+        data_weight,
+        print_interval,
+        results_dir,
+    )
+
+
