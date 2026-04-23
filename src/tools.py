@@ -19,20 +19,57 @@ def load_model(filepath, model, device):
     return model
 
 
-def save_dataset(x_train, y_train, filepath):
-    # save dataset tensors to a pytorch .pth file
+def save_dataset(x_train, y_train, filepath, norm_stats=None):
+    # save dataset tensors and optional normalization statistics to a pytorch .pth file
     os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
-    torch.save({
+    payload = {
         'x_train': x_train,
-        'y_train': y_train
-    }, filepath)
+        'y_train': y_train,
+    }
+    if norm_stats is not None:
+        payload['norm_stats'] = norm_stats
+    torch.save(payload, filepath)
     print(f"Dataset saved to {filepath}")
 
 
 def load_dataset(filepath):
-    # load dataset tensors from a pytorch .pth file
+    # load dataset tensors and optional normalization statistics from a pytorch .pth file
     data = torch.load(filepath)
-    return data['x_train'], data['y_train']
+    x_train = data['x_train']
+    y_train = data['y_train']
+    norm_stats = data.get('norm_stats', None)
+    return x_train, y_train, norm_stats
+
+
+def compute_norm_stats(x_train, y_train, eps=1e-12):
+    # compute channel-wise min/max ranges for input and output tensors
+    input_min = x_train.amin(dim=(0, 2, 3), keepdim=True)
+    input_max = x_train.amax(dim=(0, 2, 3), keepdim=True)
+    output_min = y_train.amin(dim=(0, 2, 3), keepdim=True)
+    output_max = y_train.amax(dim=(0, 2, 3), keepdim=True)
+    return {
+        'input_min': input_min,
+        'input_max': input_max,
+        'output_min': output_min,
+        'output_max': output_max,
+        'eps': eps,
+    }
+
+
+def normalize_tensor(tensor, min_val, max_val, eps=1e-12):
+    # map tensor values to [0, 1] range per channel: (x - min) / (max - min)
+    return (tensor - min_val) / (max_val - min_val + eps)
+
+
+def unnormalize_tensor(tensor, min_val, max_val, eps=1e-12):
+    # map tensor from [0, 1] back to original scale: x * (max - min) + min
+    return tensor * (max_val - min_val + eps) + min_val
+
+
+def normalize_dataset(x_train, y_train, norm_stats):
+    x_norm = normalize_tensor(x_train, norm_stats['input_min'], norm_stats['input_max'], norm_stats['eps'])
+    y_norm = normalize_tensor(y_train, norm_stats['output_min'], norm_stats['output_max'], norm_stats['eps'])
+    return x_norm, y_norm
 
 
 class L2_loss(object):

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from FNO.FNO import SpectralConv2d
+from tools import normalize_tensor, unnormalize_tensor
 
 
 class PINO2d(nn.Module):
@@ -127,24 +128,33 @@ def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta):
     return res_eq_1, res_eq_2
 
 
-def pino_loss(model, batch_x, batch_y, dx, dt,
+def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
               phys_weight=1.0, ic_weight=0.1, data_weight=0.01):
     pred = model(batch_x)
     if pred.shape[1] == 2:
-        eta_pred = pred[:, 0:1, :, :]
-        u_pred = pred[:, 1:2, :, :]
+        eta_pred_norm = pred[:, 0:1, :, :]
+        u_pred_norm = pred[:, 1:2, :, :]
     else:
         raise ValueError('PINO models must output two channels: [eta, u].')
 
-    alpha = batch_x[:, 2:3, :, :].mean(dim=[2, 3], keepdim=True)
-    beta = batch_x[:, 3:4, :, :].mean(dim=[2, 3], keepdim=True)
+    alpha_norm = batch_x[:, 2:3, :, :]
+    beta_norm = batch_x[:, 3:4, :, :]
+    alpha = unnormalize_tensor(alpha_norm, norm_stats['input_min'][2:3], norm_stats['input_max'][2:3], norm_stats['eps'])
+    beta = unnormalize_tensor(beta_norm, norm_stats['input_min'][3:4], norm_stats['input_max'][3:4], norm_stats['eps'])
+
+    eta_pred = unnormalize_tensor(eta_pred_norm, norm_stats['output_min'][0:1], norm_stats['output_max'][0:1], norm_stats['eps'])
+    u_pred = unnormalize_tensor(u_pred_norm, norm_stats['output_min'][1:2], norm_stats['output_max'][1:2], norm_stats['eps'])
+
+    # pde residual is evaluated on physical units, but the model is trained with normalized fields.
     res_eq_1, res_eq_2 = pde_residual_boussinesq(eta_pred, u_pred, dx, dt, alpha, beta)
-    loss_pde = torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2)
+    residual_norm = torch.sqrt(torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2) + 1e-12)
+    solution_norm = torch.sqrt(torch.mean(eta_pred ** 2 + u_pred ** 2) + 1e-12)
+    loss_pde = residual_norm / (solution_norm + 1e-12)
 
     eta0 = batch_x[:, 0:1, :, 0:1]
     u0 = batch_x[:, 1:2, :, 0:1]
-    eta_pred0 = eta_pred[:, :, :, 0:1]
-    u_pred0 = u_pred[:, :, :, 0:1]
+    eta_pred0 = eta_pred_norm[:, :, :, 0:1]
+    u_pred0 = u_pred_norm[:, :, :, 0:1]
     loss_ic = torch.mean((u_pred0 - u0) ** 2 + (eta_pred0 - eta0) ** 2)
 
     diff = pred - batch_y

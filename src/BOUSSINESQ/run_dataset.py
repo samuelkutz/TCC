@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 from BOUSSINESQ.dataset import generate_dataset
-from tools import save_dataset
+from tools import compute_norm_stats, save_dataset
 
 # Hyperparameters and PDE setup for dataset generation.
 # Change these values directly before running the dataset generator.
@@ -43,7 +43,8 @@ def run_dataset(dataset_file,
         t_limit=t_limit,
         device=device,
     )
-    save_dataset(x_train, y_train, dataset_file)
+    norm_stats = compute_norm_stats(x_train, y_train)
+    save_dataset(x_train, y_train, dataset_file, norm_stats=norm_stats)
     print(f'dataset written to {dataset_file}')
 
 

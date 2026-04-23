@@ -3,30 +3,32 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from tools import RelativeL2_loss, save_model, load_dataset
+from tools import RelativeL2_loss, compute_norm_stats, load_dataset, normalize_dataset, save_model
 from PINO.PINO import PINO2d, pino_loss
 
-RESULTS_DIR = 'RESULTS'
 
-
-def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval):
+def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir='RESULTS'):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    os.makedirs(RESULTS_DIR, exist_ok=True)
-    outdir = os.path.join(RESULTS_DIR, 'pino', 'with_data' if mode == 'data' else 'no_data')
+    os.makedirs(results_dir, exist_ok=True)
+    outdir = os.path.join(results_dir, 'pino', 'with_data' if mode == 'data' else 'no_data')
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
     if os.path.exists(dataset_file):
-        x_train, y_train = load_dataset(dataset_file)
+        x_train, y_train, norm_stats = load_dataset(dataset_file)
         print(f'loaded dataset from {dataset_file}')
     else:
         raise RuntimeError(
             f'Dataset not found at {dataset_file}. '
             'Generate it first using `python src/BOUSSINESQ/run_dataset.py`.'
         )
+
+    if norm_stats is None:
+        norm_stats = compute_norm_stats(x_train, y_train)
+    x_train, y_train = normalize_dataset(x_train, y_train, norm_stats)
 
     nx = x_train.shape[2]
     nt = x_train.shape[3]
@@ -61,6 +63,7 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
                 batch_y=batch_y,
                 dx=dx,
                 dt=dt,
+                norm_stats=norm_stats,
                 phys_weight=phys_weight,
                 ic_weight=ic_weight,
                 data_weight=data_weight,
@@ -116,6 +119,7 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
         'model_file': model_file,
         'dataset_file': dataset_file,
         'mode': mode,
+        'norm_stats': norm_stats,
     }
     model_metadata_file = os.path.join(model_dir, f'{label}_model_metadata.pth')
     torch.save(model_metadata, model_metadata_file)

@@ -6,16 +6,14 @@ from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from PINN.PINN import PINN
 from tools import save_model
 
-RESULTS_DIR = 'RESULTS'
 
-
-def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval):
+def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval, results_dir='RESULTS'):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    os.makedirs(RESULTS_DIR, exist_ok=True)
-    outdir = os.path.join(RESULTS_DIR, 'pinn', 'with_data' if mode == 'data' else 'no_data')
+    os.makedirs(results_dir, exist_ok=True)
+    outdir = os.path.join(results_dir, 'pinn', 'with_data' if mode == 'data' else 'no_data')
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 

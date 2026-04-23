@@ -4,7 +4,7 @@ import torch
 
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from PINO.PINO import PINO2d
-from tools import load_model
+from tools import load_model, normalize_tensor, unnormalize_tensor
 from plots import plot_training_statistics, plot_relative_error_panel, save_solution_gif, compute_spectral_relative_error
 
 RESULTS_DIR = 'RESULTS'
@@ -22,6 +22,18 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
     params = model_metadata['params']
     model_file = model_metadata['model_file']
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    norm_stats = model_metadata.get('norm_stats', None)
+    if norm_stats is None:
+        raise RuntimeError('Model metadata must contain norm_stats for consistent PINO evaluation.')
+    norm_stats = {
+        'input_min': norm_stats['input_min'].to(device),
+        'input_max': norm_stats['input_max'].to(device),
+        'output_min': norm_stats['output_min'].to(device),
+        'output_max': norm_stats['output_max'].to(device),
+        'eps': norm_stats.get('eps', 1e-12),
+    }
+
     outdir = os.path.dirname(os.path.dirname(model_metadata_file))
     os.makedirs(outdir, exist_ok=True)
 
@@ -35,7 +47,6 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         num_params=model_metadata.get('num_params'),
     )
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = PINO2d(
         modes1=params['modes1'],
         modes2=params['modes2'],
@@ -60,11 +71,23 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
             ch2 = np.ones((res, res), dtype=np.float32) * val
             ch3 = np.ones((res, res), dtype=np.float32) * val
             input_numpy = np.stack([ch0, ch1, ch2, ch3], axis=-1)
-            input_tensor = torch.from_numpy(input_numpy).permute(2, 0, 1).unsqueeze(0).to(device)
+            input_tensor = torch.from_numpy(input_numpy).permute(2, 0, 1).unsqueeze(0).float().to(device)
+            input_tensor = normalize_tensor(
+                input_tensor,
+                norm_stats['input_min'],
+                norm_stats['input_max'],
+                norm_stats['eps'],
+            )
 
             model.eval()
             with torch.no_grad():
                 pred = model(input_tensor)
+            pred = unnormalize_tensor(
+                pred,
+                norm_stats['output_min'],
+                norm_stats['output_max'],
+                norm_stats['eps'],
+            )
 
             eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
             rel_error = np.linalg.norm(eta_true_t - eta_pred) / (np.linalg.norm(eta_true_t) + 1e-8)

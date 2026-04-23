@@ -5,12 +5,12 @@ on:
   workflow_dispatch:
     inputs:
       experiment_name:
-        description: 'running main.py'
+        description: 'running src/main.py'
         required: false
-        default: 'teste_rapido'
+        default: 'default_experiment'
 
 jobs:
-  execucao-no-github:
+  github-execution:
     # Este é o runner padrão (CPU Linux)
     runs-on: ubuntu-latest
 
