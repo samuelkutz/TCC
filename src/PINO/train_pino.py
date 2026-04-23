@@ -29,6 +29,10 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
     if norm_stats is None:
         norm_stats = compute_norm_stats(x_train, y_train)
     x_train, y_train = normalize_dataset(x_train, y_train, norm_stats)
+    norm_stats = {
+        key: value.to(device) if isinstance(value, torch.Tensor) else value
+        for key, value in norm_stats.items()
+    }
 
     nx = x_train.shape[2]
     nt = x_train.shape[3]
