@@ -79,23 +79,24 @@ PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pinn', 'no_data', 'model
 
 
 def main():
-    print('\n=== generating shared dataset ===')
-    run_dataset(
-        dataset_file=DATASET_FILE,
-        device=DEVICE,
-        param_values=PARAM_VALUES,
-        x_limit=X_LIMIT,
-        t_limit=T_LIMIT,
-        dataset_res=DATASET_RES,
-    )
+    # print('\n=== generating shared dataset ===')
+    # run_dataset(
+    #     dataset_file=DATASET_FILE,
+    #     device=DEVICE,
+    #     param_values=PARAM_VALUES,
+    #     x_limit=X_LIMIT,
+    #     t_limit=T_LIMIT,
+    #     dataset_res=DATASET_RES,
+    # )
 
-    print('\n=== training fno ===')
-    train_fno(**FNO_CONFIG)
-    print('\n=== plotting fno ===')
-    eval_fno(
-        model_metadata_file=FNO_METADATA_FILE,
-        **EVAL_CONFIG,
-    )
+
+    # print('\n=== training fno ===')
+    # train_fno(**FNO_CONFIG)
+    # print('\n=== plotting fno ===')
+    # eval_fno(
+    #     model_metadata_file=FNO_METADATA_FILE,
+    #     **EVAL_CONFIG,
+    # )
 
     print('\n=== training pino with data ===')
     train_pino('data', **PINO_CONFIG)

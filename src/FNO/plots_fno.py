@@ -7,13 +7,6 @@ from FNO.FNO import FNO2d
 from tools import load_model, normalize_tensor, unnormalize_tensor
 from plots import plot_training_statistics, plot_relative_error_panel, save_solution_gif, compute_spectral_relative_error
 
-RESULTS_DIR = 'RESULTS'
-DOMAIN_X_LIMIT = 60.0
-DOMAIN_T_LIMIT = 15.0
-EVAL_PARAMS = [0.1, 2.75, 5.75]
-RESOLUTIONS = [256, 128, 64]
-
-
 def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions):
 
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
@@ -107,13 +100,3 @@ def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions):
                     filename=f'fno_animation_a{val:.3f}_res{res}.gif',
                     title=f'fno animation a={val:.3f} res={res}',
                 )
-
-
-if __name__ == '__main__':
-    eval_fno(
-        model_metadata_file=os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_model_metadata.pth'),
-        x_limit=DOMAIN_X_LIMIT,
-        t_limit=DOMAIN_T_LIMIT,
-        eval_params=EVAL_PARAMS,
-        resolutions=RESOLUTIONS,
-    )

@@ -139,11 +139,31 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
 
     alpha_norm = batch_x[:, 2:3, :, :]
     beta_norm = batch_x[:, 3:4, :, :]
-    alpha = unnormalize_tensor(alpha_norm, norm_stats['input_min'][2:3], norm_stats['input_max'][2:3], norm_stats['eps'])
-    beta = unnormalize_tensor(beta_norm, norm_stats['input_min'][3:4], norm_stats['input_max'][3:4], norm_stats['eps'])
+    alpha = unnormalize_tensor(
+        alpha_norm,
+        norm_stats['input_min'][:, 2:3, :, :],
+        norm_stats['input_max'][:, 2:3, :, :],
+        norm_stats['eps'],
+    )
+    beta = unnormalize_tensor(
+        beta_norm,
+        norm_stats['input_min'][:, 3:4, :, :],
+        norm_stats['input_max'][:, 3:4, :, :],
+        norm_stats['eps'],
+    )
 
-    eta_pred = unnormalize_tensor(eta_pred_norm, norm_stats['output_min'][0:1], norm_stats['output_max'][0:1], norm_stats['eps'])
-    u_pred = unnormalize_tensor(u_pred_norm, norm_stats['output_min'][1:2], norm_stats['output_max'][1:2], norm_stats['eps'])
+    eta_pred = unnormalize_tensor(
+        eta_pred_norm,
+        norm_stats['output_min'][:, 0:1, :, :],
+        norm_stats['output_max'][:, 0:1, :, :],
+        norm_stats['eps'],
+    )
+    u_pred = unnormalize_tensor(
+        u_pred_norm,
+        norm_stats['output_min'][:, 1:2, :, :],
+        norm_stats['output_max'][:, 1:2, :, :],
+        norm_stats['eps'],
+    )
 
     # pde residual is evaluated on physical units, but the model is trained with normalized fields.
     res_eq_1, res_eq_2 = pde_residual_boussinesq(eta_pred, u_pred, dx, dt, alpha, beta)

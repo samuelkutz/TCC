@@ -7,13 +7,6 @@ from PINO.PINO import PINO2d
 from tools import load_model, normalize_tensor, unnormalize_tensor
 from plots import plot_training_statistics, plot_relative_error_panel, save_solution_gif, compute_spectral_relative_error
 
-RESULTS_DIR = 'RESULTS'
-DOMAIN_X_LIMIT = 60.0
-DOMAIN_T_LIMIT = 15.0
-EVAL_PARAMS = [0.1, 2.75, 5.75]
-RESOLUTIONS = [256, 128, 64]
-
-
 def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions):
     label = 'pino' if mode == 'data' else 'pino_no_data'
     subdir = 'with_data' if mode == 'data' else 'no_data'
@@ -114,22 +107,3 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
                     filename=f'{label}_animation_a{val:.3f}_res{res}.gif',
                     title=f'{label} animation a={val:.3f} res={res}',
                 )
-
-
-if __name__ == '__main__':
-    eval_pino(
-        'data',
-        os.path.join(RESULTS_DIR, 'pino', 'with_data', 'models', 'pino_model_metadata.pth'),
-        60.0,
-        15.0,
-        EVAL_PARAMS,
-        RESOLUTIONS,
-    )
-    eval_pino(
-        'no_data',
-        os.path.join(RESULTS_DIR, 'pino', 'no_data', 'models', 'pino_no_data_model_metadata.pth'),
-        60.0,
-        15.0,
-        EVAL_PARAMS,
-        RESOLUTIONS,
-    )

@@ -7,11 +7,6 @@ from PINN.PINN import PINN
 from tools import load_model
 from plots import plot_training_statistics, plot_relative_error_panel, save_solution_gif, compute_spectral_relative_error
 
-RESULTS_DIR = 'RESULTS'
-PINN_X_LIMIT = 60.0
-PINN_T_LIMIT = 15.0
-
-
 def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions):
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
     subdir = 'with_data' if mode == 'data' else 'no_data'
@@ -104,23 +99,4 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         outdir=outdir,
         filename=f'{label}_animation_a{test_param:.3f}_res{test_res}.gif',
         title=f'{label} animation a={test_param:.3f} res={test_res}',
-    )
-
-
-if __name__ == '__main__':
-    eval_pinn(
-        'data',
-        os.path.join(RESULTS_DIR, 'pinn', 'with_data', 'models', 'pinn_model_metadata.pth'),
-        60.0,
-        15.0,
-        [0.1, 2.75, 5.75],
-        [256, 128, 64],
-    )
-    eval_pinn(
-        'no_data',
-        os.path.join(RESULTS_DIR, 'pinn', 'no_data', 'models', 'pinn_no_data_model_metadata.pth'),
-        60.0,
-        15.0,
-        [0.1, 2.75, 5.75],
-        [256, 128, 64],
     )
