@@ -98,7 +98,7 @@ class PINN(nn.Module):
         res_eq_1, res_eq_2 = self.Boussinesq.residual(self, x_f, t_f)
         return torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2)
 
-    def run_train_loop(self, boussinesq, epochs=3000, seed=None, print_interval=500):
+    def run_train_loop(self, boussinesq, epochs, seed, print_interval):
         # train network on pde residual + ic loss + optional supervised data loss
         if seed is not None:
             torch.manual_seed(seed)

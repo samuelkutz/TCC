@@ -3,7 +3,7 @@ import torch
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 
 
-def generate_dataset(param_values, nx, nt, x_limit=30.0, t_limit=15.0, device='cpu'):
+def generate_dataset(param_values, nx, nt, x_limit, t_limit, device):
     # generate training dataset by solving the boussinesq equation directly at the
     # target dataset resolution, rather than downsampling from a previously
     # generated high-resolution solution.
@@ -19,7 +19,7 @@ def generate_dataset(param_values, nx, nt, x_limit=30.0, t_limit=15.0, device='c
 
     for i, val in enumerate(param_values):
         # solve boussinesq equation directly at the target dataset resolution
-        bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val)
+        bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
         solver = PseudoSpectralBoussinesq(bsq, Nx=nx, Nt=nt - 1, device=device)
         x_sol, t_sol, eta_sol, u_sol = solver.solve()
 

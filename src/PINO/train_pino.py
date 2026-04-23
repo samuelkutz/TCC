@@ -9,20 +9,7 @@ from PINO.PINO import PINO2d, pino_loss
 RESULTS_DIR = 'RESULTS'
 
 
-def train_pino(mode='data',
-               dataset_file='RESULTS/boussinesq_dataset.pth',
-               x_limit=60.0,
-               t_limit=15.0,
-               epochs=5000,
-               batch_size=16,
-               lr=1e-3,
-               phys_weight=1.0,
-               ic_weight=1.0,
-               data_weight=1.0,
-               modes1=16,
-               modes2=16,
-               width=32,
-               print_interval=500):
+def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
@@ -45,7 +32,7 @@ def train_pino(mode='data',
     nt = x_train.shape[3]
     dx = 2.0 * x_limit / nx
     dt = t_limit / (nt - 1)
-    print(f'computed physics spacing dx={dx:.6f}, dt={dt:.6f} for x_limit={x_limit}, t_limit={t_limit}')
+    print(f'Computed physics spacing dx={dx:.6f}, dt={dt:.6f} for x_limit={x_limit}, t_limit={t_limit}')
 
     model = PINO2d(modes1=modes1, modes2=modes2, width=width, out_channels=y_train.shape[1]).to(device)
     num_params = sum(p.numel() for p in model.parameters())
@@ -144,4 +131,19 @@ def train_pino_no_data():
 
 
 if __name__ == '__main__':
-    train_pino()
+    train_pino(
+        'data',
+        'RESULTS/boussinesq_dataset.pth',
+        60.0,
+        15.0,
+        5000,
+        16,
+        1e-3,
+        1.0,
+        1.0,
+        1.0,
+        16,
+        16,
+        32,
+        500,
+    )

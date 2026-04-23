@@ -4,7 +4,7 @@ from FNO.FNO import SpectralConv2d
 
 
 class PINO2d(nn.Module):
-    def __init__(self, modes1, modes2, width, out_channels=2):
+    def __init__(self, modes1, modes2, width, out_channels):
         super(PINO2d, self).__init__()
         self.modes1 = modes1
         self.modes2 = modes2
@@ -84,7 +84,7 @@ def spectral_spatial_derivatives(u, dx):
     return ux.unsqueeze(1), uxx.unsqueeze(1)
 
 
-def finite_time_derivative(u, dt, order=1):
+def finite_time_derivative(u, dt, order):
     if u.ndim == 4 and u.shape[1] == 1:
         u = u[:, 0, :, :]
 

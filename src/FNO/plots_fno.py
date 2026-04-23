@@ -14,14 +14,7 @@ EVAL_PARAMS = [0.1, 2.75, 5.75]
 RESOLUTIONS = [256, 128, 64]
 
 
-def eval_fno(model_metadata_file=None, x_limit=60.0, t_limit=15.0, eval_params=None, resolutions=None):
-    if model_metadata_file is None:
-        model_metadata_file = os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_model_metadata.pth')
-
-    if eval_params is None:
-        eval_params = EVAL_PARAMS
-    if resolutions is None:
-        resolutions = RESOLUTIONS
+def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions):
 
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
     params = model_metadata['params']
@@ -48,7 +41,7 @@ def eval_fno(model_metadata_file=None, x_limit=60.0, t_limit=15.0, eval_params=N
     for val in eval_params:
         use_resolutions = resolutions if val == eval_params[1] else [256]
         for res in use_resolutions:
-            bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val)
+            bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
             solver = PseudoSpectralBoussinesq(bsq, Nx=res, Nt=res - 1, device=device)
             x, t, eta_true, u_true = solver.solve()
 
@@ -94,4 +87,10 @@ def eval_fno(model_metadata_file=None, x_limit=60.0, t_limit=15.0, eval_params=N
 
 
 if __name__ == '__main__':
-    eval_fno()
+    eval_fno(
+        model_metadata_file=os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_model_metadata.pth'),
+        x_limit=DOMAIN_X_LIMIT,
+        t_limit=DOMAIN_T_LIMIT,
+        eval_params=EVAL_PARAMS,
+        resolutions=RESOLUTIONS,
+    )

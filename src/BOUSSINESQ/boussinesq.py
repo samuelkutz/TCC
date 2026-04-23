@@ -4,7 +4,7 @@ import torch
 
 class Boussinesq:
     # container for boussinesq parameters and domain definitions
-    def __init__(self, x_min, x_max, t_min, t_max, a, b, A=1):
+    def __init__(self, x_min, x_max, t_min, t_max, a, b, A):
         self.domain = {
             'x_min': torch.tensor(x_min),
             'x_max': torch.tensor(x_max),
@@ -50,7 +50,7 @@ class Boussinesq:
 
 class PseudoSpectralBoussinesq:
     # pseudo-spectral solver using rk4 time integration in fourier space
-    def __init__(self, boussinesq, Nx=256, Nt=1000, device='cpu'):
+    def __init__(self, boussinesq, Nx, Nt, device):
         self.Nx = Nx
         self.Nt = Nt
         self.device = device

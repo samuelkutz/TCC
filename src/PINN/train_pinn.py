@@ -9,20 +9,7 @@ from tools import save_model
 RESULTS_DIR = 'RESULTS'
 
 
-def train_pinn(mode='data',
-               x_limit=60.0,
-               t_limit=15.0,
-               train_resolution=256,
-               param_value=2.55,
-               epochs=5000,
-               neurons=64,
-               hidden_layers=4,
-               domain_points=3000,
-               ic_points=500,
-               optimizer_name='Adam',
-               lr=1e-3,
-               data_weight=1.0,
-               print_interval=500):
+def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
 
@@ -32,7 +19,7 @@ def train_pinn(mode='data',
     model_dir = os.path.join(outdir, 'models')
     os.makedirs(model_dir, exist_ok=True)
 
-    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, param_value, param_value)
+    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, param_value, param_value, 1)
     solver = PseudoSpectralBoussinesq(bsq, Nx=train_resolution, Nt=train_resolution, device=device)
     x_sol, t_sol, eta_sol, u_sol = solver.solve()
     data = {'x': x_sol, 't': t_sol, 'eta': eta_sol, 'u': u_sol} if data_weight > 0 else None
@@ -99,4 +86,19 @@ def train_pinn_no_data():
 
 
 if __name__ == '__main__':
-    train_pinn()
+    train_pinn(
+        'data',
+        60.0,
+        15.0,
+        256,
+        2.55,
+        5000,
+        64,
+        4,
+        3000,
+        500,
+        'Adam',
+        1e-3,
+        1.0,
+        500,
+    )

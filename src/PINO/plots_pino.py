@@ -14,16 +14,9 @@ EVAL_PARAMS = [0.1, 2.75, 5.75]
 RESOLUTIONS = [256, 128, 64]
 
 
-def eval_pino(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0, eval_params=None, resolutions=None):
+def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions):
     label = 'pino' if mode == 'data' else 'pino_no_data'
     subdir = 'with_data' if mode == 'data' else 'no_data'
-    if model_metadata_file is None:
-        model_metadata_file = os.path.join(RESULTS_DIR, 'pino', subdir, 'models', f'{label}_model_metadata.pth')
-
-    if eval_params is None:
-        eval_params = EVAL_PARAMS
-    if resolutions is None:
-        resolutions = RESOLUTIONS
 
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
     params = model_metadata['params']
@@ -55,7 +48,7 @@ def eval_pino(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0,
     for val in eval_params:
         use_resolutions = resolutions if val == eval_params[1] else [256]
         for res in use_resolutions:
-            bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val)
+            bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
             solver = PseudoSpectralBoussinesq(bsq, Nx=res, Nt=res - 1, device=device)
             x, t, eta_true, u_true = solver.solve()
 
@@ -101,4 +94,19 @@ def eval_pino(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0,
 
 
 if __name__ == '__main__':
-    eval_pino()
+    eval_pino(
+        'data',
+        os.path.join(RESULTS_DIR, 'pino', 'with_data', 'models', 'pino_model_metadata.pth'),
+        60.0,
+        15.0,
+        EVAL_PARAMS,
+        RESOLUTIONS,
+    )
+    eval_pino(
+        'no_data',
+        os.path.join(RESULTS_DIR, 'pino', 'no_data', 'models', 'pino_no_data_model_metadata.pth'),
+        60.0,
+        15.0,
+        EVAL_PARAMS,
+        RESOLUTIONS,
+    )

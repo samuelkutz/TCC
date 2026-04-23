@@ -1,29 +1,17 @@
+import os
 import torch
 
 
-def save_model(model, filepath=None, *, model_name='model', epochs=None, n_samples=None, modes=(16,16), width=None, seed=None, extra=''):
+def save_model(model, filepath, *, model_name='model', epochs=None, n_samples=None, modes=(16,16), width=None, seed=None, extra=''):
     # save model weights to disk with descriptive filename metadata
     """save model weights to disk using a descriptive filename."""
-    import os
-    if filepath is None:
-        os.makedirs('RESULTS', exist_ok=True)
-        modes1, modes2 = modes
-        parts = [f'{model_name}', f'epochs{epochs}', f'samples{n_samples}', f'modes{modes1}x{modes2}']
-        if width is not None:
-            parts.append(f'width{width}')
-        if seed is not None:
-            parts.append(f'seed{seed}')
-        if extra:
-            parts.append(extra)
-        filename = '_'.join([p for p in parts if p]) + '.pth'
-        filepath = os.path.join('RESULTS', filename)
-
+    os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
     torch.save(model.state_dict(), filepath)
     print(f'model saved to {filepath}')
     return filepath
 
 
-def load_model(filepath, model, device='cpu'):
+def load_model(filepath, model, device):
     # load model weights and set network to evaluation mode
     model.load_state_dict(torch.load(filepath, map_location=device))
     model.to(device)
@@ -31,8 +19,9 @@ def load_model(filepath, model, device='cpu'):
     return model
 
 
-def save_dataset(x_train, y_train, filepath='dataset.pth'):
+def save_dataset(x_train, y_train, filepath):
     # save dataset tensors to a pytorch .pth file
+    os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
     torch.save({
         'x_train': x_train,
         'y_train': y_train
@@ -40,7 +29,7 @@ def save_dataset(x_train, y_train, filepath='dataset.pth'):
     print(f"Dataset saved to {filepath}")
 
 
-def load_dataset(filepath='dataset.pth'):
+def load_dataset(filepath):
     # load dataset tensors from a pytorch .pth file
     data = torch.load(filepath)
     return data['x_train'], data['y_train']

@@ -9,14 +9,7 @@ from FNO.FNO import FNO2d
 RESULTS_DIR = 'RESULTS'
 
 
-def train_fno(dataset_file='RESULTS/boussinesq_dataset.pth',
-              epochs=5000,
-              batch_size=16,
-              lr=1e-3,
-              modes1=16,
-              modes2=16,
-              width=32,
-              print_interval=500):
+def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print_interval):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(RESULTS_DIR, exist_ok=True)
     outdir = os.path.join(RESULTS_DIR, 'fno')
@@ -93,4 +86,13 @@ def train_fno(dataset_file='RESULTS/boussinesq_dataset.pth',
 
 
 if __name__ == '__main__':
-    train_fno()
+    train_fno(
+        dataset_file='RESULTS/boussinesq_dataset.pth',
+        epochs=5000,
+        batch_size=16,
+        lr=1e-3,
+        modes1=16,
+        modes2=16,
+        width=32,
+        print_interval=500,
+    )

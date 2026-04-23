@@ -12,16 +12,9 @@ PINN_X_LIMIT = 60.0
 PINN_T_LIMIT = 15.0
 
 
-def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0,
-              eval_params=None, resolutions=None):
+def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions):
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
     subdir = 'with_data' if mode == 'data' else 'no_data'
-    if model_metadata_file is None:
-        model_metadata_file = os.path.join(RESULTS_DIR, 'pinn', subdir, 'models', f'{label}_model_metadata.pth')
-    if eval_params is None:
-        eval_params = [0.1, 2.75, 5.75]
-    if resolutions is None:
-        resolutions = [256, 128, 64]
 
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
     params = model_metadata['params']
@@ -41,7 +34,7 @@ def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0,
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, params['param_value'], params['param_value'])
+    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, params['param_value'], params['param_value'], 1)
     data = None
     if params['data_weight'] > 0:
         solver = PseudoSpectralBoussinesq(bsq, Nx=params['train_resolution'], Nt=params['train_resolution'], device=device)
@@ -84,7 +77,7 @@ def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0,
         eta_pred, _ = model(x_tensor, t_tensor)
     eta_pred = eta_pred.cpu().numpy().reshape(test_res, test_res).T
 
-    bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, test_param, test_param)
+    bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, test_param, test_param, 1)
     solver_eval = PseudoSpectralBoussinesq(bsq_eval, Nx=test_res, Nt=test_res - 1, device=device)
     x, t, eta_true, u_true = solver_eval.solve()
     eta_true_t = eta_true.T
@@ -115,4 +108,19 @@ def eval_pinn(mode='data', model_metadata_file=None, x_limit=60.0, t_limit=15.0,
 
 
 if __name__ == '__main__':
-    eval_pinn()
+    eval_pinn(
+        'data',
+        os.path.join(RESULTS_DIR, 'pinn', 'with_data', 'models', 'pinn_model_metadata.pth'),
+        60.0,
+        15.0,
+        [0.1, 2.75, 5.75],
+        [256, 128, 64],
+    )
+    eval_pinn(
+        'no_data',
+        os.path.join(RESULTS_DIR, 'pinn', 'no_data', 'models', 'pinn_no_data_model_metadata.pth'),
+        60.0,
+        15.0,
+        [0.1, 2.75, 5.75],
+        [256, 128, 64],
+    )
