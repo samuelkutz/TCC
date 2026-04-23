@@ -1,0 +1,29 @@
+name: Executar meu codigo
+
+# Define quando o script será acionado
+on: [push, pull_request]
+
+jobs:
+  execucao-no-github:
+    # Este é o runner padrão (CPU Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Copia o código do seu repo para a máquina do GitHub
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      # 2. Instala o Python (ou Node, Go, etc.)
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      # 3. Instala dependências (se houver um requirements.txt)
+      - name: Instalar dependencias
+        run: |
+          pip install -r requirements.txt
+
+      # 4. Roda o seu script
+      - name: Executar script principal
+        run: python src/main.py
