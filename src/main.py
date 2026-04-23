@@ -98,23 +98,23 @@ def main():
     #     **EVAL_CONFIG,
     # )
 
-    print('\n=== training pino with data ===')
-    train_pino('data', **PINO_CONFIG)
-    print('\n=== plotting pino with data ===')
-    eval_pino(
-        'data',
-        PINO_WITH_DATA_METADATA_FILE,
-        **EVAL_CONFIG,
-    )
+    # print('\n=== training pino with data ===')
+    # train_pino('data', **PINO_CONFIG)
+    # print('\n=== plotting pino with data ===')
+    # eval_pino(
+    #     'data',
+    #     PINO_WITH_DATA_METADATA_FILE,
+    #     **EVAL_CONFIG,
+    # )
 
-    print('\n=== training pino without data ===')
-    train_pino('no_data', **PINO_CONFIG)
-    print('\n=== plotting pino without data ===')
-    eval_pino(
-        'no_data',
-        PINO_NO_DATA_METADATA_FILE,
-        **EVAL_CONFIG,
-    )
+    # print('\n=== training pino without data ===')
+    # train_pino('no_data', **PINO_CONFIG)
+    # print('\n=== plotting pino without data ===')
+    # eval_pino(
+    #     'no_data',
+    #     PINO_NO_DATA_METADATA_FILE,
+    #     **EVAL_CONFIG,
+    # 
 
     print('\n=== training pinn with data ===')
     train_pinn('data', **PINN_CONFIG)
