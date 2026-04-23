@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 
@@ -11,12 +12,13 @@ from PINN.plots_pinn import eval_pinn
 
 
 # Experiment configuration for the full workflow.
-DATASET_FILE = 'RESULTS/boussinesq_dataset.pth'
+RESULTS_DIR = 'RESULTS'
+DATASET_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 PARAM_VALUES = list(np.linspace(0.1, 3.0, 10, dtype=np.float32))
-X_LIMIT = 15.0
-T_LIMIT = 10.0
-DATASET_RES = 64
+X_LIMIT = 60.0
+T_LIMIT = 30.0
+DATASET_RES = 128
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
@@ -27,6 +29,7 @@ FNO_CONFIG = {
     'modes2': 16,
     'width': 32,
     'print_interval': 500,
+    'results_dir': RESULTS_DIR,
 }
 
 PINO_CONFIG = {
@@ -43,6 +46,7 @@ PINO_CONFIG = {
     'modes2': 16,
     'width': 32,
     'print_interval': 500,
+    'results_dir': RESULTS_DIR,
 }
 
 PINN_CONFIG = {
@@ -58,19 +62,20 @@ PINN_CONFIG = {
     'optimizer_name': 'Adam',
     'lr': 1e-3,
     'data_weight': 1.0,
+    'results_dir': RESULTS_DIR,
 }
 
 EVAL_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
     'eval_params': [0.1, 2.75, 5.75],
-    'resolutions': [64, 128, 256],
+    'resolutions': [int(DATASET_RES / 2), DATASET_RES, DATASET_RES * 2],
 }
-FNO_METADATA_FILE = 'RESULTS/fno/models/fno_model_metadata.pth'
-PINO_WITH_DATA_METADATA_FILE = 'RESULTS/pino/with_data/models/pino_model_metadata.pth'
-PINO_NO_DATA_METADATA_FILE = 'RESULTS/pino/no_data/models/pino_no_data_model_metadata.pth'
-PINN_WITH_DATA_METADATA_FILE = 'RESULTS/pinn/with_data/models/pinn_model_metadata.pth'
-PINN_NO_DATA_METADATA_FILE = 'RESULTS/pinn/no_data/models/pinn_no_data_model_metadata.pth'
+FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_model_metadata.pth')
+PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pino', 'with_data', 'models', 'pino_model_metadata.pth')
+PINO_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pino', 'no_data', 'models', 'pino_no_data_model_metadata.pth')
+PINN_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pinn', 'with_data', 'models', 'pinn_model_metadata.pth')
+PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pinn', 'no_data', 'models', 'pinn_no_data_model_metadata.pth')
 
 
 def main():
