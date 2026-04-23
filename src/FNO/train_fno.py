@@ -58,7 +58,7 @@ def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print
 
         if (epoch + 1) % print_interval == 0 or epoch == epochs - 1:
             elapsed = default_timer() - start_time
-            print(f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, relative l2 loss {epoch_loss:.4e}')
+            print(f'epoch {epoch + 1}, elapsed {elapsed:.1f}s, total_loss {epoch_loss:.4e}')
 
     training_duration = default_timer() - start_time
     final_loss = train_history[-1] if train_history else None

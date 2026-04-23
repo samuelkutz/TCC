@@ -3,7 +3,7 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from tools import RelativeL2_loss, compute_norm_stats, load_dataset, normalize_dataset, save_model
+from tools import compute_norm_stats, load_dataset, normalize_dataset, save_model
 from PINO.PINO import PINO2d, pino_loss
 
 
@@ -44,7 +44,6 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
     num_params = sum(p.numel() for p in model.parameters())
     print(f'Model parameter count: {num_params:,}')
     optimizer = Adam(model.parameters(), lr=lr)
-    loss_fn = RelativeL2_loss()
 
     dataset = torch.utils.data.TensorDataset(x_train, y_train)
     train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -54,7 +53,6 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
     print(f'starting pino training ({mode})...')
     for epoch in range(epochs):
         model.train()
-        epoch_rel = 0.0
         epoch_loss = 0.0
         epoch_pde = 0.0
         epoch_ic = 0.0
@@ -77,21 +75,16 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
             loss.backward()
             optimizer.step()
 
-            with torch.no_grad():
-                pred = model(batch_x)
-                rel = loss_fn(pred, batch_y).item()
-            epoch_rel += rel
             epoch_data += loss_data.item()
             epoch_loss += loss.item()
             epoch_pde += loss_pde.item()
             epoch_ic += loss_ic.item()
 
-        epoch_rel /= len(train_loader)
         epoch_data /= len(train_loader)
         epoch_loss /= len(train_loader)
         epoch_pde /= len(train_loader)
         epoch_ic /= len(train_loader)
-        train_history.append(epoch_rel)
+        train_history.append(epoch_loss)
 
         if (epoch + 1) % print_interval == 0 or epoch == epochs - 1:
             elapsed = default_timer() - start_time
@@ -100,8 +93,7 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
                 f'total_loss {epoch_loss:.4e}, '
                 f'pde_loss {epoch_pde:.4e}, '
                 f'ic_loss {epoch_ic:.4e}, '
-                f'data_loss {epoch_data:.4e}, '
-                f'relative_l2 {epoch_rel:.4e}'
+                f'data_loss {epoch_data:.4e}'
             )
 
     training_duration = default_timer() - start_time
