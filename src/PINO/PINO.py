@@ -120,8 +120,9 @@ def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta):
     eta_u_x, _ = spectral_spatial_derivatives(eta_u, dx)
     nonlinear = u * u_x
 
-    alpha = alpha.reshape(-1, 1, 1, 1)
-    beta = beta.reshape(-1, 1, 1, 1)
+    # Keep alpha and beta in their original batched field shape so they broadcast correctly
+    # against the spatial derivatives. They are constant per sample in the current dataset,
+    # but this also supports spatially varying coefficients if used later.
     res_eq_1 = eta_t + u_x + alpha * eta_u_x
     res_eq_2 = u_t - (beta / 3.0) * u_xxt + eta_x + alpha * nonlinear
 
