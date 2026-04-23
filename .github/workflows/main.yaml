@@ -1,7 +1,13 @@
-name: Executar meu codigo
+name: execute experiments
 
 # Define quando o script será acionado
-on: [push, pull_request]
+on:   
+  workflow_dispatch:
+    inputs:
+      experiment_name:
+        description: 'running main.py'
+        required: false
+        default: 'teste_rapido'
 
 jobs:
   execucao-no-github:
@@ -9,21 +15,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Copia o código do seu repo para a máquina do GitHub
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      # 2. Instala o Python (ou Node, Go, etc.)
       - name: Configurar Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Atualizado para v5
         with:
           python-version: '3.11'
+          cache: 'pip' # OTIMIZAÇÃO: Cache automático de dependências
 
-      # 3. Instala dependências (se houver um requirements.txt)
       - name: Instalar dependencias
         run: |
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # 4. Roda o seu script
       - name: Executar script principal
         run: python src/main.py
