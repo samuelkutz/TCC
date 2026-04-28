@@ -99,15 +99,6 @@ def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions, ou
                 filename=f'fno_summary_a{val:.3f}_res{res}.png',
                 title=f'fno relative error a={val:.3f} res={res}',
             )
-            plot_stacked_solution_curves(
-                x,
-                t,
-                eta_true_t,
-                eta_pred,
-                outdir=outdir,
-                filename=f'fno_stacked_curves_a{val:.3f}_res{res}.png',
-                title=f'fno stacked curves a={val:.3f} res={res}',
-            )
             if res == 256:
                 save_solution_gif(
                     x,
@@ -127,6 +118,16 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
 
     outdir = output_dir or os.path.dirname(os.path.dirname(model_metadata_file))
     os.makedirs(outdir, exist_ok=True)
+
+    plot_training_statistics(
+        [model_metadata['train_history']],
+        ['fno'],
+        outdir=outdir,
+        filename='fno_training_statistics.png',
+        duration_seconds=model_metadata.get('training_duration'),
+        final_loss=model_metadata.get('final_loss'),
+        num_params=model_metadata.get('num_params'),
+    )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     norm_stats = model_metadata.get('norm_stats', None)

@@ -125,6 +125,13 @@ def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3)
     return np.nan_to_num(rel_error, posinf=1e3, neginf=0.0)
 
 
+def spatial_wavenumbers(x):
+    """Return angular spatial wavenumbers kx consistent with torch.fft."""
+    x = np.asarray(x, dtype=float)
+    dx = x[1] - x[0] if len(x) > 1 else 1.0
+    return 2.0 * np.pi * np.fft.rfftfreq(len(x), d=dx)
+
+
 def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
     # plot true spectrum and its relative difference over spatial frequencies kx
     _ensure_outdir(outdir)
@@ -132,10 +139,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
 
     x = np.asarray(x)
     t = np.asarray(t)
-    dx = x[1] - x[0] if len(x) > 1 else 1.0
-    # convert cycle frequency to angular wavenumber for a periodic domain [-L, L]
-    # kx = 2*pi*m / domain_length, which is consistent with the solver's spectral derivatives.
-    kx = 2.0 * np.pi * np.fft.rfftfreq(len(x), d=dx)
+    kx = spatial_wavenumbers(x)
 
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
@@ -149,7 +153,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
                           aspect='auto',
                           cmap='viridis')
     axes[0].set_title('True X-spectrum over time')
-    axes[0].set_xlabel('Wavenumber kx')
+    axes[0].set_xlabel('Angular wavenumber kx')
     axes[0].set_ylabel('Time')
     plt.colorbar(im0, ax=axes[0], label='Amplitude')
 
@@ -161,7 +165,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
                           vmin=0.0,
                           vmax=1.0)
     axes[1].set_title('Relative X-spectrum Error')
-    axes[1].set_xlabel('Spatial frequency kx')
+    axes[1].set_xlabel('Angular wavenumber kx')
     plt.colorbar(im1, ax=axes[1], label='Relative Error')
 
     fig.suptitle(title)
@@ -188,9 +192,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         1.0,
     )
 
-    dx = x[1] - x[0] if len(x) > 1 else 1.0
-    # use angular wavenumber consistent with the solver: kx = 2*pi*m / domain_length
-    kx = 2.0 * np.pi * np.fft.rfftfreq(len(x), d=dx)
+    kx = spatial_wavenumbers(x)
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
     rel_spec = np.abs(pred_spec - true_spec) / (true_spec + 1e-12)
@@ -250,7 +252,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         cmap='viridis',
     )
     axes[2, 0].set_title('True X-spectrum over time')
-    axes[2, 0].set_xlabel('Wavenumber kx')
+    axes[2, 0].set_xlabel('Angular wavenumber kx')
     axes[2, 0].set_ylabel('Time')
     divider2 = make_axes_locatable(axes[2, 0])
     cax2 = divider2.append_axes('right', size='5%', pad=0.05)
@@ -266,7 +268,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         vmax=1.0,
     )
     axes[2, 1].set_title('Relative X-spectrum Error')
-    axes[2, 1].set_xlabel('Spatial frequency kx')
+    axes[2, 1].set_xlabel('Angular wavenumber kx')
     divider3 = make_axes_locatable(axes[2, 1])
     cax3 = divider3.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax3, label='Relative Error')
@@ -310,7 +312,7 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
     axes[-1, 0].set_xlabel('Space (x)')
     axes[-1, 1].set_xlabel('Space (x)')
     fig.suptitle(title)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.subplots_adjust(top=0.95, bottom=0.05, left=0.08, right=0.98)
     plt.savefig(outpath, dpi=150)
     print(f'Solution snapshots saved to {outpath}')
     plt.close()
@@ -355,7 +357,7 @@ def plot_stacked_solution_curves(x, t, eta_true, eta_pred, outdir, filename, tit
     ax.set_yticks([])
     ax.legend(loc='upper left')
     ax.grid(True, alpha=0.25)
-    fig.tight_layout()
+    fig.subplots_adjust(top=0.95, bottom=0.05, left=0.08, right=0.98)
     fig.savefig(outpath, dpi=150)
     print(f'Stacked solution curves saved to {outpath}')
     plt.close(fig)
@@ -428,7 +430,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     ax_bottom.grid(True, alpha=0.2)
 
     fig.suptitle(title)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
     print(f'Alpha/Beta panel saved to {outpath}')
     plt.close(fig)
@@ -506,34 +508,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     ax_bottom.grid(True, alpha=0.2)
 
     fig.suptitle(title)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fig.savefig(outpath, dpi=150)
-    print(f'Resolution panel saved to {outpath}')
-    plt.close(fig)
-
-    ax_left.set_title('Stacked solutions for requested resolutions')
-    ax_left.set_xlabel('Space (x)')
-    ax_left.set_ylabel('Stacked resolution groups')
-    ax_left.set_yticks([])
-    ax_left.legend(loc='upper left', fontsize='small')
-    ax_left.grid(True, alpha=0.2)
-
-    for t_res, res, rel_norm in zip(t_list, resolutions, time_rel_norms):
-        ax_right.plot(t_res, rel_norm, lw=1.6, label=f'res={int(res)}')
-    ax_right.set_title('Relative error over time by resolution')
-    ax_right.set_xlabel('Time (t)')
-    ax_right.set_ylabel('Relative error')
-    ax_right.grid(True, alpha=0.2)
-    ax_right.legend(fontsize='small', loc='upper right')
-
-    ax_bottom.plot(resolutions, mean_rel_errors, marker='o', color='#2ca02c', lw=2)
-    ax_bottom.set_title('Mean relative error versus resolution')
-    ax_bottom.set_xlabel('Resolution')
-    ax_bottom.set_ylabel('Mean relative error')
-    ax_bottom.grid(True, alpha=0.2)
-
-    fig.suptitle(title)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
     print(f'Resolution panel saved to {outpath}')
     plt.close(fig)
@@ -549,8 +524,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     eta_true = np.asarray(eta_true, dtype=float)
     eta_pred = np.asarray(eta_pred, dtype=float)
 
-    dx = x[1] - x[0] if len(x) > 1 else 1.0
-    kx = 2.0 * np.pi * np.fft.rfftfreq(len(x), d=dx)
+    kx = spatial_wavenumbers(x)
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
     abs_err = np.abs(pred_spec - true_spec)
@@ -572,7 +546,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         ax_spec.plot(kx, true_spec[:, idx], color='black', lw=1.8, label='True spectrum')
         ax_spec.plot(kx, pred_spec[:, idx], color='#ff7f0e', lw=1.6, linestyle='--', label='Predicted spectrum')
         ax_spec.set_title(f'Spectrum at t={t[idx]:.2f}')
-        ax_spec.set_xlabel('Wavenumber kx')
+        ax_spec.set_xlabel('Angular wavenumber kx')
         ax_spec.set_ylabel('Amplitude')
         ax_spec.grid(True, alpha=0.2)
         if row == 0:
@@ -581,7 +555,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         ax_err.plot(kx, abs_err[:, idx], color='crimson', lw=1.6)
         mean_abs = mean_abs_err_over_time[idx]
         ax_err.set_title(f'Absolute spectral error at t={t[idx]:.2f}')
-        ax_err.set_xlabel('Wavenumber kx')
+        ax_err.set_xlabel('Angular wavenumber kx')
         ax_err.set_ylabel('Absolute error')
         ax_err.grid(True, alpha=0.2)
         ax_err.text(0.05, 0.9, f'Mean abs error: {mean_abs:.2e}', transform=ax_err.transAxes,
@@ -595,7 +569,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     ax_bottom.grid(True, alpha=0.2)
 
     fig.suptitle(title)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
     print(f'Spectral panel saved to {outpath}')
     plt.close(fig)
@@ -624,7 +598,7 @@ def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im, cax=cax, label='Relative Error')
-    plt.tight_layout()
+    fig.subplots_adjust(right=0.88)
     plt.savefig(outpath, dpi=150)
     print(f'Error heatmap saved to {outpath}')
     plt.close()

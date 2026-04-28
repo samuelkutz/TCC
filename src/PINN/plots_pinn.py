@@ -100,15 +100,6 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         filename=f'{label}_summary_a{test_param:.3f}_res{test_res}.png',
         title=f'{label} relative error a={test_param:.3f} res={test_res}',
     )
-    plot_stacked_solution_curves(
-        x_pred,
-        t_pred,
-        eta_true_t,
-        eta_pred,
-        outdir=outdir,
-        filename=f'{label}_stacked_curves_a{test_param:.3f}_res{test_res}.png',
-        title=f'{label} stacked curves a={test_param:.3f} res={test_res}',
-    )
     save_solution_gif(
         x_pred,
         t_pred,
@@ -129,6 +120,16 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
 
     outdir = output_dir or os.path.dirname(os.path.dirname(model_metadata_file))
     os.makedirs(outdir, exist_ok=True)
+
+    plot_training_statistics(
+        [model_metadata['train_history']],
+        [label],
+        outdir=outdir,
+        filename=f'{label}_training_statistics.png',
+        duration_seconds=model_metadata.get('training_duration'),
+        final_loss=model_metadata.get('final_loss'),
+        num_params=model_metadata.get('num_params'),
+    )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, params['param_value'], params['param_value'], 1)

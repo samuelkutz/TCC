@@ -39,9 +39,6 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         'eps': norm_stats.get('eps', 1e-12),
     }
 
-    outdir = os.path.dirname(os.path.dirname(model_metadata_file))
-    os.makedirs(outdir, exist_ok=True)
-
     plot_training_statistics(
         [model_metadata['train_history']],
         [label],
@@ -109,15 +106,6 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
                 filename=f'{label}_summary_a{val:.3f}_res{res}.png',
                 title=f'{label} relative error a={val:.3f} res={res}',
             )
-            plot_stacked_solution_curves(
-                x,
-                t,
-                eta_true_t,
-                eta_pred,
-                outdir=outdir,
-                filename=f'{label}_stacked_curves_a{val:.3f}_res{res}.png',
-                title=f'{label} stacked curves a={val:.3f} res={res}',
-            )
             if res == 256:
                 save_solution_gif(
                     x,
@@ -140,6 +128,16 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
     outdir = output_dir or os.path.dirname(os.path.dirname(model_metadata_file))
     os.makedirs(outdir, exist_ok=True)
 
+    plot_training_statistics(
+        [model_metadata['train_history']],
+        [label],
+        outdir=outdir,
+        filename=f'{label}_training_statistics.png',
+        duration_seconds=model_metadata.get('training_duration'),
+        final_loss=model_metadata.get('final_loss'),
+        num_params=model_metadata.get('num_params'),
+    )
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     norm_stats = model_metadata.get('norm_stats', None)
     if norm_stats is None:
@@ -151,9 +149,6 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         'output_max': norm_stats['output_max'].to(device),
         'eps': norm_stats.get('eps', 1e-12),
     }
-
-    outdir = os.path.dirname(os.path.dirname(model_metadata_file))
-    os.makedirs(outdir, exist_ok=True)
 
     model = PINO2d(
         modes1=params['modes1'],

@@ -23,7 +23,7 @@ DATASET_RES = 128
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
     'epochs': 10000,
-    'batch_size': 16,
+    'batch_size': 64,
     'lr': 1e-3,
     'modes1': 16,
     'modes2': 16,
@@ -37,11 +37,11 @@ PINO_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
     'epochs': 10000,
-    'batch_size': 16,
+    'batch_size': 64,
     'lr': 1e-3,
-    'phys_weight': 1.0,
-    'ic_weight': 1.0,
-    'data_weight': 1.0,
+    'phys_weight': 1000.0,
+    'ic_weight': 10.0,
+    'data_weight': 0.1,
     'modes1': 16,
     'modes2': 16,
     'width': 32,
@@ -49,11 +49,14 @@ PINO_CONFIG = {
     'results_dir': RESULTS_DIR,
 }
 
+EVAL_PARAMS = [0.1, 3.0, 4.0]
+MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
+
 PINN_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
-    'train_resolution': 256,
-    'param_value': 2.75,
+    'train_resolution': DATASET_RES,
+    'param_value': MEDIAN_PDE_PARAM,
     'epochs': 10000,
     'neurons': 64,
     'hidden_layers': 4,
@@ -69,20 +72,23 @@ PINN_CONFIG = {
 EVAL_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
-    'eval_params': [0.1, 3.0, 4.0],
+    'eval_params': EVAL_PARAMS,
     'resolutions': [int(DATASET_RES / 2), DATASET_RES, DATASET_RES * 2],
 }
 
-FNO_EVAL_DIR = os.path.join(RESULTS_DIR, 'fno', 'eval')
-FNO_EVAL2_DIR = os.path.join(RESULTS_DIR, 'fno', 'eval2')
-PINO_WITH_DATA_EVAL_DIR = os.path.join(RESULTS_DIR, 'pino', 'with_data', 'eval')
-PINO_WITH_DATA_EVAL2_DIR = os.path.join(RESULTS_DIR, 'pino', 'with_data', 'eval2')
-PINO_NO_DATA_EVAL_DIR = os.path.join(RESULTS_DIR, 'pino', 'no_data', 'eval')
-PINO_NO_DATA_EVAL2_DIR = os.path.join(RESULTS_DIR, 'pino', 'no_data', 'eval2')
-PINN_WITH_DATA_EVAL_DIR = os.path.join(RESULTS_DIR, 'pinn', 'with_data', 'eval')
-PINN_WITH_DATA_EVAL2_DIR = os.path.join(RESULTS_DIR, 'pinn', 'with_data', 'eval2')
-PINN_NO_DATA_EVAL_DIR = os.path.join(RESULTS_DIR, 'pinn', 'no_data', 'eval')
-PINN_NO_DATA_EVAL2_DIR = os.path.join(RESULTS_DIR, 'pinn', 'no_data', 'eval2')
+EVAL1_DIR = os.path.join(RESULTS_DIR, 'eval1')
+EVAL2_DIR = os.path.join(RESULTS_DIR, 'eval2')
+
+FNO_EVAL_DIR = os.path.join(EVAL1_DIR, 'fno')
+FNO_EVAL2_DIR = os.path.join(EVAL2_DIR, 'fno')
+PINO_WITH_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pino', 'with_data')
+PINO_WITH_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pino', 'with_data')
+PINO_NO_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pino', 'no_data')
+PINO_NO_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pino', 'no_data')
+PINN_WITH_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pinn', 'with_data')
+PINN_WITH_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pinn', 'with_data')
+PINN_NO_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pinn', 'no_data')
+PINN_NO_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pinn', 'no_data')
 
 FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_model_metadata.pth')
 PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pino', 'with_data', 'models', 'pino_model_metadata.pth')
@@ -103,8 +109,8 @@ def main():
     )
 
 
-    print('\n=== training fno ===')
-    train_fno(**FNO_CONFIG)
+    # print('\n=== training fno ===')
+    # train_fno(**FNO_CONFIG)
     print('\n=== plotting fno ===')
     eval_fno(
         model_metadata_file=FNO_METADATA_FILE,
@@ -144,6 +150,13 @@ def main():
         output_dir=PINO_NO_DATA_EVAL_DIR,
         **EVAL_CONFIG,
     )
+    print('\n=== plotting pino without data additional panel ===')
+    eval_pino_2(
+        'no_data',
+        PINO_NO_DATA_METADATA_FILE,
+        output_dir=PINO_NO_DATA_EVAL2_DIR,
+        **EVAL_CONFIG,
+    )
 
     print('\n=== training pinn with data ===')
     train_pinn('data', **PINN_CONFIG)
@@ -175,6 +188,7 @@ def main():
     eval_pinn_2(
         'no_data',
         PINN_NO_DATA_METADATA_FILE,
+        output_dir=PINN_NO_DATA_EVAL2_DIR,
         **EVAL_CONFIG,
     )
 
