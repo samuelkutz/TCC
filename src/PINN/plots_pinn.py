@@ -5,9 +5,18 @@ import torch
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from PINN.PINN import PINN
 from tools import load_model
-from plots import plot_training_statistics, plot_relative_error_panel, save_solution_gif, compute_spectral_relative_error
+from plots import (
+    plot_training_statistics,
+    plot_relative_error_panel,
+    plot_stacked_solution_curves,
+    plot_model2_alpha_beta_panel,
+    plot_model2_resolution_panel,
+    plot_model2_spectral_panel,
+    save_solution_gif,
+    compute_spectral_relative_error,
+)
 
-def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions):
+def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None):
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
     subdir = 'with_data' if mode == 'data' else 'no_data'
 
@@ -15,7 +24,7 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
     params = model_metadata['params']
     model_file = model_metadata['model_file']
 
-    outdir = os.path.dirname(os.path.dirname(model_metadata_file))
+    outdir = output_dir or os.path.dirname(os.path.dirname(model_metadata_file))
     os.makedirs(outdir, exist_ok=True)
 
     plot_training_statistics(
@@ -91,6 +100,15 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         filename=f'{label}_summary_a{test_param:.3f}_res{test_res}.png',
         title=f'{label} relative error a={test_param:.3f} res={test_res}',
     )
+    plot_stacked_solution_curves(
+        x_pred,
+        t_pred,
+        eta_true_t,
+        eta_pred,
+        outdir=outdir,
+        filename=f'{label}_stacked_curves_a{test_param:.3f}_res{test_res}.png',
+        title=f'{label} stacked curves a={test_param:.3f} res={test_res}',
+    )
     save_solution_gif(
         x_pred,
         t_pred,
@@ -99,4 +117,131 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         outdir=outdir,
         filename=f'{label}_animation_a{test_param:.3f}_res{test_res}.gif',
         title=f'{label} animation a={test_param:.3f} res={test_res}',
+    )
+
+
+def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None):
+    label = 'pinn' if mode == 'data' else 'pinn_no_data'
+
+    model_metadata = torch.load(model_metadata_file, map_location='cpu')
+    params = model_metadata['params']
+    model_file = model_metadata['model_file']
+
+    outdir = output_dir or os.path.dirname(os.path.dirname(model_metadata_file))
+    os.makedirs(outdir, exist_ok=True)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, params['param_value'], params['param_value'], 1)
+    model = PINN(
+        input_size=2,
+        output_size=2,
+        neurons=params['neurons'],
+        hidden_layers=params['hidden_layers'],
+        Boussinesq=bsq,
+        domain_points=params['domain_points'],
+        ic_points=params['ic_points'],
+        optimizer_name=params['optimizer_name'],
+        lr=params['lr'],
+        data=None,
+        data_weight=params['data_weight'],
+        device=device,
+    )
+    load_model(model_file, model, device=device)
+
+    median_param = eval_params[len(eval_params) // 2]
+    median_res = resolutions[len(resolutions) // 2]
+
+    alpha_true_list = []
+    alpha_pred_list = []
+    print('start pinn eval_model_2 alpha/beta panel')
+    for val in eval_params:
+        bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
+        solver = PseudoSpectralBoussinesq(bsq_eval, Nx=median_res, Nt=median_res - 1, device=device)
+        x, t, eta_true, u_true = solver.solve()
+        eta_true_t = eta_true.T
+
+        x_pred = np.linspace(-x_limit, x_limit, median_res, dtype=np.float32)
+        t_pred = np.linspace(0.0, t_limit, median_res, dtype=np.float32)
+        X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
+        x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
+        t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
+
+        model.eval()
+        with torch.no_grad():
+            eta_pred, _ = model(x_tensor, t_tensor)
+        eta_pred = eta_pred.cpu().numpy().reshape(median_res, median_res).T
+
+        alpha_true_list.append(eta_true_t)
+        alpha_pred_list.append(eta_pred)
+
+    plot_model2_alpha_beta_panel(
+        x,
+        t,
+        alpha_true_list,
+        alpha_pred_list,
+        eval_params,
+        outdir=outdir,
+        filename=f'{label}_model2_alpha_beta_panel.png',
+        title=f'{label} model2: alpha-beta panel',
+    )
+
+    res_true_list = []
+    res_pred_list = []
+    print('start pinn eval_model_2 resolution panel')
+    for res in resolutions:
+        bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
+        solver = PseudoSpectralBoussinesq(bsq_eval, Nx=res, Nt=res - 1, device=device)
+        x, t, eta_true, u_true = solver.solve()
+        eta_true_t = eta_true.T
+
+        x_pred = np.linspace(-x_limit, x_limit, res, dtype=np.float32)
+        t_pred = np.linspace(0.0, t_limit, res, dtype=np.float32)
+        X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
+        x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
+        t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
+
+        model.eval()
+        with torch.no_grad():
+            eta_pred, _ = model(x_tensor, t_tensor)
+        eta_pred = eta_pred.cpu().numpy().reshape(res, res).T
+
+        res_true_list.append(eta_true_t)
+        res_pred_list.append(eta_pred)
+
+    plot_model2_resolution_panel(
+        x,
+        t,
+        res_true_list,
+        res_pred_list,
+        resolutions,
+        outdir=outdir,
+        filename=f'{label}_model2_resolution_panel.png',
+        title=f'{label} model2: resolution panel',
+    )
+
+    print('start pinn eval_model_2 spectral panel')
+    bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
+    solver = PseudoSpectralBoussinesq(bsq_eval, Nx=median_res, Nt=median_res - 1, device=device)
+    x, t, eta_true, u_true = solver.solve()
+    eta_true_t = eta_true.T
+
+    x_pred = np.linspace(-x_limit, x_limit, median_res, dtype=np.float32)
+    t_pred = np.linspace(0.0, t_limit, median_res, dtype=np.float32)
+    X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
+    x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
+    t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
+
+    model.eval()
+    with torch.no_grad():
+        eta_pred, _ = model(x_tensor, t_tensor)
+    eta_pred = eta_pred.cpu().numpy().reshape(median_res, median_res).T
+
+    plot_model2_spectral_panel(
+        x,
+        t,
+        eta_true_t,
+        eta_pred,
+        outdir=outdir,
+        filename=f'{label}_model2_spectral_panel.png',
+        title=f'{label} model2: spectral panel',
     )

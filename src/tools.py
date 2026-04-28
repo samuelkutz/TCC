@@ -73,16 +73,15 @@ def normalize_dataset(x_train, y_train, norm_stats):
 
 
 class L2_loss(object):
-    # standard l2 loss for model output compared to target data
+    # standard mean-squared error loss for model output compared to target data
     def __init__(self, eps=1e-10):
         super(L2_loss, self).__init__()
         self.eps = eps
 
     def __call__(self, x, y):
-        # flattened l2 norm: sqrt(sum((x - y)^2)) per sample
         diff = x - y
-        loss = torch.sqrt(torch.sum(diff * diff, dim=[1, 2, 3]) + self.eps)
-        return torch.mean(loss)
+        loss = torch.mean(diff * diff)
+        return loss
 
 
 class RelativeL2_loss(object):

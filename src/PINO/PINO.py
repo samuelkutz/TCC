@@ -168,9 +168,7 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
 
     # pde residual is evaluated on physical units, but the model is trained with normalized fields.
     res_eq_1, res_eq_2 = pde_residual_boussinesq(eta_pred, u_pred, dx, dt, alpha, beta)
-    residual_norm = torch.sqrt(torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2) + 1e-12)
-    solution_norm = torch.sqrt(torch.mean(eta_pred ** 2 + u_pred ** 2) + 1e-12)
-    loss_pde = residual_norm / (solution_norm + 1e-12)
+    loss_pde = torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2)
 
     eta0 = batch_x[:, 0:1, :, 0:1]
     u0 = batch_x[:, 1:2, :, 0:1]
@@ -197,9 +195,7 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
         norm_stats['eps'],
     )
     diff = torch.cat((eta_pred, u_pred), dim=1) - batch_y_phys
-    sq_sum = torch.sqrt(torch.sum(diff * diff, dim=[1, 2, 3]) + 1e-12)
-    target_norm = torch.sqrt(torch.sum(batch_y_phys * batch_y_phys, dim=[1, 2, 3]) + 1e-12)
-    loss_data = torch.mean(sq_sum / (target_norm + 1e-12))
+    loss_data = torch.mean(diff * diff)
 
     loss = phys_weight * loss_pde + ic_weight * loss_ic + data_weight * loss_data
     return loss, loss_pde, loss_ic, loss_data

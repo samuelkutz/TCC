@@ -3,7 +3,7 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from tools import RelativeL2_loss, compute_norm_stats, load_dataset, normalize_dataset, save_model
+from tools import L2_loss, compute_norm_stats, load_dataset, normalize_dataset, save_model
 from FNO.FNO import FNO2d
 
 
@@ -31,7 +31,7 @@ def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print
     num_params = sum(p.numel() for p in model.parameters())
     print(f'Model parameter count: {num_params:,}')
     optimizer = Adam(model.parameters(), lr=lr)
-    loss_fn = RelativeL2_loss()
+    loss_fn = L2_loss()
 
     dataset = torch.utils.data.TensorDataset(x_train, y_train)
     train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
