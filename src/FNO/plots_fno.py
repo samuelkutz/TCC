@@ -195,6 +195,8 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         title='FNO model2: alpha-beta panel',
     )
 
+    res_x_list = []
+    res_t_list = []
     res_true_list = []
     res_pred_list = []
     print('start fno eval_model_2 resolution panel')
@@ -232,10 +234,12 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
         res_true_list.append(eta_true_t)
         res_pred_list.append(eta_pred)
+        res_x_list.append(x)
+        res_t_list.append(t)
 
     plot_model2_resolution_panel(
-        x,
-        t,
+        res_x_list,
+        res_t_list,
         res_true_list,
         res_pred_list,
         resolutions,

@@ -185,6 +185,8 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         title=f'{label} model2: alpha-beta panel',
     )
 
+    res_x_list = []
+    res_t_list = []
     res_true_list = []
     res_pred_list = []
     print('start pinn eval_model_2 resolution panel')
@@ -207,10 +209,12 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
 
         res_true_list.append(eta_true_t)
         res_pred_list.append(eta_pred)
+        res_x_list.append(x)
+        res_t_list.append(t)
 
     plot_model2_resolution_panel(
-        x,
-        t,
+        res_x_list,
+        res_t_list,
         res_true_list,
         res_pred_list,
         resolutions,

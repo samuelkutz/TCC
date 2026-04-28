@@ -104,7 +104,7 @@ def main():
 
 
     print('\n=== training fno ===')
-    train_fno(**FNO_CONFIG)
+    # train_fno(**FNO_CONFIG)
     # print('\n=== plotting fno ===')
     # eval_fno(
     #     model_metadata_file=FNO_METADATA_FILE,

@@ -383,8 +383,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
         amplitude = max(amplitude, np.max(eta_true) - np.min(eta_true), np.max(eta_pred) - np.min(eta_pred))
     amplitude = max(amplitude, 1.0)
-    group_height = amplitude * offset_factor * (n_curves + 1)
-    curve_offset = amplitude * offset_factor * 0.6
+    offset = amplitude * offset_factor
 
     time_rel_norms = []
     mean_rel_errors = []
@@ -393,39 +392,36 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         time_rel_norms.append(rel_norm)
         mean_rel_errors.append(np.mean(rel_norm))
 
-    fig = plt.figure(figsize=(16, 12))
-    gs = fig.add_gridspec(2, 2, height_ratios=[3, 1], width_ratios=[1, 1], hspace=0.35, wspace=0.3)
-    ax_left = fig.add_subplot(gs[0, 0])
-    ax_right = fig.add_subplot(gs[0, 1])
-    ax_bottom = fig.add_subplot(gs[1, :])
+    fig = plt.figure(figsize=(14, 4 * n_params + 4))
+    gs = fig.add_gridspec(n_params + 1, 2, height_ratios=[1] * n_params + [0.8], hspace=0.4, wspace=0.3)
 
     for i, (alpha, eta_true, eta_pred) in enumerate(zip(param_values, eta_true_list, eta_pred_list)):
-        group_base = i * group_height
+        ax_left = fig.add_subplot(gs[i, 0])
+        ax_right = fig.add_subplot(gs[i, 1])
+
         for j, idx in enumerate(indices):
-            baseline = group_base + j * curve_offset
+            baseline = j * offset
             ax_left.plot(x, eta_true[:, idx] + baseline, color='black', lw=1.6,
-                         label='Reference' if i == 0 and j == 0 else '')
+                         label='Reference' if j == 0 else '')
             ax_left.plot(x, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
-                         label='Predicted' if i == 0 and j == 0 else '')
-        ax_left.text(x[-1] + 0.03 * (x[-1] - x[0]), group_base + 0.5 * group_height,
-                     f'α=β={alpha:.3f}', va='center', fontsize=9, color='gray')
+                         label='Predicted' if j == 0 else '')
+            ax_left.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
+        ax_left.set_title(f'Stacked solutions for α=β={alpha:.3f}')
+        ax_left.set_xlabel('Space (x)')
+        ax_left.set_ylabel('Offset solution')
+        ax_left.set_yticks([])
+        ax_left.grid(True, alpha=0.2)
+        if i == 0:
+            ax_left.legend(loc='upper left', fontsize='small')
 
-    ax_left.set_title('Stacked solutions for α=β values')
-    ax_left.set_xlabel('Space (x)')
-    ax_left.set_ylabel('Stacked α groups')
-    ax_left.set_yticks([])
-    ax_left.legend(loc='upper left', fontsize='small')
-    ax_left.grid(True, alpha=0.2)
+        ax_right.plot(t, time_rel_norms[i], lw=1.8, color='#2ca02c')
+        ax_right.set_title(f'Relative error over time for α=β={alpha:.3f}')
+        ax_right.set_xlabel('Time (t)')
+        ax_right.set_ylabel('Relative error')
+        ax_right.grid(True, alpha=0.2)
 
-    for alpha, rel_norm in zip(param_values, time_rel_norms):
-        ax_right.plot(t, rel_norm, lw=1.6, label=f'α=β={alpha:.3f}')
-    ax_right.set_title('Relative error over time for α=β values')
-    ax_right.set_xlabel('Time (t)')
-    ax_right.set_ylabel('Relative error')
-    ax_right.grid(True, alpha=0.2)
-    ax_right.legend(fontsize='small', loc='upper right')
-
-    ax_bottom.plot(param_values, mean_rel_errors, marker='o', color='#2ca02c', lw=2)
+    ax_bottom = fig.add_subplot(gs[-1, :])
+    ax_bottom.plot(param_values, mean_rel_errors, marker='o', color='#1f77b4', lw=2)
     ax_bottom.set_title('Mean relative error versus α=β')
     ax_bottom.set_xlabel('α=β value')
     ax_bottom.set_ylabel('Mean relative error')
@@ -438,30 +434,32 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     plt.close(fig)
 
 
-def plot_model2_resolution_panel(x, t, eta_true_list, eta_pred_list, resolutions, outdir, filename, title,
+def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, resolutions, outdir, filename, title,
                                  n_curves=5, offset_factor=1.3):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
-    x = np.asarray(x, dtype=float)
-    t = np.asarray(t, dtype=float)
+    x_list = [np.asarray(x, dtype=float) for x in x_list]
+    t_list = [np.asarray(t, dtype=float) for t in t_list]
     resolutions = np.asarray(resolutions, dtype=float)
     n_res = len(resolutions)
     if n_res == 0:
         raise ValueError('resolutions must contain at least one value')
+    if len(x_list) != n_res or len(t_list) != n_res:
+        raise ValueError('x_list and t_list must match the number of resolutions')
 
-    if len(t) < n_curves:
-        indices = np.arange(len(t), dtype=int)
+    max_time_len = max(t.shape[0] for t in t_list)
+    if max_time_len < n_curves:
+        indices = np.arange(max_time_len, dtype=int)
     else:
         fractions = np.linspace(0.0, 1.0, n_curves)
-        indices = [int(np.round(frac * (len(t) - 1))) for frac in fractions]
+        indices = [int(np.round(frac * (max_time_len - 1))) for frac in fractions]
 
     amplitude = 0.0
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
         amplitude = max(amplitude, np.max(eta_true) - np.min(eta_true), np.max(eta_pred) - np.min(eta_pred))
     amplitude = max(amplitude, 1.0)
-    group_height = amplitude * offset_factor * (n_curves + 1)
-    curve_offset = amplitude * offset_factor * 0.6
+    offset = amplitude * offset_factor
 
     time_rel_norms = []
     mean_rel_errors = []
@@ -470,22 +468,48 @@ def plot_model2_resolution_panel(x, t, eta_true_list, eta_pred_list, resolutions
         time_rel_norms.append(rel_norm)
         mean_rel_errors.append(np.mean(rel_norm))
 
-    fig = plt.figure(figsize=(16, 12))
-    gs = fig.add_gridspec(2, 2, height_ratios=[3, 1], width_ratios=[1, 1], hspace=0.35, wspace=0.3)
-    ax_left = fig.add_subplot(gs[0, 0])
-    ax_right = fig.add_subplot(gs[0, 1])
-    ax_bottom = fig.add_subplot(gs[1, :])
+    fig = plt.figure(figsize=(14, 4 * n_res + 4))
+    gs = fig.add_gridspec(n_res + 1, 2, height_ratios=[1] * n_res + [0.8], hspace=0.4, wspace=0.3)
 
-    for i, (res, eta_true, eta_pred) in enumerate(zip(resolutions, eta_true_list, eta_pred_list)):
-        group_base = i * group_height
+    for i, (res, x_res, t_res, eta_true, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_true_list, eta_pred_list)):
+        ax_left = fig.add_subplot(gs[i, 0])
+        ax_right = fig.add_subplot(gs[i, 1])
+
         for j, idx in enumerate(indices):
-            baseline = group_base + j * curve_offset
-            ax_left.plot(x, eta_true[:, idx] + baseline, color='black', lw=1.6,
-                         label='Reference' if i == 0 and j == 0 else '')
-            ax_left.plot(x, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
-                         label='Predicted' if i == 0 and j == 0 else '')
-        ax_left.text(x[-1] + 0.03 * (x[-1] - x[0]), group_base + 0.5 * group_height,
-                     f'res={int(res)}', va='center', fontsize=9, color='gray')
+            if idx >= eta_true.shape[1]:
+                continue
+            baseline = j * offset
+            ax_left.plot(x_res, eta_true[:, idx] + baseline, color='black', lw=1.6,
+                         label='Reference' if j == 0 else '')
+            ax_left.plot(x_res, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
+                         label='Predicted' if j == 0 else '')
+            ax_left.hlines(baseline, x_res[0], x_res[-1], color='gray', alpha=0.25, linewidth=0.7)
+        ax_left.set_title(f'Stacked solutions for res={int(res)}')
+        ax_left.set_xlabel('Space (x)')
+        ax_left.set_ylabel('Offset solution')
+        ax_left.set_yticks([])
+        ax_left.grid(True, alpha=0.2)
+        if i == 0:
+            ax_left.legend(loc='upper left', fontsize='small')
+
+        ax_right.plot(t_res, time_rel_norms[i], lw=1.8, color='#2ca02c')
+        ax_right.set_title(f'Relative error over time for res={int(res)}')
+        ax_right.set_xlabel('Time (t)')
+        ax_right.set_ylabel('Relative error')
+        ax_right.grid(True, alpha=0.2)
+
+    ax_bottom = fig.add_subplot(gs[-1, :])
+    ax_bottom.plot(resolutions, mean_rel_errors, marker='o', color='#1f77b4', lw=2)
+    ax_bottom.set_title('Mean relative error versus resolution')
+    ax_bottom.set_xlabel('Resolution')
+    ax_bottom.set_ylabel('Mean relative error')
+    ax_bottom.grid(True, alpha=0.2)
+
+    fig.suptitle(title)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.savefig(outpath, dpi=150)
+    print(f'Resolution panel saved to {outpath}')
+    plt.close(fig)
 
     ax_left.set_title('Stacked solutions for requested resolutions')
     ax_left.set_xlabel('Space (x)')
@@ -494,8 +518,8 @@ def plot_model2_resolution_panel(x, t, eta_true_list, eta_pred_list, resolutions
     ax_left.legend(loc='upper left', fontsize='small')
     ax_left.grid(True, alpha=0.2)
 
-    for res, rel_norm in zip(resolutions, time_rel_norms):
-        ax_right.plot(t, rel_norm, lw=1.6, label=f'res={int(res)}')
+    for t_res, res, rel_norm in zip(t_list, resolutions, time_rel_norms):
+        ax_right.plot(t_res, rel_norm, lw=1.6, label=f'res={int(res)}')
     ax_right.set_title('Relative error over time by resolution')
     ax_right.set_xlabel('Time (t)')
     ax_right.set_ylabel('Relative error')
