@@ -25,7 +25,7 @@ MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
     'epochs': 5000,
-    'batch_size': 64,
+    'batch_size': 256,
     'lr': 1e-3,
     'modes1': 16,
     'modes2': 16,
@@ -39,7 +39,7 @@ PINO_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
     'epochs': 5000,
-    'batch_size': 64,
+    'batch_size': 256,
     'lr': 1e-3,
     'phys_weight': 1000.0,
     'ic_weight': 10.0,

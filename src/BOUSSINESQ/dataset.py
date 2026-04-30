@@ -41,7 +41,6 @@ def generate_dataset(param_values, nx, nt, x_limit, t_limit, device):
         output_data[i, ..., 0] = eta_sub
         output_data[i, ..., 1] = u_sub
 
-
         print(f"Processed case {i+1}/{n_cases} (alpha=beta={val:.2f})")
 
     # convert to pytorch tensors: (batch, channels, height, width)
