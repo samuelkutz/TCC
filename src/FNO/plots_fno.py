@@ -194,6 +194,7 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_alpha_beta_panel.png',
         title='FNO evaluation: alpha-beta panel',
+        resolution=median_res,
     )
 
     res_x_list = []
@@ -247,6 +248,7 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_resolution_panel.png',
         title='FNO evaluation: resolution panel',
+        param_value=median_param,
     )
 
     print('start fno eval_model_2 spectral panel')

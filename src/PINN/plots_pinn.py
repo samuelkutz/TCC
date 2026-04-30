@@ -9,7 +9,6 @@ from plots import (
     plot_training_statistics,
     plot_relative_error_panel,
     plot_stacked_solution_curves,
-    plot_model2_alpha_beta_panel,
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
     save_solution_gif,
@@ -152,40 +151,6 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
     median_param = eval_params[len(eval_params) // 2]
     median_res = resolutions[len(resolutions) // 2]
 
-    alpha_true_list = []
-    alpha_pred_list = []
-    print('start pinn eval_model_2 alpha/beta panel')
-    for val in eval_params:
-        bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
-        solver = PseudoSpectralBoussinesq(bsq_eval, Nx=median_res, Nt=median_res - 1, device=device)
-        x, t, eta_true, u_true = solver.solve()
-        eta_true_t = eta_true.T
-
-        x_pred = np.linspace(-x_limit, x_limit, median_res, dtype=np.float32)
-        t_pred = np.linspace(0.0, t_limit, median_res, dtype=np.float32)
-        X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
-        x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
-        t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
-
-        model.eval()
-        with torch.no_grad():
-            eta_pred, _ = model(x_tensor, t_tensor)
-        eta_pred = eta_pred.cpu().numpy().reshape(median_res, median_res).T
-
-        alpha_true_list.append(eta_true_t)
-        alpha_pred_list.append(eta_pred)
-
-    plot_model2_alpha_beta_panel(
-        x,
-        t,
-        alpha_true_list,
-        alpha_pred_list,
-        eval_params,
-        outdir=outdir,
-        filename=f'{label}_model2_alpha_beta_panel.png',
-        title=f'{label} evaluation: alpha-beta panel',
-    )
-
     res_x_list = []
     res_t_list = []
     res_true_list = []
@@ -222,6 +187,7 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
         title=f'{label} evaluation: resolution panel',
+        param_value=median_param,
     )
 
     print('start pinn eval_model_2 spectral panel')
