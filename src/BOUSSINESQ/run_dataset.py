@@ -26,7 +26,6 @@ def run_dataset(dataset_file,
             'run_dataset requires explicit values for dataset_file, device, param_values, '
             'x_limit, t_limit, and dataset_res.'
         )
-
     os.makedirs(os.path.dirname(dataset_file) or '.', exist_ok=True)
     print('Generating dataset with the following settings:')
     print(f'  dataset_file: {dataset_file}')
