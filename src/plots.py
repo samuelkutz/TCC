@@ -364,7 +364,7 @@ def plot_stacked_solution_curves(x, t, eta_true, eta_pred, outdir, filename, tit
 
 
 def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_values, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3):
+                                 n_curves=5, offset_factor=1.3, resolution=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -397,6 +397,8 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     fig = plt.figure(figsize=(14, 4 * n_params + 4))
     gs = fig.add_gridspec(n_params + 1, 2, height_ratios=[1] * n_params + [0.8], hspace=0.4, wspace=0.3)
 
+    res_label = f'  (resolution = {int(resolution)})' if resolution is not None else ''
+
     for i, (alpha, eta_true, eta_pred) in enumerate(zip(param_values, eta_true_list, eta_pred_list)):
         ax_left = fig.add_subplot(gs[i, 0])
         ax_right = fig.add_subplot(gs[i, 1])
@@ -408,7 +410,9 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
             ax_left.plot(x, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
-        ax_left.set_title(f'Stacked solutions for α = β = {alpha:.3f}')
+            ax_left.text(x[-1] + 0.01 * (x[-1] - x[0]), baseline,
+                         f't={t[idx]:.2f}', va='center', fontsize=7, color='dimgray', clip_on=False)
+        ax_left.set_title(f'Stacked solutions for α = β = {alpha:.3f}{res_label}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
         ax_left.set_yticks([])
@@ -451,7 +455,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
 
 def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, resolutions, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3):
+                                 n_curves=5, offset_factor=1.3, param_value=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -480,6 +484,8 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     fig = plt.figure(figsize=(14, 4 * n_res + 4))
     gs = fig.add_gridspec(n_res + 1, 2, height_ratios=[1] * n_res + [0.8], hspace=0.4, wspace=0.3)
 
+    param_label = f'  (α = β = {param_value:.3f})' if param_value is not None else ''
+
     for i, (res, x_res, t_res, eta_true, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_true_list, eta_pred_list)):
         ax_left = fig.add_subplot(gs[i, 0])
         ax_right = fig.add_subplot(gs[i, 1])
@@ -499,7 +505,9 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
             ax_left.plot(x_res, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x_res[0], x_res[-1], color='gray', alpha=0.25, linewidth=0.7)
-        ax_left.set_title(f'Stacked solutions for res = {int(res)}')
+            ax_left.text(x_res[-1] + 0.01 * (x_res[-1] - x_res[0]), baseline,
+                         f't={t_res[idx]:.2f}', va='center', fontsize=7, color='dimgray', clip_on=False)
+        ax_left.set_title(f'Stacked solutions for res = {int(res)}{param_label}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
         ax_left.set_yticks([])
