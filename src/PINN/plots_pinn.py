@@ -5,7 +5,7 @@ import torch
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from PINN.PINN import PINN
 from tools import load_model
-from plots import (
+from _plots import (
     plot_training_statistics,
     plot_relative_error_panel,
     plot_stacked_solution_curves,
@@ -152,10 +152,12 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
     median_param = eval_params[len(eval_params) // 2]
     median_res = resolutions[len(resolutions) // 2]
 
+    fixed_param = median_param
     alpha_true_list = []
     alpha_pred_list = []
+    alpha_param_values = [fixed_param]
     print('start pinn eval_model_2 alpha/beta panel')
-    for val in eval_params:
+    for val in alpha_param_values:
         bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
         solver = PseudoSpectralBoussinesq(bsq_eval, Nx=median_res, Nt=median_res - 1, device=device)
         x, t, eta_true, u_true = solver.solve()
@@ -180,10 +182,11 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         t,
         alpha_true_list,
         alpha_pred_list,
-        eval_params,
+        alpha_param_values,
         outdir=outdir,
         filename=f'{label}_model2_alpha_beta_panel.png',
         title=f'{label} evaluation: alpha-beta panel',
+        eval_resolution=median_res,
     )
 
     res_x_list = []
@@ -222,6 +225,7 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
         title=f'{label} evaluation: resolution panel',
+        eval_alpha_beta=median_param,
     )
 
     print('start pinn eval_model_2 spectral panel')

@@ -11,7 +11,7 @@ from PINN.train_pinn import train_pinn
 from PINN.plots_pinn import eval_pinn, eval_pinn_2
 
 
-# Experiment configuration for the full workflow.
+# experiment configuration for the full workflow.
 RESULTS_DIR = 'results'
 DATASET_FILE = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

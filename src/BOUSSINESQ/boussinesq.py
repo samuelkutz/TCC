@@ -16,7 +16,7 @@ class Boussinesq:
         self.A = A
 
     def ic(self, x):
-        # initial condition eta(x,0)=A*sech^2(x) and u(x,0)=0
+        # initial condition eta(x,0)=a*sech^2(x) and u(x,0)=0
         mid = (self.domain['x_max'] + self.domain['x_min']) / 2
         val = (x - mid)
         eta_0 = self.A / (torch.cosh(val)**2)

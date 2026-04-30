@@ -173,5 +173,3 @@ def train_pino_no_data(dataset_file, x_limit, t_limit, epochs, batch_size, lr, p
         print_interval,
         results_dir,
     )
-
-

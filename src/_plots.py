@@ -111,9 +111,9 @@ def compute_spectral_relative_error(eta_true, eta_pred):
 
 
 def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3):
-    """Compute a robust relative error map.
+    """compute a robust relative error map.
 
-    This avoids huge spikes from dividing by values near zero in the true field.
+    this avoids huge spikes from dividing by values near zero in the true field.
     """
     # relative error = |eta_true - eta_pred| / max(|eta_true|, floor)
     eta_true = np.asarray(eta_true, dtype=float)
@@ -126,7 +126,7 @@ def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3)
 
 
 def spatial_wavenumbers(x):
-    """Return angular spatial wavenumbers kx consistent with torch.fft."""
+    """return angular spatial wavenumbers kx consistent with torch.fft."""
     x = np.asarray(x, dtype=float)
     dx = x[1] - x[0] if len(x) > 1 else 1.0
     return 2.0 * np.pi * np.fft.rfftfreq(len(x), d=dx)
@@ -203,7 +203,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
     for idx, time_index in enumerate(indices):
         ax = axes[0, idx]
         ax.plot(x, eta_true[:, time_index], color='black', lw=1.8, label='True')
-        ax.plot(x, eta_pred[:, time_index], color='#ff7f0e', lw=1.8, linestyle='--', label='Predicted')
+        ax.plot(x, eta_pred[:, time_index], color='#ff7f0e', lw=1.8, linestyle='--', label='predicted')
         ax.set_title(f'Prediction at t={t[time_index]:.2f}')
         ax.set_xlabel('Space (x)')
         ax.set_ylabel('η(x,t)')
@@ -229,6 +229,14 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
 
     time_plot = t + 5.0
     axes[1, 1].plot(time_plot, time_relative_norm, color='crimson', lw=2)
+    axes[1, 1].axvline(
+        x=time_plot[-1],
+        color='black',
+        linestyle='--',
+        linewidth=1.0,
+        alpha=0.7,
+        label='evaluation stop',
+    )
     axes[1, 1].set_title('Time-resolved relative error norm')
     axes[1, 1].set_xlabel('Time (t + 5)')
     axes[1, 1].set_ylabel('Relative error')
@@ -320,7 +328,7 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
 
 def plot_stacked_solution_curves(x, t, eta_true, eta_pred, outdir, filename, title,
                                  n_curves=5, offset_factor=1.3):
-    # stacked 2D curves for a few time slices, matching the GIF style with reference solution
+    # stacked 2d curves for a few time slices, matching the gif style with reference solution
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -363,8 +371,34 @@ def plot_stacked_solution_curves(x, t, eta_true, eta_pred, outdir, filename, tit
     plt.close(fig)
 
 
+def _five_time_slice_indices_labels(t_array):
+    """return indices and labels for t=min, 1/4, 1/2, 3/4, max."""
+    t_array = np.asarray(t_array, dtype=float)
+    if t_array.size == 0:
+        return [], []
+
+    fractions = [0.0, 0.25, 0.5, 0.75, 1.0]
+    tags = ['min', '1/4', '1/2', '3/4', 'max']
+    idx_labels = []
+    for frac, tag in zip(fractions, tags):
+        target = t_array[0] + frac * (t_array[-1] - t_array[0])
+        idx = int(np.argmin(np.abs(t_array - target)))
+        idx_labels.append((idx, tag))
+
+    seen = set()
+    indices = []
+    labels = []
+    for idx, tag in idx_labels:
+        if idx in seen:
+            continue
+        seen.add(idx)
+        indices.append(idx)
+        labels.append(tag)
+    return indices, labels
+
+
 def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_values, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3):
+                                 n_curves=5, offset_factor=1.3, eval_resolution=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -375,11 +409,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     if n_params == 0:
         raise ValueError('param_values must contain at least one value')
 
-    if len(t) < n_curves:
-        indices = np.arange(len(t), dtype=int)
-    else:
-        fractions = np.linspace(0.0, 1.0, n_curves)
-        indices = [int(np.round(frac * (len(t) - 1))) for frac in fractions]
+    indices, time_tags = _five_time_slice_indices_labels(t)
 
     amplitude = 0.0
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
@@ -403,20 +433,40 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
         for j, idx in enumerate(indices):
             baseline = j * offset
-            ax_left.plot(x, eta_true[:, idx] + baseline, color='black', lw=1.6,
+            ax_left.plot(x, eta_true[:, idx] + baseline, color='#2b1b17', lw=1.6,
                          label='Reference' if j == 0 else '')
-            ax_left.plot(x, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
+            ax_left.plot(x, eta_pred[:, idx] + baseline, color='#d94801', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
-            ax_left.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
+            ax_left.hlines(baseline, x[0], x[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
+            tag = time_tags[j] if j < len(time_tags) else f'{j}'
+            ax_left.text(
+                x[-1] + 0.02 * (x[-1] - x[0]),
+                baseline,
+                f't={tag}',
+                va='center',
+                fontsize=8,
+                color='#8c564b',
+            )
         ax_left.set_title(f'Stacked solutions for α = β = {alpha:.3f}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
         ax_left.set_yticks([])
         ax_left.grid(True, alpha=0.2)
+        if eval_resolution is not None:
+            ax_left.text(
+                0.98,
+                0.02,
+                f'eval res = {int(eval_resolution)}',
+                transform=ax_left.transAxes,
+                ha='right',
+                va='bottom',
+                fontsize=9,
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'),
+            )
         if i == 0:
             ax_left.legend(loc='upper left', fontsize='small')
 
-        ax_right.plot(t, time_rel_norms[i], lw=1.8, color='#2ca02c')
+        ax_right.plot(t, time_rel_norms[i], lw=1.8, color='#b22222')
         ax_right.set_title(f'Relative error over time for α = β = {alpha:.3f}')
         ax_right.set_xlabel('Time (t)')
         ax_right.set_ylabel('Relative error')
@@ -433,8 +483,8 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         labels=[f'{val:.2f}' for val in param_values],
     )
     for patch in box['boxes']:
-        patch.set_facecolor('#a6cee3')
-        patch.set_edgecolor('#1f78b4')
+        patch.set_facecolor('#fdd0a2')
+        patch.set_edgecolor('#e6550d')
         patch.set_alpha(0.7)
     ax_bottom.set_title('Relative error distribution vs. α = β')
     ax_bottom.set_xlabel('α = β value')
@@ -451,7 +501,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
 
 def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, resolutions, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3):
+                                 n_curves=5, offset_factor=1.3, eval_alpha_beta=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -484,30 +534,46 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         ax_left = fig.add_subplot(gs[i, 0])
         ax_right = fig.add_subplot(gs[i, 1])
 
-        if t_res.shape[0] < n_curves:
-            indices = np.arange(t_res.shape[0], dtype=int)
-        else:
-            fractions = np.linspace(0.0, 1.0, n_curves)
-            indices = [int(np.round(frac * (t_res.shape[0] - 1))) for frac in fractions]
+        indices, time_tags = _five_time_slice_indices_labels(t_res)
 
         for j, idx in enumerate(indices):
             if idx >= eta_true.shape[1]:
                 continue
             baseline = j * offset
-            ax_left.plot(x_res, eta_true[:, idx] + baseline, color='black', lw=1.6,
+            ax_left.plot(x_res, eta_true[:, idx] + baseline, color='#2b1b17', lw=1.6,
                          label='Reference' if j == 0 else '')
-            ax_left.plot(x_res, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
+            ax_left.plot(x_res, eta_pred[:, idx] + baseline, color='#d94801', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
-            ax_left.hlines(baseline, x_res[0], x_res[-1], color='gray', alpha=0.25, linewidth=0.7)
+            ax_left.hlines(baseline, x_res[0], x_res[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
+            tag = time_tags[j] if j < len(time_tags) else f'{j}'
+            ax_left.text(
+                x_res[-1] + 0.02 * (x_res[-1] - x_res[0]),
+                baseline,
+                f't={tag}',
+                va='center',
+                fontsize=8,
+                color='#8c564b',
+            )
         ax_left.set_title(f'Stacked solutions for res = {int(res)}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
         ax_left.set_yticks([])
         ax_left.grid(True, alpha=0.2)
+        if eval_alpha_beta is not None:
+            ax_left.text(
+                0.98,
+                0.02,
+                f'eval α=β = {eval_alpha_beta:.3f}',
+                transform=ax_left.transAxes,
+                ha='right',
+                va='bottom',
+                fontsize=9,
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'),
+            )
         if i == 0:
             ax_left.legend(loc='upper left', fontsize='small')
 
-        ax_right.plot(t_res, time_rel_norms[i], lw=1.8, color='#2ca02c')
+        ax_right.plot(t_res, time_rel_norms[i], lw=1.8, color='#b22222')
         ax_right.set_title(f'Relative error over time for res = {int(res)}')
         ax_right.set_xlabel('Time (t)')
         ax_right.set_ylabel('Relative error')
@@ -524,8 +590,8 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         labels=[str(int(res)) for res in resolutions],
     )
     for patch in box['boxes']:
-        patch.set_facecolor('#b2df8a')
-        patch.set_edgecolor('#33a02c')
+        patch.set_facecolor('#fdae6b')
+        patch.set_edgecolor('#e6550d')
         patch.set_alpha(0.7)
     ax_bottom.set_title('Relative error distribution vs. resolution')
     ax_bottom.set_xlabel('Resolution')
@@ -582,7 +648,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         ax_err = fig.add_subplot(gs[row, 1])
 
         ax_spec.plot(kx, true_spec[:, idx], color='black', lw=1.8, label='True spectrum')
-        ax_spec.plot(kx, pred_spec[:, idx], color='#ff7f0e', lw=1.6, linestyle='--', label='Predicted spectrum')
+        ax_spec.plot(kx, pred_spec[:, idx], color='#ff7f0e', lw=1.6, linestyle='--', label='predicted spectrum')
         if abs(target_time - round(target_time)) < 1e-6:
             time_label = f'{int(round(target_time))}'
         else:
@@ -662,7 +728,7 @@ def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title):
     ax.grid(True, alpha=0.3)
 
     true_line, = ax.plot([], [], color='black', lw=2, label='True')
-    pred_line, = ax.plot([], [], color='#ff7f0e', lw=2, linestyle='--', label='Predicted')
+    pred_line, = ax.plot([], [], color='#ff7f0e', lw=2, linestyle='--', label='predicted')
     time_text = ax.text(0.02, 0.92, '', transform=ax.transAxes, fontsize=12,
                         bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
     ax.legend()

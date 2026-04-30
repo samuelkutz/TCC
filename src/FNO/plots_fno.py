@@ -5,7 +5,7 @@ import torch
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from FNO.FNO import FNO2d
 from tools import load_model, normalize_tensor, unnormalize_tensor
-from plots import (
+from _plots import (
     plot_training_statistics,
     plot_relative_error_panel,
     plot_stacked_solution_curves,
@@ -194,6 +194,7 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_alpha_beta_panel.png',
         title='FNO evaluation: alpha-beta panel',
+        eval_resolution=median_res,
     )
 
     res_x_list = []
@@ -247,6 +248,7 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_resolution_panel.png',
         title='FNO evaluation: resolution panel',
+        eval_alpha_beta=median_param,
     )
 
     print('start fno eval_model_2 spectral panel')

@@ -8,9 +8,9 @@ def generate_dataset(param_values, nx, nt, x_limit, t_limit, device):
     # target dataset resolution, rather than downsampling from a previously
     # generated high-resolution solution.
     """
-    Generate Boussinesq dataset for FNO training.
+    generate boussinesq dataset for fno training.
     
-    Returns: x_train (N, 4, nx, nt), y_train (N, 2, nx, nt)
+    returns: x_train (n, 4, nx, nt), y_train (n, 2, nx, nt)
     """
     n_cases = len(param_values)
     
