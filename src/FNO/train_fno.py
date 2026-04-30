@@ -10,9 +10,10 @@ from FNO.FNO import FNO2d
 def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print_interval, results_dir):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(results_dir, exist_ok=True)
-    outdir = os.path.join(results_dir, 'fno')
-    model_dir = os.path.join(outdir, 'models')
-    os.makedirs(model_dir, exist_ok=True)
+    weights_dir = os.path.join(results_dir, 'models', 'weights', 'fno')
+    metadata_dir = os.path.join(results_dir, 'models', 'metadata', 'fno')
+    os.makedirs(weights_dir, exist_ok=True)
+    os.makedirs(metadata_dir, exist_ok=True)
 
     if os.path.exists(dataset_file):
         x_train, y_train, norm_stats = load_dataset(dataset_file)
@@ -63,7 +64,7 @@ def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print
     training_duration = default_timer() - start_time
     final_loss = train_history[-1] if train_history else None
 
-    model_file = os.path.join(model_dir, 'fno_weights.pth')
+    model_file = os.path.join(weights_dir, 'fno_weights.pth')
     save_model(model, filepath=model_file)
 
     model_metadata = {
@@ -84,7 +85,8 @@ def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print
         'dataset_file': dataset_file,
         'norm_stats': norm_stats,
     }
-    torch.save(model_metadata, os.path.join(model_dir, 'fno_model_metadata.pth'))
-    print(f'fno model metadata saved to {os.path.join(model_dir, "fno_model_metadata.pth")}')
+    model_metadata_file = os.path.join(metadata_dir, 'fno_model_metadata.pth')
+    torch.save(model_metadata, model_metadata_file)
+    print(f'fno model metadata saved to {model_metadata_file}')
 
 

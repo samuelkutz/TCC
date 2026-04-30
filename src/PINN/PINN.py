@@ -77,7 +77,12 @@ class PINN(nn.Module):
 
         x_data = torch.from_numpy(self.data['x']).float().to(self.device)
         t_data = torch.from_numpy(self.data['t']).float().to(self.device)
-        X, T = torch.meshgrid(x_data, t_data, indexing='xy')
+        eta_data = torch.from_numpy(self.data['eta']).float().to(self.device)
+        u_data = torch.from_numpy(self.data['u']).float().to(self.device)
+
+        # Build a (time, space) grid to match the solver output layout [Nt+1, Nx].
+        T = t_data.unsqueeze(1).repeat(1, x_data.shape[0])
+        X = x_data.unsqueeze(0).repeat(t_data.shape[0], 1)
         X_flat = X.reshape(-1, 1)
         T_flat = T.reshape(-1, 1)
 
@@ -86,8 +91,8 @@ class PINN(nn.Module):
         x_samples = X_flat[idx]
         t_samples = T_flat[idx]
 
-        eta_true = torch.from_numpy(self.data['eta'].T).float().to(self.device).reshape(-1, 1)[idx]
-        u_true = torch.from_numpy(self.data['u'].T).float().to(self.device).reshape(-1, 1)[idx]
+        eta_true = eta_data.reshape(-1, 1)[idx]
+        u_true = u_data.reshape(-1, 1)[idx]
 
         eta_pred, u_pred = self(x_samples, t_samples)
         return torch.mean((eta_pred - eta_true) ** 2 + (u_pred - u_true) ** 2)

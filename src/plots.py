@@ -22,9 +22,9 @@ def plot_training_loss(train_loss_history, outdir, filename, duration_seconds=No
     epochs = np.arange(1, len(train_loss_history) + 1)
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(epochs, train_loss_history, color='#1f77b4', lw=2.2)
-    ax.set_title('Training L2 Loss History', fontsize=14)
+    ax.set_title('Training L2 loss history', fontsize=14)
     ax.set_xlabel('Epoch', fontsize=12)
-    ax.set_ylabel('L2 Loss', fontsize=12)
+    ax.set_ylabel('L2 loss', fontsize=12)
     ax.grid(True, alpha=0.35)
     ax.tick_params(axis='both', which='major', labelsize=10)
 
@@ -65,9 +65,9 @@ def plot_training_statistics(histories, labels, outdir, filename, log_scale=True
     for history, label in zip(histories, labels):
         ax.plot(epochs, history, alpha=0.85, lw=2.0, label=label)
 
-    ax.set_title('Training L2 Loss', fontsize=14)
+    ax.set_title('Training L2 loss', fontsize=14)
     ax.set_xlabel('Epoch', fontsize=12)
-    ax.set_ylabel('L2 Loss', fontsize=12)
+    ax.set_ylabel('L2 loss', fontsize=12)
     ax.grid(True, alpha=0.3)
     ax.tick_params(axis='both', which='major', labelsize=10)
     if log_scale:
@@ -152,8 +152,8 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
                           origin='lower',
                           aspect='auto',
                           cmap='viridis')
-    axes[0].set_title('True X-spectrum over time')
-    axes[0].set_xlabel('Angular wavenumber kx')
+    axes[0].set_title('True spatial spectrum over time')
+    axes[0].set_xlabel('Wavenumber k')
     axes[0].set_ylabel('Time')
     plt.colorbar(im0, ax=axes[0], label='Amplitude')
 
@@ -164,8 +164,8 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
                           cmap='inferno',
                           vmin=0.0,
                           vmax=1.0)
-    axes[1].set_title('Relative X-spectrum Error')
-    axes[1].set_xlabel('Angular wavenumber kx')
+    axes[1].set_title('Relative spatial spectrum error')
+    axes[1].set_xlabel('Wavenumber k')
     plt.colorbar(im1, ax=axes[1], label='Relative Error')
 
     fig.suptitle(title)
@@ -220,7 +220,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         vmin=0.0,
         vmax=1.0,
     )
-    axes[1, 0].set_title('Relative Error Heatmap')
+    axes[1, 0].set_title('Relative error heatmap')
     axes[1, 0].set_xlabel('Space (x)')
     axes[1, 0].set_ylabel('Time (t)')
     divider = make_axes_locatable(axes[1, 0])
@@ -229,9 +229,9 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
 
     time_plot = t + 5.0
     axes[1, 1].plot(time_plot, time_relative_norm, color='crimson', lw=2)
-    axes[1, 1].set_title('Time-resolved Relative Error Norm')
+    axes[1, 1].set_title('Time-resolved relative error norm')
     axes[1, 1].set_xlabel('Time (t + 5)')
-    axes[1, 1].set_ylabel('Relative Error')
+    axes[1, 1].set_ylabel('Relative error')
     axes[1, 1].grid(True, alpha=0.3)
     mean_err = np.mean(time_relative_norm)
     axes[1, 1].text(
@@ -251,8 +251,8 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         aspect='auto',
         cmap='viridis',
     )
-    axes[2, 0].set_title('True X-spectrum over time')
-    axes[2, 0].set_xlabel('Angular wavenumber kx')
+    axes[2, 0].set_title('True spatial spectrum over time')
+    axes[2, 0].set_xlabel('Wavenumber k')
     axes[2, 0].set_ylabel('Time')
     divider2 = make_axes_locatable(axes[2, 0])
     cax2 = divider2.append_axes('right', size='5%', pad=0.05)
@@ -267,8 +267,8 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         vmin=0.0,
         vmax=1.0,
     )
-    axes[2, 1].set_title('Relative X-spectrum Error')
-    axes[2, 1].set_xlabel('Angular wavenumber kx')
+    axes[2, 1].set_title('Relative spatial spectrum error')
+    axes[2, 1].set_xlabel('Wavenumber k')
     divider3 = make_axes_locatable(axes[2, 1])
     cax3 = divider3.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax3, label='Relative Error')
@@ -305,8 +305,8 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
 
         rel_error_line = compute_relative_error(eta_true[:, idx], eta_pred[:, idx])
         axes[row, 1].plot(x, rel_error_line, color='crimson')
-        axes[row, 1].set_title(f'Relative Error at t={t[idx]:.2f}')
-        axes[row, 1].set_ylabel('Relative Error')
+        axes[row, 1].set_title(f'Relative error at t = {t[idx]:.2f}')
+        axes[row, 1].set_ylabel('Relative error')
         axes[row, 1].grid(True, alpha=0.3)
 
     axes[-1, 0].set_xlabel('Space (x)')
@@ -408,7 +408,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
             ax_left.plot(x, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
-        ax_left.set_title(f'Stacked solutions for α=β={alpha:.3f}')
+        ax_left.set_title(f'Stacked solutions for α = β = {alpha:.3f}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
         ax_left.set_yticks([])
@@ -417,17 +417,31 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
             ax_left.legend(loc='upper left', fontsize='small')
 
         ax_right.plot(t, time_rel_norms[i], lw=1.8, color='#2ca02c')
-        ax_right.set_title(f'Relative error over time for α=β={alpha:.3f}')
+        ax_right.set_title(f'Relative error over time for α = β = {alpha:.3f}')
         ax_right.set_xlabel('Time (t)')
         ax_right.set_ylabel('Relative error')
         ax_right.grid(True, alpha=0.2)
 
     ax_bottom = fig.add_subplot(gs[-1, :])
-    ax_bottom.plot(param_values, mean_rel_errors, marker='o', color='#1f77b4', lw=2)
-    ax_bottom.set_title('Mean relative error versus α=β')
-    ax_bottom.set_xlabel('α=β value')
-    ax_bottom.set_ylabel('Mean relative error')
+    box = ax_bottom.boxplot(
+        time_rel_norms,
+        positions=param_values,
+        widths=np.maximum(0.05 * (param_values.max() - param_values.min()), 0.05),
+        patch_artist=True,
+        showmeans=True,
+        meanline=True,
+        labels=[f'{val:.2f}' for val in param_values],
+    )
+    for patch in box['boxes']:
+        patch.set_facecolor('#a6cee3')
+        patch.set_edgecolor('#1f78b4')
+        patch.set_alpha(0.7)
+    ax_bottom.set_title('Relative error distribution vs. α = β')
+    ax_bottom.set_xlabel('α = β value')
+    ax_bottom.set_ylabel('Relative error')
     ax_bottom.grid(True, alpha=0.2)
+    ax_bottom.set_xticks(param_values)
+    ax_bottom.set_xticklabels([f'{val:.2f}' for val in param_values], rotation=15, ha='right')
 
     fig.suptitle(title)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
@@ -450,13 +464,6 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     if len(x_list) != n_res or len(t_list) != n_res:
         raise ValueError('x_list and t_list must match the number of resolutions')
 
-    max_time_len = max(t.shape[0] for t in t_list)
-    if max_time_len < n_curves:
-        indices = np.arange(max_time_len, dtype=int)
-    else:
-        fractions = np.linspace(0.0, 1.0, n_curves)
-        indices = [int(np.round(frac * (max_time_len - 1))) for frac in fractions]
-
     amplitude = 0.0
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
         amplitude = max(amplitude, np.max(eta_true) - np.min(eta_true), np.max(eta_pred) - np.min(eta_pred))
@@ -477,6 +484,12 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         ax_left = fig.add_subplot(gs[i, 0])
         ax_right = fig.add_subplot(gs[i, 1])
 
+        if t_res.shape[0] < n_curves:
+            indices = np.arange(t_res.shape[0], dtype=int)
+        else:
+            fractions = np.linspace(0.0, 1.0, n_curves)
+            indices = [int(np.round(frac * (t_res.shape[0] - 1))) for frac in fractions]
+
         for j, idx in enumerate(indices):
             if idx >= eta_true.shape[1]:
                 continue
@@ -486,7 +499,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
             ax_left.plot(x_res, eta_pred[:, idx] + baseline, color='#ff7f0e', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x_res[0], x_res[-1], color='gray', alpha=0.25, linewidth=0.7)
-        ax_left.set_title(f'Stacked solutions for res={int(res)}')
+        ax_left.set_title(f'Stacked solutions for res = {int(res)}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
         ax_left.set_yticks([])
@@ -495,17 +508,31 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
             ax_left.legend(loc='upper left', fontsize='small')
 
         ax_right.plot(t_res, time_rel_norms[i], lw=1.8, color='#2ca02c')
-        ax_right.set_title(f'Relative error over time for res={int(res)}')
+        ax_right.set_title(f'Relative error over time for res = {int(res)}')
         ax_right.set_xlabel('Time (t)')
         ax_right.set_ylabel('Relative error')
         ax_right.grid(True, alpha=0.2)
 
     ax_bottom = fig.add_subplot(gs[-1, :])
-    ax_bottom.plot(resolutions, mean_rel_errors, marker='o', color='#1f77b4', lw=2)
-    ax_bottom.set_title('Mean relative error versus resolution')
+    box = ax_bottom.boxplot(
+        time_rel_norms,
+        positions=resolutions,
+        widths=np.maximum(0.05 * (resolutions.max() - resolutions.min()), 1.0),
+        patch_artist=True,
+        showmeans=True,
+        meanline=True,
+        labels=[str(int(res)) for res in resolutions],
+    )
+    for patch in box['boxes']:
+        patch.set_facecolor('#b2df8a')
+        patch.set_edgecolor('#33a02c')
+        patch.set_alpha(0.7)
+    ax_bottom.set_title('Relative error distribution vs. resolution')
     ax_bottom.set_xlabel('Resolution')
-    ax_bottom.set_ylabel('Mean relative error')
+    ax_bottom.set_ylabel('Relative error')
     ax_bottom.grid(True, alpha=0.2)
+    ax_bottom.set_xticks(resolutions)
+    ax_bottom.set_xticklabels([str(int(res)) for res in resolutions], rotation=15, ha='right')
 
     fig.suptitle(title)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
@@ -532,21 +559,36 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
 
     if len(t) < n_times:
         indices = np.arange(len(t), dtype=int)
+        target_times = t
     else:
-        fractions = np.linspace(0.0, 1.0, n_times)
-        indices = [int(np.round(frac * (len(t) - 1))) for frac in fractions]
+        target_times = np.linspace(t[0], t[-1], n_times)
+        selected = []
+        seen = set()
+        for target in target_times:
+            idx = int(np.argmin(np.abs(t - target)))
+            if idx not in seen:
+                seen.add(idx)
+                selected.append((idx, target))
+        if selected:
+            indices, target_times = zip(*selected)
+        else:
+            indices, target_times = [], []
 
     fig = plt.figure(figsize=(16, 12))
     gs = fig.add_gridspec(n_times + 1, 2, height_ratios=[1] * n_times + [0.8], hspace=0.35, wspace=0.3)
 
-    for row, idx in enumerate(indices):
+    for row, (idx, target_time) in enumerate(zip(indices, target_times)):
         ax_spec = fig.add_subplot(gs[row, 0])
         ax_err = fig.add_subplot(gs[row, 1])
 
         ax_spec.plot(kx, true_spec[:, idx], color='black', lw=1.8, label='True spectrum')
         ax_spec.plot(kx, pred_spec[:, idx], color='#ff7f0e', lw=1.6, linestyle='--', label='Predicted spectrum')
-        ax_spec.set_title(f'Spectrum at t={t[idx]:.2f}')
-        ax_spec.set_xlabel('Angular wavenumber kx')
+        if abs(target_time - round(target_time)) < 1e-6:
+            time_label = f'{int(round(target_time))}'
+        else:
+            time_label = f'{target_time:.2f}'
+        ax_spec.set_title(f'Spectrum at t = {time_label}')
+        ax_spec.set_xlabel('Wavenumber k')
         ax_spec.set_ylabel('Amplitude')
         ax_spec.grid(True, alpha=0.2)
         if row == 0:
@@ -554,8 +596,8 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
 
         ax_err.plot(kx, abs_err[:, idx], color='crimson', lw=1.6)
         mean_abs = mean_abs_err_over_time[idx]
-        ax_err.set_title(f'Absolute spectral error at t={t[idx]:.2f}')
-        ax_err.set_xlabel('Angular wavenumber kx')
+        ax_err.set_title(f'Absolute spectral error at t = {time_label}')
+        ax_err.set_xlabel('Wavenumber k')
         ax_err.set_ylabel('Absolute error')
         ax_err.grid(True, alpha=0.2)
         ax_err.text(0.05, 0.9, f'Mean abs error: {mean_abs:.2e}', transform=ax_err.transAxes,

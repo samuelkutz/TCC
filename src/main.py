@@ -12,17 +12,19 @@ from PINN.plots_pinn import eval_pinn, eval_pinn_2
 
 
 # Experiment configuration for the full workflow.
-RESULTS_DIR = 'RESULTS'
-DATASET_FILE = os.path.join(RESULTS_DIR, 'boussinesq_dataset.pth')
+RESULTS_DIR = 'results'
+DATASET_FILE = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 PARAM_VALUES = list(np.linspace(0.1, 3.0, 10, dtype=np.float32))
 X_LIMIT = 60.0
 T_LIMIT = 30.0
 DATASET_RES = 128
+EVAL_PARAMS = [0.1, 3.0, 4.0]
+MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
-    'epochs': 10000,
+    'epochs': 5000,
     'batch_size': 64,
     'lr': 1e-3,
     'modes1': 16,
@@ -36,7 +38,7 @@ PINO_CONFIG = {
     'dataset_file': DATASET_FILE,
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
-    'epochs': 10000,
+    'epochs': 5000,
     'batch_size': 64,
     'lr': 1e-3,
     'phys_weight': 1000.0,
@@ -49,15 +51,13 @@ PINO_CONFIG = {
     'results_dir': RESULTS_DIR,
 }
 
-EVAL_PARAMS = [0.1, 3.0, 4.0]
-MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
 
 PINN_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
     'train_resolution': DATASET_RES,
     'param_value': MEDIAN_PDE_PARAM,
-    'epochs': 10000,
+    'epochs': 5000,
     'neurons': 64,
     'hidden_layers': 4,
     'domain_points': 3000,
@@ -76,8 +76,8 @@ EVAL_CONFIG = {
     'resolutions': [int(DATASET_RES / 2), DATASET_RES, DATASET_RES * 2],
 }
 
-EVAL1_DIR = os.path.join(RESULTS_DIR, 'eval1')
-EVAL2_DIR = os.path.join(RESULTS_DIR, 'eval2')
+EVAL1_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval1')
+EVAL2_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval2')
 
 FNO_EVAL_DIR = os.path.join(EVAL1_DIR, 'fno')
 FNO_EVAL2_DIR = os.path.join(EVAL2_DIR, 'fno')
@@ -90,14 +90,18 @@ PINN_WITH_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pinn', 'with_data')
 PINN_NO_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pinn', 'no_data')
 PINN_NO_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pinn', 'no_data')
 
-FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'fno', 'models', 'fno_model_metadata.pth')
-PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pino', 'with_data', 'models', 'pino_model_metadata.pth')
-PINO_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pino', 'no_data', 'models', 'pino_no_data_model_metadata.pth')
-PINN_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pinn', 'with_data', 'models', 'pinn_model_metadata.pth')
-PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'pinn', 'no_data', 'models', 'pinn_no_data_model_metadata.pth')
+FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'fno', 'fno_model_metadata.pth')
+PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pino', 'with_data', 'pino_model_metadata.pth')
+PINO_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pino', 'no_data', 'pino_no_data_model_metadata.pth')
+PINN_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pinn', 'with_data', 'pinn_model_metadata.pth')
+PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pinn', 'no_data', 'pinn_no_data_model_metadata.pth')
 
 
 def main():
+    os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
+    os.makedirs(EVAL1_DIR, exist_ok=True)
+    os.makedirs(EVAL2_DIR, exist_ok=True)
+
     print('\n=== generating shared dataset ===')
     run_dataset(
         dataset_file=DATASET_FILE,

@@ -13,9 +13,10 @@ def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, ne
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(results_dir, exist_ok=True)
-    outdir = os.path.join(results_dir, 'pinn', 'with_data' if mode == 'data' else 'no_data')
-    model_dir = os.path.join(outdir, 'models')
-    os.makedirs(model_dir, exist_ok=True)
+    weights_dir = os.path.join(results_dir, 'models', 'weights', 'pinn', 'with_data' if mode == 'data' else 'no_data')
+    metadata_dir = os.path.join(results_dir, 'models', 'metadata', 'pinn', 'with_data' if mode == 'data' else 'no_data')
+    os.makedirs(weights_dir, exist_ok=True)
+    os.makedirs(metadata_dir, exist_ok=True)
 
     bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, param_value, param_value, 1)
     solver = PseudoSpectralBoussinesq(bsq, Nx=train_resolution, Nt=train_resolution, device=device)
@@ -45,7 +46,7 @@ def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, ne
     training_duration = default_timer() - start_time
     final_loss = history[-1] if len(history) > 0 else None
 
-    model_file = os.path.join(model_dir, f'{label}_weights.pth')
+    model_file = os.path.join(weights_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
     model_metadata = {
@@ -70,7 +71,7 @@ def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, ne
         'model_file': model_file,
         'mode': mode,
     }
-    model_metadata_file = os.path.join(model_dir, f'{label}_model_metadata.pth')
+    model_metadata_file = os.path.join(metadata_dir, f'{label}_model_metadata.pth')
     torch.save(model_metadata, model_metadata_file)
     print(f'pinn model metadata saved to {model_metadata_file}')
 

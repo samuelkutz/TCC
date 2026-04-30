@@ -183,7 +183,7 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         eval_params,
         outdir=outdir,
         filename=f'{label}_model2_alpha_beta_panel.png',
-        title=f'{label} model2: alpha-beta panel',
+        title=f'{label} evaluation: alpha-beta panel',
     )
 
     res_x_list = []
@@ -221,7 +221,7 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         resolutions,
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
-        title=f'{label} model2: resolution panel',
+        title=f'{label} evaluation: resolution panel',
     )
 
     print('start pinn eval_model_2 spectral panel')
@@ -248,5 +248,5 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         eta_pred,
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
-        title=f'{label} model2: spectral panel',
+        title=f'{label} evaluation: spectral panel',
     )

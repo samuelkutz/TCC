@@ -13,9 +13,10 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(results_dir, exist_ok=True)
-    outdir = os.path.join(results_dir, 'pino', 'with_data' if mode == 'data' else 'no_data')
-    model_dir = os.path.join(outdir, 'models')
-    os.makedirs(model_dir, exist_ok=True)
+    weights_dir = os.path.join(results_dir, 'models', 'weights', 'pino', 'with_data' if mode == 'data' else 'no_data')
+    metadata_dir = os.path.join(results_dir, 'models', 'metadata', 'pino', 'with_data' if mode == 'data' else 'no_data')
+    os.makedirs(weights_dir, exist_ok=True)
+    os.makedirs(metadata_dir, exist_ok=True)
 
     if os.path.exists(dataset_file):
         x_train, y_train, norm_stats = load_dataset(dataset_file)
@@ -99,7 +100,7 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
     training_duration = default_timer() - start_time
     final_loss = train_history[-1] if train_history else None
 
-    model_file = os.path.join(model_dir, f'{label}_weights.pth')
+    model_file = os.path.join(weights_dir, f'{label}_weights.pth')
     save_model(model, filepath=model_file)
 
     model_metadata = {
@@ -129,7 +130,7 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
         'mode': mode,
         'norm_stats': norm_stats,
     }
-    model_metadata_file = os.path.join(model_dir, f'{label}_model_metadata.pth')
+    model_metadata_file = os.path.join(metadata_dir, f'{label}_model_metadata.pth')
     torch.save(model_metadata, model_metadata_file)
     print(f'pino model metadata saved to {model_metadata_file}')
 
