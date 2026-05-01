@@ -417,7 +417,6 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         ax_right = fig.add_subplot(gs[i, 1])
 
         for j, idx in enumerate(indices):
-            frac = fractions[j]
             baseline = j * offset
             ax_left.plot(x, eta_true[:, idx] + baseline, color='black', lw=1.6,
                          label='Reference' if j == 0 else '')
@@ -425,7 +424,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
             ax_left.text(x[-1] + 0.01 * (x[-1] - x[0]), baseline,
-                         f'{_frac_label(frac)} ({t[idx]:.2f})', va='center', fontsize=7, color='dimgray', clip_on=False)
+                         f't={t[idx]:.2f}', va='center', fontsize=7, color='dimgray', clip_on=False)
         ax_left.set_title(f'Stacked solutions for α = β = {alpha:.3f}{res_label}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
@@ -515,7 +514,6 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         for j, idx in enumerate(indices):
             if idx >= eta_true.shape[1]:
                 continue
-            frac = fractions[j]
             baseline = j * offset
             ax_left.plot(x_res, eta_true[:, idx] + baseline, color='black', lw=1.6,
                          label='Reference' if j == 0 else '')
@@ -523,7 +521,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x_res[0], x_res[-1], color='gray', alpha=0.25, linewidth=0.7)
             ax_left.text(x_res[-1] + 0.01 * (x_res[-1] - x_res[0]), baseline,
-                         f'{_frac_label(frac)} ({t_res[idx]:.2f})', va='center', fontsize=7, color='dimgray', clip_on=False)
+                         f't={t_res[idx]:.2f}', va='center', fontsize=7, color='dimgray', clip_on=False)
         ax_left.set_title(f'Stacked solutions for res = {int(res)}{param_label}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
