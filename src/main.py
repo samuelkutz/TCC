@@ -22,10 +22,12 @@ T_LIMIT = 30.0
 DATASET_RES = 128
 EVAL_PARAMS = [0.1, 3.0, 4.0]
 MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
+EPOCHS = 5000
+SEED = 37
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
-    'epochs': 5000,
+    'epochs': EPOCHS,
     'batch_size': 256,
     'lr': 1e-3,
     'modes1': 16,
@@ -39,7 +41,7 @@ PINO_CONFIG = {
     'dataset_file': DATASET_FILE,
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
-    'epochs': 5000,
+    'epochs': EPOCHS,
     'batch_size': 256,
     'lr': 1e-3,
     'phys_weight': 1000.0,
@@ -58,8 +60,8 @@ PINN_CONFIG = {
     't_limit': T_LIMIT,
     'train_resolution': DATASET_RES,
     'param_value': MEDIAN_PDE_PARAM,
-    'epochs': 5000,
-    'neurons': 64,
+    'epochs': EPOCHS,
+    'neurons': 128,
     'hidden_layers': 4,
     'domain_points': 3000,
     'ic_points': 500,
@@ -74,7 +76,7 @@ EVAL_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
     'eval_params': EVAL_PARAMS,
-    'resolutions': [DATASET_RES, DATASET_RES * 2, DATASET_RES * 3],
+    'resolutions': [DATASET_RES, DATASET_RES * 2, DATASET_RES * 4],
 }
 
 EVAL1_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval1')
@@ -99,7 +101,7 @@ PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pi
 
 
 def main():
-    seed = 42
+    seed = SEED
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
