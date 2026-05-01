@@ -13,6 +13,8 @@ from PINN.plots_pinn import eval_pinn, eval_pinn_2
 
 
 # Experiment configuration for the full workflow.
+SEED = 42
+EPOCHS = 5000
 RESULTS_DIR = 'results'
 DATASET_FILE = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -25,7 +27,7 @@ MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
-    'epochs': 5000,
+    'epochs': EPOCHS,
     'batch_size': 256,
     'lr': 1e-3,
     'modes1': 16,
@@ -39,7 +41,7 @@ PINO_CONFIG = {
     'dataset_file': DATASET_FILE,
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
-    'epochs': 5000,
+    'epochs': EPOCHS,
     'batch_size': 256,
     'lr': 1e-3,
     'phys_weight': 1000.0,
@@ -58,7 +60,7 @@ PINN_CONFIG = {
     't_limit': T_LIMIT,
     'train_resolution': DATASET_RES,
     'param_value': MEDIAN_PDE_PARAM,
-    'epochs': 5000,
+    'epochs': EPOCHS,
     'neurons': 64,
     'hidden_layers': 4,
     'domain_points': 3000,
@@ -74,7 +76,7 @@ EVAL_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
     'eval_params': EVAL_PARAMS,
-    'resolutions': [DATASET_RES, DATASET_RES * 2, DATASET_RES * 3],
+    'resolutions': [DATASET_RES, DATASET_RES * 2, DATASET_RES * 4],
 }
 
 EVAL1_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval1')
@@ -99,11 +101,10 @@ PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pi
 
 
 def main():
-    seed = 42
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 

@@ -110,6 +110,18 @@ def compute_spectral_relative_error(eta_true, eta_pred):
     return float(rel_error)
 
 
+def _frac_label(frac):
+    """Return a human-readable fraction-of-T label for a given normalised time fraction."""
+    if abs(frac) < 1e-9:
+        return 'min'
+    if abs(frac - 1.0) < 1e-9:
+        return 'max'
+    for p, q in [(1, 4), (1, 2), (3, 4), (1, 3), (2, 3), (1, 5), (2, 5), (3, 5), (4, 5)]:
+        if abs(frac - p / q) < 1e-9:
+            return f'{p}/{q}·T'
+    return f'{frac:.2f}·T'
+
+
 def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3):
     """Compute a robust relative error map.
 
@@ -376,6 +388,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         raise ValueError('param_values must contain at least one value')
 
     if len(t) < n_curves:
+        fractions = np.linspace(0.0, 1.0, len(t))
         indices = np.arange(len(t), dtype=int)
     else:
         fractions = np.linspace(0.0, 1.0, n_curves)
@@ -404,6 +417,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         ax_right = fig.add_subplot(gs[i, 1])
 
         for j, idx in enumerate(indices):
+            frac = fractions[j]
             baseline = j * offset
             ax_left.plot(x, eta_true[:, idx] + baseline, color='black', lw=1.6,
                          label='Reference' if j == 0 else '')
@@ -411,7 +425,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
             ax_left.text(x[-1] + 0.01 * (x[-1] - x[0]), baseline,
-                         f't={t[idx]:.2f}', va='center', fontsize=7, color='dimgray', clip_on=False)
+                         f'{_frac_label(frac)} ({t[idx]:.2f})', va='center', fontsize=7, color='dimgray', clip_on=False)
         ax_left.set_title(f'Stacked solutions for α = β = {alpha:.3f}{res_label}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
@@ -447,7 +461,8 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     ax_bottom.set_xticks(param_values)
     ax_bottom.set_xticklabels([f'{val:.2f}' for val in param_values], rotation=15, ha='right')
 
-    fig.suptitle(title)
+    suptitle = f'{title}  (resolution = {int(resolution)})' if resolution is not None else title
+    fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
     print(f'Alpha/Beta panel saved to {outpath}')
@@ -491,6 +506,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         ax_right = fig.add_subplot(gs[i, 1])
 
         if t_res.shape[0] < n_curves:
+            fractions = np.linspace(0.0, 1.0, t_res.shape[0])
             indices = np.arange(t_res.shape[0], dtype=int)
         else:
             fractions = np.linspace(0.0, 1.0, n_curves)
@@ -499,6 +515,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         for j, idx in enumerate(indices):
             if idx >= eta_true.shape[1]:
                 continue
+            frac = fractions[j]
             baseline = j * offset
             ax_left.plot(x_res, eta_true[:, idx] + baseline, color='black', lw=1.6,
                          label='Reference' if j == 0 else '')
@@ -506,7 +523,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x_res[0], x_res[-1], color='gray', alpha=0.25, linewidth=0.7)
             ax_left.text(x_res[-1] + 0.01 * (x_res[-1] - x_res[0]), baseline,
-                         f't={t_res[idx]:.2f}', va='center', fontsize=7, color='dimgray', clip_on=False)
+                         f'{_frac_label(frac)} ({t_res[idx]:.2f})', va='center', fontsize=7, color='dimgray', clip_on=False)
         ax_left.set_title(f'Stacked solutions for res = {int(res)}{param_label}')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Offset solution')
@@ -542,7 +559,8 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     ax_bottom.set_xticks(resolutions)
     ax_bottom.set_xticklabels([str(int(res)) for res in resolutions], rotation=15, ha='right')
 
-    fig.suptitle(title)
+    suptitle = f'{title}  (α = β = {param_value:.3f})' if param_value is not None else title
+    fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
     print(f'Resolution panel saved to {outpath}')
