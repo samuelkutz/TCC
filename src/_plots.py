@@ -141,6 +141,21 @@ def spatial_wavenumbers(x):
     return np.arange(n_freq, dtype=float) * np.pi / L
 
 
+def spectral_mode_index(x):
+    """return spectral mode indices scaled to the spatial resolution.
+
+    This rescales the physical wavenumber axis by 2L/pi so that the
+    displayed values follow the discrete mode index convention.
+    """
+    x = np.asarray(x, dtype=float)
+    if len(x) < 2:
+        return np.array([0.0], dtype=float)
+
+    domain_length = x[-1] - x[0]
+    L = domain_length / 2.0
+    return spatial_wavenumbers(x) * (2.0 * L / np.pi)
+
+
 def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
     # plot true spectrum and its relative difference over spatial frequencies kx
     _ensure_outdir(outdir)
@@ -148,7 +163,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
 
     x = np.asarray(x)
     t = np.asarray(t)
-    kx = spatial_wavenumbers(x)
+    kx = spectral_mode_index(x)
 
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
@@ -162,7 +177,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
                           aspect='auto',
                           cmap='viridis')
     axes[0].set_title('True spatial spectrum over time')
-    axes[0].set_xlabel('Wavenumber k')
+    axes[0].set_xlabel('Spectral index n')
     axes[0].set_ylabel('Time')
     plt.colorbar(im0, ax=axes[0], label='Amplitude')
 
@@ -174,7 +189,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
                           vmin=0.0,
                           vmax=1.0)
     axes[1].set_title('Relative spatial spectrum error')
-    axes[1].set_xlabel('Wavenumber k')
+    axes[1].set_xlabel('Spectral index n')
     plt.colorbar(im1, ax=axes[1], label='Relative Error')
 
     fig.suptitle(title)
@@ -201,7 +216,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         1.0,
     )
 
-    kx = spatial_wavenumbers(x)
+    kx = spectral_mode_index(x)
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
     rel_spec = np.abs(pred_spec - true_spec) / (true_spec + 1e-12)
@@ -269,7 +284,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         cmap='viridis',
     )
     axes[2, 0].set_title('True spatial spectrum over time')
-    axes[2, 0].set_xlabel('Wavenumber k')
+    axes[2, 0].set_xlabel('Spectral index n')
     axes[2, 0].set_ylabel('Time')
     divider2 = make_axes_locatable(axes[2, 0])
     cax2 = divider2.append_axes('right', size='5%', pad=0.05)
@@ -285,7 +300,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         vmax=1.0,
     )
     axes[2, 1].set_title('Relative spatial spectrum error')
-    axes[2, 1].set_xlabel('Wavenumber k')
+    axes[2, 1].set_xlabel('Spectral index n')
     divider3 = make_axes_locatable(axes[2, 1])
     cax3 = divider3.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax3, label='Relative Error')
@@ -365,13 +380,14 @@ def plot_stacked_solution_curves(x, t, eta_true, eta_pred, outdir, filename, tit
         ax.plot(x, eta_pred[:, idx] + baseline, color='#1f77b4', lw=1.5,
                 linestyle='--', label='Predicted' if i == 0 else '')
         ax.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
-        ax.text(0.98, baseline,
-            f't={t[idx]:.2f}', transform=ax.get_xaxis_transform(), ha='right', va='center', fontsize=9, color='gray')
 
+    y_ticks = [i * offset for i in range(len(indices))]
+    y_tick_labels = [f'{t[idx]:.2f}' for idx in indices]
+    ax.set_yticks(y_ticks)
+    ax.set_yticklabels(y_tick_labels)
     ax.set_title(title)
     ax.set_xlabel('Space (x)')
-    ax.set_ylabel('Stacked solution slices')
-    ax.set_yticks([])
+    ax.set_ylabel('Time (t)')
     ax.legend(loc='upper left')
     ax.grid(True, alpha=0.25)
     fig.subplots_adjust(top=0.95, bottom=0.05, left=0.08, right=0.98)
@@ -447,21 +463,13 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
             ax_left.plot(x, eta_pred[:, idx] + baseline, color='#d94801', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x[0], x[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
-            time_label = t[idx] if idx < len(t) else None
-            ax_left.text(
-                0.98,
-                baseline,
-                f't={time_label:.2f}' if time_label is not None else f't={j}',
-                transform=ax_left.get_xaxis_transform(),
-                ha='right',
-                va='center',
-                fontsize=8,
-                color='#8c564b',
-            )
+        y_ticks = [j * offset for j in range(len(indices))]
+        y_tick_labels = [f'{t[idx]:.2f}' if idx < len(t) else '' for idx in indices]
+        ax_left.set_yticks(y_ticks)
+        ax_left.set_yticklabels(y_tick_labels)
         ax_left.set_title(f'Stacked solutions for α = β = {alpha:.3f}')
         ax_left.set_xlabel('Space (x)')
-        ax_left.set_ylabel('Offset solution')
-        ax_left.set_yticks([])
+        ax_left.set_ylabel('Time (t)')
         ax_left.grid(True, alpha=0.2)
         # show evaluation resolution label if provided (prefer explicit res_label)
         if res_label is not None:
@@ -568,21 +576,13 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
             ax_left.plot(x_res, eta_pred[:, idx] + baseline, color='#d94801', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x_res[0], x_res[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
-            time_label = t_res[idx] if idx < len(t_res) else None
-            ax_left.text(
-                0.98,
-                baseline,
-                f't={time_label:.2f}' if time_label is not None else f't={j}',
-                transform=ax_left.get_xaxis_transform(),
-                ha='right',
-                va='center',
-                fontsize=8,
-                color='#8c564b',
-            )
+        y_ticks = [j * offset for j in range(len(indices))]
+        y_tick_labels = [f'{t_res[idx]:.2f}' if idx < len(t_res) else '' for idx in indices]
+        ax_left.set_yticks(y_ticks)
+        ax_left.set_yticklabels(y_tick_labels)
         ax_left.set_title(f'Stacked solutions for res = {int(res)}')
         ax_left.set_xlabel('Space (x)')
-        ax_left.set_ylabel('Offset solution')
-        ax_left.set_yticks([])
+        ax_left.set_ylabel('Time (t)')
         ax_left.grid(True, alpha=0.2)
         # show evaluated alpha/beta label if provided (prefer explicit param_label)
         if param_label is not None:
@@ -654,7 +654,8 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     eta_true = np.asarray(eta_true, dtype=float)
     eta_pred = np.asarray(eta_pred, dtype=float)
 
-    kx = spatial_wavenumbers(x)
+    kx = spectral_mode_index(x)
+
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
     abs_err = np.abs(pred_spec - true_spec)
@@ -691,7 +692,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         else:
             time_label = f'{target_time:.2f}'
         ax_spec.set_title(f'Spectrum at t = {time_label}')
-        ax_spec.set_xlabel('Wavenumber k')
+        ax_spec.set_xlabel('Spectral index n')
         ax_spec.set_ylabel('Amplitude')
         ax_spec.grid(True, alpha=0.2)
         if row == 0:
@@ -700,7 +701,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         ax_err.plot(kx, abs_err[:, idx], color='crimson', lw=1.6)
         mean_abs = mean_abs_err_over_time[idx]
         ax_err.set_title(f'Absolute spectral error at t = {time_label}')
-        ax_err.set_xlabel('Wavenumber k')
+        ax_err.set_xlabel('Spectral index n')
         ax_err.set_ylabel('Absolute error')
         ax_err.grid(True, alpha=0.2)
         ax_err.text(0.05, 0.9, f'Mean abs error: {mean_abs:.2e}', transform=ax_err.transAxes,

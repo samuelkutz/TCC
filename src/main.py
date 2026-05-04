@@ -22,7 +22,7 @@ T_LIMIT = 30.0
 DATASET_RES = 128
 EVAL_PARAMS = [0.1, 2.71, 3.21]
 MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
-EPOCHS = 3000
+EPOCHS = 20000
 SEED = 37
 
 FNO_CONFIG = {
@@ -46,7 +46,7 @@ PINO_CONFIG = {
     'lr': 1e-3,
     'phys_weight': 100.0,
     'ic_weight': 10.0,
-    'data_weight': 0.01,
+    'data_weight': 0.1,
     'modes1': 16,
     'modes2': 16,
     'width': 32,
@@ -61,13 +61,13 @@ PINN_CONFIG = {
     'train_resolution': DATASET_RES,
     'param_value': MEDIAN_PDE_PARAM,
     'epochs': EPOCHS,
-    'neurons': 64,
+    'neurons': 256,
     'hidden_layers': 8,
-    'domain_points': 3000,
+    'domain_points': 10000,
     'ic_points': 500,
     'optimizer_name': 'Adam',
     'lr': 1e-3,
-    'data_weight': 1.0,
+    'data_weight': 100.0,
     'print_interval': 500,
     'results_dir': RESULTS_DIR,
 }
@@ -77,16 +77,16 @@ EVAL_CONFIG = {
     't_limit': T_LIMIT,
     'eval_params': EVAL_PARAMS,
     'resolutions': [DATASET_RES, DATASET_RES * 2, DATASET_RES * 4],
-    'spectral_res': 512,
+    'spectral_res': 256,
 }
 
-EVAL_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval')
+IMG_DIR = os.path.join(RESULTS_DIR, 'imgs')
 
-FNO_EVAL_DIR = os.path.join(EVAL_DIR, 'fno')
-PINO_WITH_DATA_EVAL_DIR = os.path.join(EVAL_DIR, 'pino', 'with_data')
-PINO_NO_DATA_EVAL_DIR = os.path.join(EVAL_DIR, 'pino', 'no_data')
-PINN_WITH_DATA_EVAL_DIR = os.path.join(EVAL_DIR, 'pinn', 'with_data')
-PINN_NO_DATA_EVAL_DIR = os.path.join(EVAL_DIR, 'pinn', 'no_data')
+FNO_EVAL_DIR = os.path.join(IMG_DIR, 'fno')
+PINO_WITH_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pino', 'with_data')
+PINO_NO_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pino', 'no_data')
+PINN_WITH_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pinn', 'with_data')
+PINN_NO_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pinn', 'no_data')
 
 FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'fno', 'fno_model_metadata.pth')
 PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pino', 'with_data', 'pino_model_metadata.pth')
@@ -104,7 +104,6 @@ def main():
     torch.backends.cudnn.benchmark = False
 
     os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
-    os.makedirs(EVAL_DIR, exist_ok=True)
 
     print('\n=== generating shared dataset ===')
     run_dataset(
@@ -115,7 +114,6 @@ def main():
         t_limit=T_LIMIT,
         dataset_res=DATASET_RES,
     )
-
 
     print('\n=== training fno ===')
     train_fno(**FNO_CONFIG)
