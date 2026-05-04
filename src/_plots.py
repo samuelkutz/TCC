@@ -365,8 +365,8 @@ def plot_stacked_solution_curves(x, t, eta_true, eta_pred, outdir, filename, tit
         ax.plot(x, eta_pred[:, idx] + baseline, color='#1f77b4', lw=1.5,
                 linestyle='--', label='Predicted' if i == 0 else '')
         ax.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
-        ax.text(x[-1] + 0.02 * (x[-1] - x[0]), baseline,
-                f't={t[idx]:.2f}', va='center', fontsize=9, color='gray')
+        ax.text(0.98, baseline,
+            f't={t[idx]:.2f}', transform=ax.get_xaxis_transform(), ha='right', va='center', fontsize=9, color='gray')
 
     ax.set_title(title)
     ax.set_xlabel('Space (x)')
@@ -449,9 +449,11 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
             ax_left.hlines(baseline, x[0], x[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
             time_label = t[idx] if idx < len(t) else None
             ax_left.text(
-                x[-1] + 0.02 * (x[-1] - x[0]),
+                0.98,
                 baseline,
                 f't={time_label:.2f}' if time_label is not None else f't={j}',
+                transform=ax_left.get_xaxis_transform(),
+                ha='right',
                 va='center',
                 fontsize=8,
                 color='#8c564b',
@@ -568,9 +570,11 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
             ax_left.hlines(baseline, x_res[0], x_res[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
             time_label = t_res[idx] if idx < len(t_res) else None
             ax_left.text(
-                x_res[-1] + 0.02 * (x_res[-1] - x_res[0]),
+                0.98,
                 baseline,
                 f't={time_label:.2f}' if time_label is not None else f't={j}',
+                transform=ax_left.get_xaxis_transform(),
+                ha='right',
                 va='center',
                 fontsize=8,
                 color='#8c564b',
