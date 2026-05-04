@@ -88,5 +88,3 @@ def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print
     model_metadata_file = os.path.join(metadata_dir, 'fno_model_metadata.pth')
     torch.save(model_metadata, model_metadata_file)
     print(f'fno model metadata saved to {model_metadata_file}')
-
-

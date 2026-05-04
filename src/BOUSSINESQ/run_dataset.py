@@ -4,8 +4,8 @@ import numpy as np
 from BOUSSINESQ.dataset import generate_dataset
 from tools import compute_norm_stats, save_dataset
 
-# Hyperparameters and PDE setup for dataset generation.
-# Change these values directly before running the dataset generator.
+# hyperparameters and pde setup for dataset generation.
+# change these values directly before running the dataset generator.
 DEFAULT_DATASET_FILE = os.path.join('results', 'models', 'boussinesq_dataset.pth')
 DEFAULT_DEVICE = 'cpu'
 DEFAULT_PARAM_VALUES = list(np.arange(0.1, 3.01, 0.5))

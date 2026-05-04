@@ -171,7 +171,7 @@ The repository saves outputs in a standardized `results/` hierarchy:
 - `src/PINO/`: physics-informed operator model plus PINO training,
 - `src/PINN/`: classical physics-informed neural network training,
 - `src/tools.py`: utilities for normalization, saving/loading, and losses,
-- `src/plots.py`: shared plotting utilities for evaluation figures.
+- `src/_plots.py`: shared plotting utilities for evaluation figures.
 
 ## Requirements
 

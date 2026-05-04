@@ -114,5 +114,3 @@ def train_pinn_no_data(x_limit, t_limit, train_resolution, param_value, epochs, 
         print_interval,
         results_dir,
     )
-
-

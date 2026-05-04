@@ -12,7 +12,7 @@ from PINN.train_pinn import train_pinn
 from PINN.plots_pinn import eval_pinn, eval_pinn_2
 
 
-# Experiment configuration for the full workflow.
+# experiment configuration for the full workflow.
 RESULTS_DIR = 'results'
 DATASET_FILE = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -128,8 +128,9 @@ def main():
     )
 
 
-    print('\n=== training fno ===')
-    train_fno(**FNO_CONFIG)
+    # print('\n=== training fno ===')
+    # train_fno(**FNO_CONFIG)
+
     print('\n=== plotting fno ===')
     eval_fno(
         model_metadata_file=FNO_METADATA_FILE,
@@ -143,8 +144,9 @@ def main():
         **EVAL_CONFIG,
     )
 
-    print('\n=== training pino with data ===')
-    train_pino('data', **PINO_CONFIG)
+    # print('\n=== training pino with data ===')
+    # train_pino('data', **PINO_CONFIG)
+
     print('\n=== plotting pino with data ===')
     eval_pino(
         'data',
@@ -160,8 +162,9 @@ def main():
         **EVAL_CONFIG,
     )
 
-    print('\n=== training pino without data ===')
-    train_pino('no_data', **PINO_CONFIG)
+    # print('\n=== training pino without data ===')
+    # train_pino('no_data', **PINO_CONFIG)
+
     print('\n=== plotting pino without data ===')
     eval_pino(
         'no_data',
@@ -177,8 +180,9 @@ def main():
         **EVAL_CONFIG,
     )
 
-    print('\n=== training pinn with data ===')
-    train_pinn('data', **PINN_CONFIG)
+    # print('\n=== training pinn with data ===')
+    # train_pinn('data', **PINN_CONFIG)
+
     print('\n=== plotting pinn with data ===')
     eval_pinn(
         'data',
@@ -194,8 +198,9 @@ def main():
         **EVAL_CONFIG,
     )
 
-    print('\n=== training pinn without data ===')
-    train_pinn('no_data', **PINN_CONFIG)
+    # print('\n=== training pinn without data ===')
+    # train_pinn('no_data', **PINN_CONFIG)
+    
     print('\n=== plotting pinn without data ===')
     eval_pinn(
         'no_data',

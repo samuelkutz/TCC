@@ -5,7 +5,7 @@ import torch
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from PINO.PINO import PINO2d
 from tools import load_model, normalize_tensor, unnormalize_tensor
-from plots import (
+from _plots import (
     plot_training_statistics,
     plot_relative_error_panel,
     plot_stacked_solution_curves,
@@ -208,7 +208,7 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_alpha_beta_panel.png',
         title=f'{label} evaluation: alpha-beta panel',
-        resolution=median_res,
+        eval_resolution=median_res,
     )
 
     res_x_list = []
@@ -262,7 +262,7 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
         title=f'{label} evaluation: resolution panel',
-        param_value=median_param,
+        eval_alpha_beta=median_param,
     )
 
     print('start pino eval_model_2 spectral panel')
@@ -296,13 +296,17 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         norm_stats['eps'],
     )
 
+    spectral_res = 512
     eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
+    x_pred = np.linspace(-x_limit, x_limit, spectral_res, dtype=np.float32)
+    t_pred = np.linspace(0.0, t_limit, spectral_res, dtype=np.float32)
     plot_model2_spectral_panel(
-        x,
-        t,
+        x_pred,
+        t_pred,
         eta_true_t,
         eta_pred,
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
         title=f'{label} evaluation: spectral panel',
+        eval_resolution=spectral_res,
     )

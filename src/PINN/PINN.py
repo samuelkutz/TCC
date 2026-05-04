@@ -80,7 +80,7 @@ class PINN(nn.Module):
         eta_data = torch.from_numpy(self.data['eta']).float().to(self.device)
         u_data = torch.from_numpy(self.data['u']).float().to(self.device)
 
-        # Build a (time, space) grid to match the solver output layout [Nt+1, Nx].
+        # build a (time, space) grid to match the solver output layout [nt+1, nx].
         T = t_data.unsqueeze(1).repeat(1, x_data.shape[0])
         X = x_data.unsqueeze(0).repeat(t_data.shape[0], 1)
         X_flat = X.reshape(-1, 1)
@@ -98,7 +98,7 @@ class PINN(nn.Module):
         return torch.mean((eta_pred - eta_true) ** 2 + (u_pred - u_true) ** 2)
 
     def _pde_loss(self):
-        # estimate PDE residual loss from sampled interior domain points
+        # estimate pde residual loss from sampled interior domain points
         x_f, t_f = self._sample_domain(self.domain_points)
         res_eq_1, res_eq_2 = self.Boussinesq.residual(self, x_f, t_f)
         return torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2)

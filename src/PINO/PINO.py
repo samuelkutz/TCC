@@ -1,86 +1,44 @@
 import torch
 import torch.nn as nn
-from FNO.FNO import SpectralConv2d
-from tools import normalize_tensor, unnormalize_tensor
+from FNO.FNO import FNO2d
+from tools import unnormalize_tensor
 
 
-class PINO2d(nn.Module):
+class PINO2d(FNO2d):
+    """physics-informed neural operator with an fno backbone.
+
+    references:
+    - li et al., 2021, fourier neural operator for parametric pdes.
+    - li et al., 2023, physics-informed neural operator for learning pdes.
+    - neuraloperator repository: https://github.com/neuraloperator/neuraloperator
+    """
     def __init__(self, modes1, modes2, width, out_channels):
-        super(PINO2d, self).__init__()
-        self.modes1 = modes1
-        self.modes2 = modes2
-        self.width = width
+        super(PINO2d, self).__init__(modes1=modes1, modes2=modes2, width=width)
         self.out_channels = out_channels
 
-        self.fc0 = nn.Linear(6, self.width)
-
-        self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv2 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-        self.conv3 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
-
-        self.w0 = nn.Conv2d(self.width, self.width, 1)
-        self.w1 = nn.Conv2d(self.width, self.width, 1)
-        self.w2 = nn.Conv2d(self.width, self.width, 1)
-        self.w3 = nn.Conv2d(self.width, self.width, 1)
-
-        self.fc1 = nn.Linear(self.width, 128)
-        self.fc2 = nn.Linear(128, self.out_channels)
-
-    def get_grid(self, shape, device):
-        batchsize, size_x, size_y = shape[0], shape[2], shape[3]
-        gridx = torch.linspace(-1, 1, size_x, dtype=torch.float, device=device)
-        gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, size_y])
-        gridy = torch.linspace(-1, 1, size_y, dtype=torch.float, device=device)
-        gridy = gridy.reshape(1, 1, size_y).repeat([batchsize, size_x, 1])
-        return torch.stack((gridx, gridy), dim=3)
-
-    def forward(self, x):
-        grid = self.get_grid(x.shape, x.device)
-        x = x.permute(0, 2, 3, 1)
-        x = torch.cat((x, grid), dim=-1)
-
-        x = self.fc0(x)
-        x = x.permute(0, 3, 1, 2)
-
-        x1 = self.conv0(x)
-        x2 = self.w0(x)
-        x = x1 + x2
-        x = torch.nn.functional.gelu(x)
-
-        x1 = self.conv1(x)
-        x2 = self.w1(x)
-        x = x1 + x2
-        x = torch.nn.functional.gelu(x)
-
-        x1 = self.conv2(x)
-        x2 = self.w2(x)
-        x = x1 + x2
-        x = torch.nn.functional.gelu(x)
-
-        x1 = self.conv3(x)
-        x2 = self.w3(x)
-        x = x1 + x2
-        x = torch.nn.functional.gelu(x)
-
-        x = x.permute(0, 2, 3, 1)
-        x = self.fc1(x)
-        x = torch.nn.functional.gelu(x)
-        x = self.fc2(x)
-        x = x.permute(0, 3, 1, 2)
-        return x
+        self.projection = nn.Sequential(
+            nn.Linear(width, width * 2),
+            nn.GELU(),
+            nn.Linear(width * 2, out_channels),
+        )
 
 
 def spectral_spatial_derivatives(u, dx):
+    """compute spatial derivatives via fft using forward normalization.
+
+    dx is spatial spacing, kx = 2*pi*fftfreq
+    ux = ifft(i*kx*fft(u)), uxx = ifft(-kx^2*fft(u))
+    """
     if u.ndim == 4 and u.shape[1] == 1:
         u = u[:, 0, :, :]
 
     Nx = u.shape[-2]
-    u_ft = torch.fft.fft(u, dim=-2)
+    u_ft = torch.fft.fft(u, dim=-2, norm='forward')
+    # spectral derivative factor for spatial dimension
     kx = 2 * torch.pi * torch.fft.fftfreq(Nx, d=dx, device=u.device).view(1, Nx, 1)
 
-    ux = torch.fft.ifft(1j * kx * u_ft, dim=-2).real
-    uxx = torch.fft.ifft(-(kx ** 2) * u_ft, dim=-2).real
+    ux = torch.fft.ifft(1j * kx * u_ft, dim=-2, norm='forward').real
+    uxx = torch.fft.ifft(-(kx ** 2) * u_ft, dim=-2, norm='forward').real
 
     return ux.unsqueeze(1), uxx.unsqueeze(1)
 
@@ -92,11 +50,13 @@ def finite_time_derivative(u, dt, order):
     ut = torch.zeros_like(u)
     utt = torch.zeros_like(u)
 
+    # first-order time derivative using forward/backward difference at boundaries
     ut[..., 0] = (u[..., 1] - u[..., 0]) / dt
     ut[..., -1] = (u[..., -1] - u[..., -2]) / dt
     if u.shape[-1] > 2:
         ut[..., 1:-1] = (u[..., 2:] - u[..., :-2]) / (2.0 * dt)
 
+    # second-order time derivative with one-sided boundary approximations
     utt[..., 0] = (u[..., 2] - 2.0 * u[..., 1] + u[..., 0]) / (dt ** 2)
     utt[..., -1] = (u[..., -1] - 2.0 * u[..., -2] + u[..., -3]) / (dt ** 2)
     if u.shape[-1] > 2:
@@ -110,6 +70,11 @@ def finite_time_derivative(u, dt, order):
 
 
 def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta):
+    """compute boussinesq continuity and momentum residuals.
+
+    res_eq_1 = eta_t + u_x + alpha*partial_x(eta*u)
+    res_eq_2 = u_t - (beta/3)*u_xxt + eta_x + alpha*u*u_x
+    """
     eta_x, eta_xx = spectral_spatial_derivatives(eta, dx)
     u_x, u_xx = spectral_spatial_derivatives(u, dx)
 
@@ -120,10 +85,9 @@ def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta):
     eta_u_x, _ = spectral_spatial_derivatives(eta_u, dx)
     nonlinear = u * u_x
 
-    # Keep alpha and beta in their original batched field shape so they broadcast correctly
-    # against the spatial derivatives. They are constant per sample in the current dataset,
-    # but this also supports spatially varying coefficients if used later.
+    # continuity residual: eta_t + u_x + alpha * (eta*u)_x
     res_eq_1 = eta_t + u_x + alpha * eta_u_x
+    # momentum residual: u_t - (beta/3) u_xxt + eta_x + alpha u u_x
     res_eq_2 = u_t - (beta / 3.0) * u_xxt + eta_x + alpha * nonlinear
 
     return res_eq_1, res_eq_2
@@ -166,7 +130,7 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
         norm_stats['eps'],
     )
 
-    # pde residual is evaluated on physical units, but the model is trained with normalized fields.
+    # pde residual is computed in physical units for physics-consistent constraints.
     res_eq_1, res_eq_2 = pde_residual_boussinesq(eta_pred, u_pred, dx, dt, alpha, beta)
     loss_pde = torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2)
 
@@ -197,5 +161,6 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
     diff = torch.cat((eta_pred, u_pred), dim=1) - batch_y_phys
     loss_data = torch.mean(diff * diff)
 
+    # weighted objective follows the standard pino decomposition (physics + ic + data).
     loss = phys_weight * loss_pde + ic_weight * loss_ic + data_weight * loss_data
     return loss, loss_pde, loss_ic, loss_data

@@ -5,7 +5,7 @@ import torch
 from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from FNO.FNO import FNO2d
 from tools import load_model, normalize_tensor, unnormalize_tensor
-from plots import (
+from _plots import (
     plot_training_statistics,
     plot_relative_error_panel,
     plot_stacked_solution_curves,
@@ -194,7 +194,7 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_alpha_beta_panel.png',
         title='FNO evaluation: alpha-beta panel',
-        resolution=median_res,
+        eval_resolution=median_res,
     )
 
     res_x_list = []
@@ -248,21 +248,22 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_resolution_panel.png',
         title='FNO evaluation: resolution panel',
-        param_value=median_param,
+        eval_alpha_beta=median_param,
     )
 
+    spectral_res = 512
     print('start fno eval_model_2 spectral panel')
     bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
-    solver = PseudoSpectralBoussinesq(bsq, Nx=median_res, Nt=median_res - 1, device=device)
+    solver = PseudoSpectralBoussinesq(bsq, Nx=spectral_res, Nt=spectral_res - 1, device=device)
     x, t, eta_true, u_true = solver.solve()
     eta_true_t = eta_true.T
 
     eta0 = np.asarray(eta_true[0, :], dtype=np.float32)
     u0 = np.asarray(u_true[0, :], dtype=np.float32)
-    ch0 = np.tile(eta0[:, None], (1, median_res))
-    ch1 = np.tile(u0[:, None], (1, median_res))
-    ch2 = np.ones((median_res, median_res), dtype=np.float32) * median_param
-    ch3 = np.ones((median_res, median_res), dtype=np.float32) * median_param
+    ch0 = np.tile(eta0[:, None], (1, spectral_res))
+    ch1 = np.tile(u0[:, None], (1, spectral_res))
+    ch2 = np.ones((spectral_res, spectral_res), dtype=np.float32) * median_param
+    ch3 = np.ones((spectral_res, spectral_res), dtype=np.float32) * median_param
     input_numpy = np.stack([ch0, ch1, ch2, ch3], axis=-1)
     input_tensor = torch.from_numpy(input_numpy).permute(2, 0, 1).unsqueeze(0).float().to(device)
     input_tensor = normalize_tensor(
@@ -283,12 +284,15 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
     )
 
     eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
+    x_pred = np.linspace(-x_limit, x_limit, spectral_res, dtype=np.float32)
+    t_pred = np.linspace(0.0, t_limit, spectral_res, dtype=np.float32)
     plot_model2_spectral_panel(
-        x,
-        t,
+        x_pred,
+        t_pred,
         eta_true_t,
         eta_pred,
         outdir=outdir,
         filename='fno_model2_spectral_panel.png',
         title='FNO evaluation: spectral panel',
+        eval_resolution=spectral_res,
     )
