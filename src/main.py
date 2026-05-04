@@ -5,11 +5,11 @@ import torch
 
 from BOUSSINESQ.run_dataset import run_dataset
 from FNO.train_fno import train_fno
-from FNO.plots_fno import eval_fno, eval_fno_2
+from FNO.plots_fno import eval_fno
 from PINO.train_pino import train_pino
-from PINO.plots_pino import eval_pino, eval_pino_2
+from PINO.plots_pino import eval_pino
 from PINN.train_pinn import train_pinn
-from PINN.plots_pinn import eval_pinn, eval_pinn_2
+from PINN.plots_pinn import eval_pinn
 
 
 # experiment configuration for the full workflow.
@@ -121,13 +121,7 @@ def main():
     train_fno(**FNO_CONFIG)
 
     print('\n=== plotting fno ===')
-    # eval_fno(
-    #     model_metadata_file=FNO_METADATA_FILE,
-    #     output_dir=FNO_EVAL_DIR,
-    #     **EVAL_CONFIG,
-    # )
-
-    eval_fno_2(
+    eval_fno(
         model_metadata_file=FNO_METADATA_FILE,
         output_dir=FNO_EVAL_DIR,
         **EVAL_CONFIG,
@@ -137,14 +131,7 @@ def main():
     train_pino('data', **PINO_CONFIG)
 
     print('\n=== plotting pino with data ===')
-    # eval_pino(
-    #     'data',
-    #     PINO_WITH_DATA_METADATA_FILE,
-    #     output_dir=PINO_WITH_DATA_EVAL_DIR,
-    #     **EVAL_CONFIG,
-    # )
-
-    eval_pino_2(
+    eval_pino(
         'data',
         PINO_WITH_DATA_METADATA_FILE,
         output_dir=PINO_WITH_DATA_EVAL_DIR,
@@ -155,14 +142,7 @@ def main():
     train_pino('no_data', **PINO_CONFIG)
 
     print('\n=== plotting pino without data ===')
-    # eval_pino(
-    #     'no_data',
-    #     PINO_NO_DATA_METADATA_FILE,
-    #     output_dir=PINO_NO_DATA_EVAL_DIR,
-    #     **EVAL_CONFIG,
-    # )
-
-    eval_pino_2(
+    eval_pino(
         'no_data',
         PINO_NO_DATA_METADATA_FILE,
         output_dir=PINO_NO_DATA_EVAL_DIR,
@@ -173,14 +153,7 @@ def main():
     train_pinn('data', **PINN_CONFIG)
 
     print('\n=== plotting pinn with data ===')
-    # eval_pinn(
-    #     'data',
-    #     PINN_WITH_DATA_METADATA_FILE,
-    #     output_dir=PINN_WITH_DATA_EVAL_DIR,
-    #     **EVAL_CONFIG,
-    # )
-    
-    eval_pinn_2(
+    eval_pinn(
         'data',
         PINN_WITH_DATA_METADATA_FILE,
         output_dir=PINN_WITH_DATA_EVAL_DIR,
@@ -191,14 +164,7 @@ def main():
     train_pinn('no_data', **PINN_CONFIG)
 
     print('\n=== plotting pinn without data ===')
-    # eval_pinn(
-    #     'no_data',
-    #     PINN_NO_DATA_METADATA_FILE,
-    #     output_dir=PINN_NO_DATA_EVAL_DIR,
-    #     **EVAL_CONFIG,
-    # )
-    
-    eval_pinn_2(
+    eval_pinn(
         'no_data',
         PINN_NO_DATA_METADATA_FILE,
         output_dir=PINN_NO_DATA_EVAL_DIR,
