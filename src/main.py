@@ -61,8 +61,8 @@ PINN_CONFIG = {
     'train_resolution': DATASET_RES,
     'param_value': MEDIAN_PDE_PARAM,
     'epochs': EPOCHS,
-    'neurons': 256,
-    'hidden_layers': 8,
+    'neurons': 64,
+    'hidden_layers': 4,
     'domain_points': 10000,
     'ic_points': 500,
     'optimizer_name': 'Adam',
@@ -116,36 +116,36 @@ def main():
     )
 
     print('\n=== training fno ===')
-    train_fno(**FNO_CONFIG)
+   # train_fno(**FNO_CONFIG)
 
     print('\n=== plotting fno ===')
-    eval_fno(
-        model_metadata_file=FNO_METADATA_FILE,
-        output_dir=FNO_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    #eval_fno(
+    #    model_metadata_file=FNO_METADATA_FILE,
+    #    output_dir=FNO_EVAL_DIR,
+    #    **EVAL_CONFIG,
+    #)
 
     print('\n=== training pino with data ===')
-    train_pino('data', **PINO_CONFIG)
+    #train_pino('data', **PINO_CONFIG)
 
     print('\n=== plotting pino with data ===')
-    eval_pino(
-        'data',
-        PINO_WITH_DATA_METADATA_FILE,
-        output_dir=PINO_WITH_DATA_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    #eval_pino(
+    #    'data',
+    #    PINO_WITH_DATA_METADATA_FILE,
+    #    output_dir=PINO_WITH_DATA_EVAL_DIR,
+    #    **EVAL_CONFIG,
+    #)
 
     print('\n=== training pino without data ===')
-    train_pino('no_data', **PINO_CONFIG)
+    #train_pino('no_data', **PINO_CONFIG)
 
     print('\n=== plotting pino without data ===')
-    eval_pino(
-        'no_data',
-        PINO_NO_DATA_METADATA_FILE,
-        output_dir=PINO_NO_DATA_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    #eval_pino(
+    #    'no_data',
+    #    PINO_NO_DATA_METADATA_FILE,
+    #    output_dir=PINO_NO_DATA_EVAL_DIR,
+    #    **EVAL_CONFIG,
+    #)
 
     print('\n=== training pinn with data ===')
     train_pinn('data', **PINN_CONFIG)
