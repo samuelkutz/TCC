@@ -126,10 +126,19 @@ def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3)
 
 
 def spatial_wavenumbers(x):
-    """return angular spatial wavenumbers kx consistent with torch.fft."""
+    """return spatial wavenumbers kx normalized as n * π / L.
+
+    This maps the FFT frequency index to the standard integer-indexed
+    wavenumbers for a domain [-L, L].
+    """
     x = np.asarray(x, dtype=float)
-    dx = x[1] - x[0] if len(x) > 1 else 1.0
-    return 2.0 * np.pi * np.fft.rfftfreq(len(x), d=dx)
+    if len(x) < 2:
+        return np.array([0.0], dtype=float)
+
+    domain_length = x[-1] - x[0]
+    L = domain_length / 2.0
+    n_freq = len(x) // 2 + 1
+    return np.arange(n_freq, dtype=float) * np.pi / L
 
 
 def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
@@ -409,7 +418,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     if n_params == 0:
         raise ValueError('param_values must contain at least one value')
 
-    indices, time_tags = _five_time_slice_indices_labels(t)
+    indices, _ = _five_time_slice_indices_labels(t)
 
     amplitude = 0.0
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
@@ -438,11 +447,11 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
             ax_left.plot(x, eta_pred[:, idx] + baseline, color='#d94801', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x[0], x[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
-            tag = time_tags[j] if j < len(time_tags) else f'{j}'
+            time_label = t[idx] if idx < len(t) else None
             ax_left.text(
                 x[-1] + 0.02 * (x[-1] - x[0]),
                 baseline,
-                f't={tag}',
+                f't={time_label:.2f}' if time_label is not None else f't={j}',
                 va='center',
                 fontsize=8,
                 color='#8c564b',
@@ -493,7 +502,10 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     ax_bottom.set_xticks(param_values)
     ax_bottom.set_xticklabels([f'{val:.2f}' for val in param_values], rotation=15, ha='right')
 
-    fig.suptitle(title)
+    suptitle = title
+    if eval_resolution is not None:
+        suptitle = f'{suptitle} (eval res = {int(eval_resolution)})'
+    fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
     print(f'Alpha/Beta panel saved to {outpath}')
@@ -534,7 +546,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         ax_left = fig.add_subplot(gs[i, 0])
         ax_right = fig.add_subplot(gs[i, 1])
 
-        indices, time_tags = _five_time_slice_indices_labels(t_res)
+        indices, _ = _five_time_slice_indices_labels(t_res)
 
         for j, idx in enumerate(indices):
             if idx >= eta_true.shape[1]:
@@ -545,11 +557,11 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
             ax_left.plot(x_res, eta_pred[:, idx] + baseline, color='#d94801', lw=1.4, linestyle='--',
                          label='Predicted' if j == 0 else '')
             ax_left.hlines(baseline, x_res[0], x_res[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
-            tag = time_tags[j] if j < len(time_tags) else f'{j}'
+            time_label = t_res[idx] if idx < len(t_res) else None
             ax_left.text(
                 x_res[-1] + 0.02 * (x_res[-1] - x_res[0]),
                 baseline,
-                f't={tag}',
+                f't={time_label:.2f}' if time_label is not None else f't={j}',
                 va='center',
                 fontsize=8,
                 color='#8c564b',
@@ -600,7 +612,10 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     ax_bottom.set_xticks(resolutions)
     ax_bottom.set_xticklabels([str(int(res)) for res in resolutions], rotation=15, ha='right')
 
-    fig.suptitle(title)
+    suptitle = title
+    if eval_alpha_beta is not None:
+        suptitle = f'{suptitle} (eval α=β = {eval_alpha_beta:.3f})'
+    fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
     print(f'Resolution panel saved to {outpath}')
@@ -608,7 +623,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
 
 def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title,
-                               n_times=3):
+                               n_times=3, eval_resolution=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -676,7 +691,10 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     ax_bottom.set_ylabel('Mean absolute error')
     ax_bottom.grid(True, alpha=0.2)
 
-    fig.suptitle(title)
+    suptitle = title
+    if eval_resolution is not None:
+        suptitle = f'{suptitle} (eval res = {int(eval_resolution)})'
+    fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
     print(f'Spectral panel saved to {outpath}')

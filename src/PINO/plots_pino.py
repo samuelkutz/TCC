@@ -296,13 +296,17 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         norm_stats['eps'],
     )
 
+    spectral_res = 512
     eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
+    x_pred = np.linspace(-x_limit, x_limit, spectral_res, dtype=np.float32)
+    t_pred = np.linspace(0.0, t_limit, spectral_res, dtype=np.float32)
     plot_model2_spectral_panel(
-        x,
-        t,
+        x_pred,
+        t_pred,
         eta_true_t,
         eta_pred,
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
         title=f'{label} evaluation: spectral panel',
+        eval_resolution=spectral_res,
     )

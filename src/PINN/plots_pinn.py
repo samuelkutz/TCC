@@ -66,10 +66,11 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
     if len(resolutions) == 0:
         raise ValueError('resolutions must contain at least one value for PINN evaluation')
 
+    # Use a single representative alpha=beta value for PINN evaluation.
     test_param = sorted(eval_params)[len(eval_params) // 2]
     test_res = sorted(resolutions)[len(resolutions) // 2]
 
-    print(f'start pinn evaluation ({mode}) on alpha=beta={test_param} with resolution={test_res}')
+    print(f'start pinn evaluation ({mode}) on single alpha=beta={test_param} with resolution={test_res}')
     x_pred = np.linspace(-x_limit, x_limit, test_res, dtype=np.float32)
     t_pred = np.linspace(0.0, t_limit, test_res, dtype=np.float32)
     X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
@@ -152,42 +153,8 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
     median_param = eval_params[len(eval_params) // 2]
     median_res = resolutions[len(resolutions) // 2]
 
-    fixed_param = median_param
-    alpha_true_list = []
-    alpha_pred_list = []
-    alpha_param_values = [fixed_param]
-    print('start pinn eval_model_2 alpha/beta panel')
-    for val in alpha_param_values:
-        bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
-        solver = PseudoSpectralBoussinesq(bsq_eval, Nx=median_res, Nt=median_res - 1, device=device)
-        x, t, eta_true, u_true = solver.solve()
-        eta_true_t = eta_true.T
-
-        x_pred = np.linspace(-x_limit, x_limit, median_res, dtype=np.float32)
-        t_pred = np.linspace(0.0, t_limit, median_res, dtype=np.float32)
-        X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
-        x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
-        t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
-
-        model.eval()
-        with torch.no_grad():
-            eta_pred, _ = model(x_tensor, t_tensor)
-        eta_pred = eta_pred.cpu().numpy().reshape(median_res, median_res).T
-
-        alpha_true_list.append(eta_true_t)
-        alpha_pred_list.append(eta_pred)
-
-    plot_model2_alpha_beta_panel(
-        x,
-        t,
-        alpha_true_list,
-        alpha_pred_list,
-        alpha_param_values,
-        outdir=outdir,
-        filename=f'{label}_model2_alpha_beta_panel.png',
-        title=f'{label} evaluation: alpha-beta panel',
-        eval_resolution=median_res,
-    )
+    # PINN uses only one alpha=beta evaluation value for these panels.
+    print(f'start pinn eval_model_2 with single alpha=beta={median_param:.3f}')
 
     res_x_list = []
     res_t_list = []
@@ -228,14 +195,15 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         eval_alpha_beta=median_param,
     )
 
+    spectral_res = 512
     print('start pinn eval_model_2 spectral panel')
     bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
-    solver = PseudoSpectralBoussinesq(bsq_eval, Nx=median_res, Nt=median_res - 1, device=device)
+    solver = PseudoSpectralBoussinesq(bsq_eval, Nx=spectral_res, Nt=spectral_res - 1, device=device)
     x, t, eta_true, u_true = solver.solve()
     eta_true_t = eta_true.T
 
-    x_pred = np.linspace(-x_limit, x_limit, median_res, dtype=np.float32)
-    t_pred = np.linspace(0.0, t_limit, median_res, dtype=np.float32)
+    x_pred = np.linspace(-x_limit, x_limit, spectral_res, dtype=np.float32)
+    t_pred = np.linspace(0.0, t_limit, spectral_res, dtype=np.float32)
     X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
     x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
     t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
@@ -243,14 +211,15 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
     model.eval()
     with torch.no_grad():
         eta_pred, _ = model(x_tensor, t_tensor)
-    eta_pred = eta_pred.cpu().numpy().reshape(median_res, median_res).T
+    eta_pred = eta_pred.cpu().numpy().reshape(spectral_res, spectral_res).T
 
     plot_model2_spectral_panel(
-        x,
-        t,
+        x_pred,
+        t_pred,
         eta_true_t,
         eta_pred,
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
         title=f'{label} evaluation: spectral panel',
+        eval_resolution=spectral_res,
     )
