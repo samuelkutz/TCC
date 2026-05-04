@@ -20,7 +20,7 @@ PARAM_VALUES = list(np.linspace(0.1, 3.0, 10, dtype=np.float32))
 X_LIMIT = 60.0
 T_LIMIT = 30.0
 DATASET_RES = 128
-EVAL_PARAMS = [0.1, 3.0, 4.0]
+EVAL_PARAMS = [0.1, 2.71, 3.21]
 MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
 EPOCHS = 3000
 SEED = 37
