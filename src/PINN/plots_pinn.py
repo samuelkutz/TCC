@@ -9,7 +9,6 @@ from _plots import (
     plot_training_statistics,
     plot_relative_error_panel,
     plot_stacked_solution_curves,
-    plot_model2_alpha_beta_panel,
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
     save_solution_gif,

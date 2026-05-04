@@ -1,4 +1,5 @@
 import os
+import random
 import numpy as np
 import torch
 
@@ -74,7 +75,7 @@ EVAL_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
     'eval_params': EVAL_PARAMS,
-    'resolutions': [int(DATASET_RES / 2), DATASET_RES, DATASET_RES * 2],
+    'resolutions': [DATASET_RES, DATASET_RES * 2, DATASET_RES * 3],
 }
 
 EVAL1_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval1')
@@ -99,6 +100,14 @@ PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pi
 
 
 def main():
+    seed = 42
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
     os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
     os.makedirs(EVAL1_DIR, exist_ok=True)
     os.makedirs(EVAL2_DIR, exist_ok=True)

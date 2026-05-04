@@ -436,6 +436,8 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     fig = plt.figure(figsize=(14, 4 * n_params + 4))
     gs = fig.add_gridspec(n_params + 1, 2, height_ratios=[1] * n_params + [0.8], hspace=0.4, wspace=0.3)
 
+    res_label = f'  (resolution = {int(resolution)})' if resolution is not None else ''
+
     for i, (alpha, eta_true, eta_pred) in enumerate(zip(param_values, eta_true_list, eta_pred_list)):
         ax_left = fig.add_subplot(gs[i, 0])
         ax_right = fig.add_subplot(gs[i, 1])
@@ -541,6 +543,8 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
     fig = plt.figure(figsize=(14, 4 * n_res + 4))
     gs = fig.add_gridspec(n_res + 1, 2, height_ratios=[1] * n_res + [0.8], hspace=0.4, wspace=0.3)
+
+    param_label = f'  (α = β = {param_value:.3f})' if param_value is not None else ''
 
     for i, (res, x_res, t_res, eta_true, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_true_list, eta_pred_list)):
         ax_left = fig.add_subplot(gs[i, 0])
