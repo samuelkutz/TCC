@@ -208,7 +208,7 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_alpha_beta_panel.png',
         title=f'{label} evaluation: alpha-beta panel',
-        eval_resolution=median_res,
+        res_label=f'{int(median_res)}',
     )
 
     res_x_list = []
@@ -262,7 +262,7 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
         title=f'{label} evaluation: resolution panel',
-        eval_alpha_beta=median_param,
+        param_label=f'{median_param:.3f}',
     )
 
     print('start pino eval_model_2 spectral panel')
@@ -308,5 +308,5 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
         title=f'{label} evaluation: spectral panel',
-        eval_resolution=spectral_res,
+        res_label=f'{int(spectral_res)}',
     )

@@ -407,7 +407,7 @@ def _five_time_slice_indices_labels(t_array):
 
 
 def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_values, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3, eval_resolution=None):
+                                 n_curves=5, offset_factor=1.3, eval_resolution=None, res_label=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -436,8 +436,6 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     fig = plt.figure(figsize=(14, 4 * n_params + 4))
     gs = fig.add_gridspec(n_params + 1, 2, height_ratios=[1] * n_params + [0.8], hspace=0.4, wspace=0.3)
 
-    res_label = f'  (resolution = {int(resolution)})' if resolution is not None else ''
-
     for i, (alpha, eta_true, eta_pred) in enumerate(zip(param_values, eta_true_list, eta_pred_list)):
         ax_left = fig.add_subplot(gs[i, 0])
         ax_right = fig.add_subplot(gs[i, 1])
@@ -463,11 +461,18 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         ax_left.set_ylabel('Offset solution')
         ax_left.set_yticks([])
         ax_left.grid(True, alpha=0.2)
-        if eval_resolution is not None:
+        # show evaluation resolution label if provided (prefer explicit res_label)
+        if res_label is not None:
+            res_text = str(res_label)
+        elif eval_resolution is not None:
+            res_text = f'{int(eval_resolution)}'
+        else:
+            res_text = None
+        if res_text is not None:
             ax_left.text(
                 0.98,
                 0.02,
-                f'eval res = {int(eval_resolution)}',
+                f'eval res = {res_text}',
                 transform=ax_left.transAxes,
                 ha='right',
                 va='bottom',
@@ -505,7 +510,9 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     ax_bottom.set_xticklabels([f'{val:.2f}' for val in param_values], rotation=15, ha='right')
 
     suptitle = title
-    if eval_resolution is not None:
+    if res_label is not None:
+        suptitle = f"{suptitle} (eval res = {res_label})"
+    elif eval_resolution is not None:
         suptitle = f'{suptitle} (eval res = {int(eval_resolution)})'
     fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
@@ -515,7 +522,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
 
 def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, resolutions, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3, eval_alpha_beta=None):
+                                 n_curves=5, offset_factor=1.3, eval_alpha_beta=None, param_label=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -543,8 +550,6 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
     fig = plt.figure(figsize=(14, 4 * n_res + 4))
     gs = fig.add_gridspec(n_res + 1, 2, height_ratios=[1] * n_res + [0.8], hspace=0.4, wspace=0.3)
-
-    param_label = f'  (α = β = {param_value:.3f})' if param_value is not None else ''
 
     for i, (res, x_res, t_res, eta_true, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_true_list, eta_pred_list)):
         ax_left = fig.add_subplot(gs[i, 0])
@@ -575,11 +580,18 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         ax_left.set_ylabel('Offset solution')
         ax_left.set_yticks([])
         ax_left.grid(True, alpha=0.2)
-        if eval_alpha_beta is not None:
+        # show evaluated alpha/beta label if provided (prefer explicit param_label)
+        if param_label is not None:
+            p_text = str(param_label)
+        elif eval_alpha_beta is not None:
+            p_text = f'{eval_alpha_beta:.3f}'
+        else:
+            p_text = None
+        if p_text is not None:
             ax_left.text(
                 0.98,
                 0.02,
-                f'eval α=β = {eval_alpha_beta:.3f}',
+                f'eval α=β = {p_text}',
                 transform=ax_left.transAxes,
                 ha='right',
                 va='bottom',
@@ -617,7 +629,9 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     ax_bottom.set_xticklabels([str(int(res)) for res in resolutions], rotation=15, ha='right')
 
     suptitle = title
-    if eval_alpha_beta is not None:
+    if param_label is not None:
+        suptitle = f"{suptitle} (eval α=β = {param_label})"
+    elif eval_alpha_beta is not None:
         suptitle = f'{suptitle} (eval α=β = {eval_alpha_beta:.3f})'
     fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
@@ -627,7 +641,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
 
 def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title,
-                               n_times=3, eval_resolution=None):
+                               n_times=3, eval_resolution=None, res_label=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -696,7 +710,9 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     ax_bottom.grid(True, alpha=0.2)
 
     suptitle = title
-    if eval_resolution is not None:
+    if res_label is not None:
+        suptitle = f"{suptitle} (eval res = {res_label})"
+    elif eval_resolution is not None:
         suptitle = f'{suptitle} (eval res = {int(eval_resolution)})'
     fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)

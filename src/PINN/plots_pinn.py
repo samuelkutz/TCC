@@ -191,7 +191,7 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
         title=f'{label} evaluation: resolution panel',
-        eval_alpha_beta=median_param,
+        param_label=f'{median_param:.3f}',
     )
 
     spectral_res = 512
@@ -220,5 +220,5 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
         title=f'{label} evaluation: spectral panel',
-        eval_resolution=spectral_res,
+        res_label=f'{int(spectral_res)}',
     )

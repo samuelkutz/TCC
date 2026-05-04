@@ -194,7 +194,7 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_alpha_beta_panel.png',
         title='FNO evaluation: alpha-beta panel',
-        eval_resolution=median_res,
+        res_label=f'{int(median_res)}',
     )
 
     res_x_list = []
@@ -248,7 +248,7 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_resolution_panel.png',
         title='FNO evaluation: resolution panel',
-        eval_alpha_beta=median_param,
+        param_label=f'{median_param:.3f}',
     )
 
     spectral_res = 512
@@ -294,5 +294,5 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         outdir=outdir,
         filename='fno_model2_spectral_panel.png',
         title='FNO evaluation: spectral panel',
-        eval_resolution=spectral_res,
+        res_label=f'{int(spectral_res)}',
     )
