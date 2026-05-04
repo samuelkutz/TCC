@@ -16,11 +16,11 @@ from PINN.plots_pinn import eval_pinn
 RESULTS_DIR = 'results'
 DATASET_FILE = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-PARAM_VALUES = list(np.linspace(0.1, 3.0, 10, dtype=np.float32))
+PARAM_VALUES = list(np.linspace(0.1, 4.0, 10, dtype=np.float32))
 X_LIMIT = 60.0
 T_LIMIT = 30.0
 DATASET_RES = 128
-EVAL_PARAMS = [0.1, 2.71, 3.21]
+EVAL_PARAMS = [0.1, 3.21, 4.2]
 MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
 EPOCHS = 20000
 SEED = 37
