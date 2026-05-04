@@ -118,7 +118,7 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
                 )
 
 
-def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None):
+def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None, spectral_res=512):
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
@@ -196,6 +196,17 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         )
 
         eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
+        # save gif for median parameter at median resolution
+        if val == median_param:
+            save_solution_gif(
+                x,
+                t,
+                eta_true_t,
+                eta_pred,
+                outdir=outdir,
+                filename=f'{label}_animation_a{val:.3f}_res{int(median_res)}.gif',
+                title=f'{label} animation a={val:.3f} res={int(median_res)}',
+            )
         alpha_true_list.append(eta_true_t)
         alpha_pred_list.append(eta_pred)
 
@@ -266,7 +277,6 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
     )
 
     print('start pino eval_model_2 spectral panel')
-    spectral_res = 512
     bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
     # evaluate true solution on the spectral grid to match x_pred/t_pred used for spectral panel
     solver = PseudoSpectralBoussinesq(bsq, Nx=spectral_res, Nt=spectral_res - 1, device=device)

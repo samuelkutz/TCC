@@ -111,7 +111,7 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
     )
 
 
-def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None):
+def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None, spectral_res=512):
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
 
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
@@ -177,6 +177,18 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
             eta_pred, _ = model(x_tensor, t_tensor)
         eta_pred = eta_pred.cpu().numpy().reshape(res, res).T
 
+        # save gif for median resolution (use median_param supplied above)
+        if res == median_res:
+            save_solution_gif(
+                x_pred,
+                t_pred,
+                eta_true_t,
+                eta_pred,
+                outdir=outdir,
+                filename=f'{label}_animation_a{median_param:.3f}_res{res}.gif',
+                title=f'{label} animation a={median_param:.3f} res={res}',
+            )
+
         res_true_list.append(eta_true_t)
         res_pred_list.append(eta_pred)
         res_x_list.append(x)
@@ -194,7 +206,6 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
         param_label=f'{median_param:.3f}',
     )
 
-    spectral_res = 512
     print('start pinn eval_model_2 spectral panel')
     bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
     solver = PseudoSpectralBoussinesq(bsq_eval, Nx=spectral_res, Nt=spectral_res - 1, device=device)
@@ -211,6 +222,18 @@ def eval_pinn_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
     with torch.no_grad():
         eta_pred, _ = model(x_tensor, t_tensor)
     eta_pred = eta_pred.cpu().numpy().reshape(spectral_res, spectral_res).T
+
+    # save gif for median parameter at median resolution
+    if median_param is not None:
+        save_solution_gif(
+            x_pred,
+            t_pred,
+            eta_true_t,
+            eta_pred,
+            outdir=outdir,
+            filename=f'{label}_animation_a{median_param:.3f}_res{int(spectral_res)}.gif',
+            title=f'{label} animation a={median_param:.3f} res={int(spectral_res)}',
+        )
 
     plot_model2_spectral_panel(
         x_pred,

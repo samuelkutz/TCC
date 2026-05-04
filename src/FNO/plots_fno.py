@@ -111,7 +111,7 @@ def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions, ou
                 )
 
 
-def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None):
+def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None, spectral_res=512):
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
     params = model_metadata['params']
     model_file = model_metadata['model_file']
@@ -182,6 +182,17 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         )
 
         eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
+        # save gif for the median parameter at median resolution
+        if val == median_param:
+            save_solution_gif(
+                x,
+                t,
+                eta_true_t,
+                eta_pred,
+                outdir=outdir,
+                filename=f'fno_animation_a{val:.3f}_res{int(median_res)}.gif',
+                title=f'fno animation a={val:.3f} res={int(median_res)}',
+            )
         alpha_true_list.append(eta_true_t)
         alpha_pred_list.append(eta_pred)
 
@@ -251,7 +262,6 @@ def eval_fno_2(model_metadata_file, x_limit, t_limit, eval_params, resolutions, 
         param_label=f'{median_param:.3f}',
     )
 
-    spectral_res = 512
     print('start fno eval_model_2 spectral panel')
     bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
     solver = PseudoSpectralBoussinesq(bsq, Nx=spectral_res, Nt=spectral_res - 1, device=device)

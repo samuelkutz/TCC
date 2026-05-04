@@ -49,7 +49,7 @@ def plot_training_loss(train_loss_history, outdir, filename, duration_seconds=No
 
     fig.tight_layout()
     fig.savefig(outpath, dpi=150)
-    print(f'Training loss plot saved to {outpath}')
+    print(f'training loss plot saved to {outpath}')
     plt.close(fig)
 
 
@@ -96,7 +96,7 @@ def plot_training_statistics(histories, labels, outdir, filename, log_scale=True
 
     fig.tight_layout()
     fig.savefig(outpath, dpi=150)
-    print(f'Training statistics plot saved to {outpath}')
+    print(f'training statistics plot saved to {outpath}')
     plt.close(fig)
 
 
@@ -179,7 +179,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
 
     fig.suptitle(title)
     plt.savefig(outpath, dpi=150)
-    print(f'Spectral summary saved to {outpath}')
+    print(f'spectral summary saved to {outpath}')
     plt.close()
 
 
@@ -293,7 +293,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
     fig.suptitle(title)
     fig.subplots_adjust(top=0.95, bottom=0.03, hspace=0.35, wspace=0.28)
     fig.savefig(outpath, dpi=150)
-    print(f'Relative error summary saved to {outpath}')
+    print(f'relative error summary saved to {outpath}')
     plt.close()
 
 
@@ -331,7 +331,7 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
     fig.suptitle(title)
     fig.subplots_adjust(top=0.95, bottom=0.05, left=0.08, right=0.98)
     plt.savefig(outpath, dpi=150)
-    print(f'Solution snapshots saved to {outpath}')
+    print(f'solution snapshots saved to {outpath}')
     plt.close()
 
 
@@ -376,7 +376,7 @@ def plot_stacked_solution_curves(x, t, eta_true, eta_pred, outdir, filename, tit
     ax.grid(True, alpha=0.25)
     fig.subplots_adjust(top=0.95, bottom=0.05, left=0.08, right=0.98)
     fig.savefig(outpath, dpi=150)
-    print(f'Stacked solution curves saved to {outpath}')
+    print(f'stacked solution curves saved to {outpath}')
     plt.close(fig)
 
 
@@ -517,7 +517,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
-    print(f'Alpha/Beta panel saved to {outpath}')
+    print(f'alpha/beta panel saved to {outpath}')
     plt.close(fig)
 
 
@@ -636,7 +636,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
-    print(f'Resolution panel saved to {outpath}')
+    print(f'resolution panel saved to {outpath}')
     plt.close(fig)
 
 
@@ -717,7 +717,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     fig.suptitle(suptitle)
     fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
     fig.savefig(outpath, dpi=150)
-    print(f'Spectral panel saved to {outpath}')
+    print(f'spectral panel saved to {outpath}')
     plt.close(fig)
 
 
@@ -746,7 +746,7 @@ def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):
     plt.colorbar(im, cax=cax, label='Relative Error')
     fig.subplots_adjust(right=0.88)
     plt.savefig(outpath, dpi=150)
-    print(f'Error heatmap saved to {outpath}')
+    print(f'error heatmap saved to {outpath}')
     plt.close()
 
 
@@ -791,5 +791,5 @@ def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title):
 
     ani = animation.FuncAnimation(fig, update, frames=len(t), init_func=init, blit=True, interval=interval)
     ani.save(outpath, writer='pillow', fps=fps)
-    print(f'Animation saved to {outpath}')
+    print(f'animation saved to {outpath}')
     plt.close(fig)

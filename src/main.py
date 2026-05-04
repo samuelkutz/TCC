@@ -23,6 +23,7 @@ DATASET_RES = 128
 EVAL_PARAMS = [0.1, 3.0, 4.0]
 MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
 EPOCHS = 3000
+SEED = 37
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
@@ -76,21 +77,16 @@ EVAL_CONFIG = {
     't_limit': T_LIMIT,
     'eval_params': EVAL_PARAMS,
     'resolutions': [DATASET_RES, DATASET_RES * 2, DATASET_RES * 4],
+    'spectral_res': 512,
 }
 
-EVAL1_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval1')
-EVAL2_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval2')
+EVAL_DIR = os.path.join(RESULTS_DIR, 'imgs', 'eval')
 
-FNO_EVAL_DIR = os.path.join(EVAL1_DIR, 'fno')
-FNO_EVAL2_DIR = os.path.join(EVAL2_DIR, 'fno')
-PINO_WITH_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pino', 'with_data')
-PINO_WITH_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pino', 'with_data')
-PINO_NO_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pino', 'no_data')
-PINO_NO_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pino', 'no_data')
-PINN_WITH_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pinn', 'with_data')
-PINN_WITH_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pinn', 'with_data')
-PINN_NO_DATA_EVAL_DIR = os.path.join(EVAL1_DIR, 'pinn', 'no_data')
-PINN_NO_DATA_EVAL2_DIR = os.path.join(EVAL2_DIR, 'pinn', 'no_data')
+FNO_EVAL_DIR = os.path.join(EVAL_DIR, 'fno')
+PINO_WITH_DATA_EVAL_DIR = os.path.join(EVAL_DIR, 'pino', 'with_data')
+PINO_NO_DATA_EVAL_DIR = os.path.join(EVAL_DIR, 'pino', 'no_data')
+PINN_WITH_DATA_EVAL_DIR = os.path.join(EVAL_DIR, 'pinn', 'with_data')
+PINN_NO_DATA_EVAL_DIR = os.path.join(EVAL_DIR, 'pinn', 'no_data')
 
 FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'fno', 'fno_model_metadata.pth')
 PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pino', 'with_data', 'pino_model_metadata.pth')
@@ -100,17 +96,15 @@ PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pi
 
 
 def main():
-    seed = 42
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
     os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
-    os.makedirs(EVAL1_DIR, exist_ok=True)
-    os.makedirs(EVAL2_DIR, exist_ok=True)
+    os.makedirs(EVAL_DIR, exist_ok=True)
 
     print('\n=== generating shared dataset ===')
     run_dataset(
@@ -135,7 +129,7 @@ def main():
 
     eval_fno_2(
         model_metadata_file=FNO_METADATA_FILE,
-        output_dir=FNO_EVAL2_DIR,
+        output_dir=FNO_EVAL_DIR,
         **EVAL_CONFIG,
     )
 
@@ -153,7 +147,7 @@ def main():
     eval_pino_2(
         'data',
         PINO_WITH_DATA_METADATA_FILE,
-        output_dir=PINO_WITH_DATA_EVAL2_DIR,
+        output_dir=PINO_WITH_DATA_EVAL_DIR,
         **EVAL_CONFIG,
     )
 
@@ -171,7 +165,7 @@ def main():
     eval_pino_2(
         'no_data',
         PINO_NO_DATA_METADATA_FILE,
-        output_dir=PINO_NO_DATA_EVAL2_DIR,
+        output_dir=PINO_NO_DATA_EVAL_DIR,
         **EVAL_CONFIG,
     )
 
@@ -189,7 +183,7 @@ def main():
     eval_pinn_2(
         'data',
         PINN_WITH_DATA_METADATA_FILE,
-        output_dir=PINN_WITH_DATA_EVAL2_DIR,
+        output_dir=PINN_WITH_DATA_EVAL_DIR,
         **EVAL_CONFIG,
     )
 
@@ -207,7 +201,7 @@ def main():
     eval_pinn_2(
         'no_data',
         PINN_NO_DATA_METADATA_FILE,
-        output_dir=PINN_NO_DATA_EVAL2_DIR,
+        output_dir=PINN_NO_DATA_EVAL_DIR,
         **EVAL_CONFIG,
     )
 
