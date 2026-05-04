@@ -22,12 +22,7 @@ T_LIMIT = 30.0
 DATASET_RES = 128
 EVAL_PARAMS = [0.1, 3.0, 4.0]
 MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
-<<<<<<< HEAD
-EPOCHS = 5000
-SEED = 37
-=======
-EPOCHS=25000
->>>>>>> 2201788728780ee58197a8ebf2fe05affe649b47
+EPOCHS = 3000
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
@@ -65,8 +60,8 @@ PINN_CONFIG = {
     'train_resolution': DATASET_RES,
     'param_value': MEDIAN_PDE_PARAM,
     'epochs': EPOCHS,
-    'neurons': 128,
-    'hidden_layers': 4,
+    'neurons': 64,
+    'hidden_layers': 8,
     'domain_points': 3000,
     'ic_points': 500,
     'optimizer_name': 'Adam',
@@ -105,7 +100,7 @@ PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pi
 
 
 def main():
-    seed = SEED
+    seed = 42
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -200,7 +195,7 @@ def main():
 
     # print('\n=== training pinn without data ===')
     # train_pinn('no_data', **PINN_CONFIG)
-    
+
     print('\n=== plotting pinn without data ===')
     eval_pinn(
         'no_data',
