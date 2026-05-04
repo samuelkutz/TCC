@@ -22,8 +22,12 @@ T_LIMIT = 30.0
 DATASET_RES = 128
 EVAL_PARAMS = [0.1, 3.0, 4.0]
 MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
+<<<<<<< HEAD
 EPOCHS = 5000
 SEED = 37
+=======
+EPOCHS=25000
+>>>>>>> 2201788728780ee58197a8ebf2fe05affe649b47
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
@@ -44,9 +48,9 @@ PINO_CONFIG = {
     'epochs': EPOCHS,
     'batch_size': 256,
     'lr': 1e-3,
-    'phys_weight': 1000.0,
+    'phys_weight': 100.0,
     'ic_weight': 10.0,
-    'data_weight': 0.1,
+    'data_weight': 0.01,
     'modes1': 16,
     'modes2': 16,
     'width': 32,
