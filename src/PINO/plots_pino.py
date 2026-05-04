@@ -275,10 +275,10 @@ def eval_pino_2(mode, model_metadata_file, x_limit, t_limit, eval_params, resolu
 
     eta0 = np.asarray(eta_true[0, :], dtype=np.float32)
     u0 = np.asarray(u_true[0, :], dtype=np.float32)
-    ch0 = np.tile(eta0[:, None], (1, median_res))
-    ch1 = np.tile(u0[:, None], (1, median_res))
-    ch2 = np.ones((median_res, median_res), dtype=np.float32) * median_param
-    ch3 = np.ones((median_res, median_res), dtype=np.float32) * median_param
+    ch0 = np.tile(eta0[:, None], (1, spectral_res))
+    ch1 = np.tile(u0[:, None], (1, spectral_res))
+    ch2 = np.ones((spectral_res, spectral_res), dtype=np.float32) * median_param
+    ch3 = np.ones((spectral_res, spectral_res), dtype=np.float32) * median_param
     input_numpy = np.stack([ch0, ch1, ch2, ch3], axis=-1)
     input_tensor = torch.from_numpy(input_numpy).permute(2, 0, 1).unsqueeze(0).float().to(device)
     input_tensor = normalize_tensor(
