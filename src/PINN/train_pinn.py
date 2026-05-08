@@ -38,7 +38,7 @@ def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, ne
         device=device,
     )
     num_params = sum(p.numel() for p in model.parameters())
-    print(f'Model parameter count: {num_params:,}')
+    print(f'model parameter count: {num_params:,}')
 
     print(f'starting pinn training ({mode})...')
     start_time = default_timer()

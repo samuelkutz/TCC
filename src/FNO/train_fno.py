@@ -30,7 +30,7 @@ def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print
 
     model = FNO2d(modes1=modes1, modes2=modes2, width=width).to(device)
     num_params = sum(p.numel() for p in model.parameters())
-    print(f'Model parameter count: {num_params:,}')
+    print(f'model parameter count: {num_params:,}')
     optimizer = Adam(model.parameters(), lr=lr)
     loss_fn = L2_loss()
 

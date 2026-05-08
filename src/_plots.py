@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.colors import LightSource
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
@@ -22,9 +23,9 @@ def plot_training_loss(train_loss_history, outdir, filename, duration_seconds=No
     epochs = np.arange(1, len(train_loss_history) + 1)
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(epochs, train_loss_history, color='#1f77b4', lw=2.2)
-    ax.set_title('Training L2 loss history', fontsize=14)
+    ax.set_title('Training $L^2$ Loss History', fontsize=14)
     ax.set_xlabel('Epoch', fontsize=12)
-    ax.set_ylabel('L2 loss', fontsize=12)
+    ax.set_ylabel('$L^2$ Loss', fontsize=12)
     ax.grid(True, alpha=0.35)
     ax.tick_params(axis='both', which='major', labelsize=10)
 
@@ -65,9 +66,9 @@ def plot_training_statistics(histories, labels, outdir, filename, log_scale=True
     for history, label in zip(histories, labels):
         ax.plot(epochs, history, alpha=0.85, lw=2.0, label=label)
 
-    ax.set_title('Training L2 loss', fontsize=14)
+    ax.set_title('Training $L^2$ Loss', fontsize=14)
     ax.set_xlabel('Epoch', fontsize=12)
-    ax.set_ylabel('L2 loss', fontsize=12)
+    ax.set_ylabel('$L^2$ Loss', fontsize=12)
     ax.grid(True, alpha=0.3)
     ax.tick_params(axis='both', which='major', labelsize=10)
     if log_scale:
@@ -176,7 +177,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
                           origin='lower',
                           aspect='auto',
                           cmap='viridis')
-    axes[0].set_title('True spatial spectrum over time')
+    axes[0].set_title('True Spatial Spectrum Over Time')
     axes[0].set_xlabel('Spectral index n')
     axes[0].set_ylabel('Time')
     plt.colorbar(im0, ax=axes[0], label='Amplitude')
@@ -188,7 +189,7 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
                           cmap='inferno',
                           vmin=0.0,
                           vmax=1.0)
-    axes[1].set_title('Relative spatial spectrum error')
+    axes[1].set_title('Relative Spatial Spectrum Error')
     axes[1].set_xlabel('Spectral index n')
     plt.colorbar(im1, ax=axes[1], label='Relative Error')
 
@@ -228,7 +229,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         ax = axes[0, idx]
         ax.plot(x, eta_true[:, time_index], color='black', lw=1.8, label='True')
         ax.plot(x, eta_pred[:, time_index], color='#ff7f0e', lw=1.8, linestyle='--', label='predicted')
-        ax.set_title(f'Prediction at t={t[time_index]:.2f}')
+        ax.set_title(f'Prediction at $t = {t[time_index]:.2f}$')
         ax.set_xlabel('Space (x)')
         ax.set_ylabel('η(x,t)')
         ax.grid(True, alpha=0.3)
@@ -244,7 +245,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         vmin=0.0,
         vmax=1.0,
     )
-    axes[1, 0].set_title('Relative error heatmap')
+    axes[1, 0].set_title('Relative Error Heatmap')
     axes[1, 0].set_xlabel('Space (x)')
     axes[1, 0].set_ylabel('Time (t)')
     divider = make_axes_locatable(axes[1, 0])
@@ -261,7 +262,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         alpha=0.7,
         label='evaluation stop',
     )
-    axes[1, 1].set_title('Time-resolved relative error norm')
+    axes[1, 1].set_title('Time-Resolved Relative Error Norm')
     axes[1, 1].set_xlabel('Time (t + 5)')
     axes[1, 1].set_ylabel('Relative error')
     axes[1, 1].grid(True, alpha=0.3)
@@ -283,7 +284,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         aspect='auto',
         cmap='viridis',
     )
-    axes[2, 0].set_title('True spatial spectrum over time')
+    axes[2, 0].set_title('True Spatial Spectrum Over Time')
     axes[2, 0].set_xlabel('Spectral index n')
     axes[2, 0].set_ylabel('Time')
     divider2 = make_axes_locatable(axes[2, 0])
@@ -299,7 +300,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
         vmin=0.0,
         vmax=1.0,
     )
-    axes[2, 1].set_title('Relative spatial spectrum error')
+    axes[2, 1].set_title('Relative Spatial Spectrum Error')
     axes[2, 1].set_xlabel('Spectral index n')
     divider3 = make_axes_locatable(axes[2, 1])
     cax3 = divider3.append_axes('right', size='5%', pad=0.05)
@@ -337,7 +338,7 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
 
         rel_error_line = compute_relative_error(eta_true[:, idx], eta_pred[:, idx])
         axes[row, 1].plot(x, rel_error_line, color='crimson')
-        axes[row, 1].set_title(f'Relative error at t = {t[idx]:.2f}')
+        axes[row, 1].set_title(f'Relative Error at $t = {t[idx]:.2f}$')
         axes[row, 1].set_ylabel('Relative error')
         axes[row, 1].grid(True, alpha=0.3)
 
@@ -467,7 +468,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         y_tick_labels = [f'{t[idx]:.2f}' if idx < len(t) else '' for idx in indices]
         ax_left.set_yticks(y_ticks)
         ax_left.set_yticklabels(y_tick_labels)
-        ax_left.set_title(f'Stacked solutions for α = β = {alpha:.3f}')
+        ax_left.set_title(f'Stacked Solutions for $\\alpha = \\beta = {alpha:.3f}$')
         ax_left.set_xlabel('Space (x)')
         ax_left.set_ylabel('Time (t)')
         ax_left.grid(True, alpha=0.2)
@@ -493,7 +494,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
             ax_left.legend(loc='upper left', fontsize='small')
 
         ax_right.plot(t, time_rel_norms[i], lw=1.8, color='#b22222')
-        ax_right.set_title(f'Relative error over time for α = β = {alpha:.3f}')
+        ax_right.set_title(f'Relative Error Over Time for $\\alpha = \\beta = {alpha:.3f}$')
         ax_right.set_xlabel('Time (t)')
         ax_right.set_ylabel('Relative error')
         ax_right.grid(True, alpha=0.2)
@@ -512,9 +513,9 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         patch.set_facecolor('#fdd0a2')
         patch.set_edgecolor('#e6550d')
         patch.set_alpha(0.7)
-    ax_bottom.set_title('Relative error distribution vs. α = β')
-    ax_bottom.set_xlabel('α = β value')
-    ax_bottom.set_ylabel('Relative error')
+    ax_bottom.set_title('Relative Error Distribution vs. $\\alpha = \\beta$')
+    ax_bottom.set_xlabel('$\\alpha = \\beta$ Value')
+    ax_bottom.set_ylabel('Relative Error')
     ax_bottom.grid(True, alpha=0.2)
     ax_bottom.set_xticks(param_values)
     ax_bottom.set_xticklabels([f'{val:.2f}' for val in param_values], rotation=15, ha='right')
@@ -645,7 +646,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
 
 def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title,
-                               n_times=3, eval_resolution=None, res_label=None):
+                               n_times=3, eval_resolution=None, res_label=None, param_label=None):
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
@@ -658,8 +659,8 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
 
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
-    abs_err = np.abs(pred_spec - true_spec)
-    mean_abs_err_over_time = np.mean(abs_err, axis=0)
+    rel_err = compute_relative_error(true_spec, pred_spec)
+    mean_rel_err_over_time = np.mean(rel_err, axis=0)
 
     if len(t) < n_times:
         indices = np.arange(len(t), dtype=int)
@@ -698,23 +699,25 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         if row == 0:
             ax_spec.legend(fontsize='small', loc='upper right')
 
-        ax_err.plot(kx, abs_err[:, idx], color='crimson', lw=1.6)
-        mean_abs = mean_abs_err_over_time[idx]
-        ax_err.set_title(f'Absolute spectral error at t = {time_label}')
+        ax_err.plot(kx, rel_err[:, idx], color='crimson', lw=1.6)
+        mean_rel = mean_rel_err_over_time[idx]
+        ax_err.set_title(f'Relative Spectral Error at $t = {time_label}$')
         ax_err.set_xlabel('Spectral index n')
-        ax_err.set_ylabel('Absolute error')
+        ax_err.set_ylabel('Relative error')
         ax_err.grid(True, alpha=0.2)
-        ax_err.text(0.05, 0.9, f'Mean abs error: {mean_abs:.2e}', transform=ax_err.transAxes,
+        ax_err.text(0.05, 0.9, f'Mean rel error: {mean_rel:.2e}', transform=ax_err.transAxes,
                     fontsize=10, bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
 
     ax_bottom = fig.add_subplot(gs[-1, :])
-    ax_bottom.plot(t, mean_abs_err_over_time, color='#2ca02c', lw=2, marker='o')
-    ax_bottom.set_title('Mean absolute spectral error over time')
+    ax_bottom.plot(t, mean_rel_err_over_time, color='#c28b00', lw=2, marker='o')
+    ax_bottom.set_title('Mean Relative Spectral Error Over Time')
     ax_bottom.set_xlabel('Time (t)')
-    ax_bottom.set_ylabel('Mean absolute error')
+    ax_bottom.set_ylabel('Mean Relative Error')
     ax_bottom.grid(True, alpha=0.2)
 
     suptitle = title
+    if param_label is not None:
+        suptitle = f'{suptitle} (alpha=beta={param_label})'
     if res_label is not None:
         suptitle = f"{suptitle} (eval res = {res_label})"
     elif eval_resolution is not None:
@@ -797,4 +800,58 @@ def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title):
     ani = animation.FuncAnimation(fig, update, frames=len(t), init_func=init, blit=True, interval=interval)
     ani.save(outpath, writer='pillow', fps=fps)
     print(f'animation saved to {outpath}')
+    plt.close(fig)
+
+
+def plot_solution_surface_3d(x, t, eta_true, eta_pred, outdir, filename, title,
+                              true_label='Reference', pred_label='Prediction', cmap='inferno'):
+    # create side-by-side 3d surfaces for reference and prediction
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
+
+    x = np.asarray(x, dtype=float)
+    t = np.asarray(t, dtype=float)
+    eta_true = np.asarray(eta_true, dtype=float)
+    eta_pred = np.asarray(eta_pred, dtype=float)
+    X, T = np.meshgrid(x, t, indexing='ij')
+
+    fig = plt.figure(figsize=(16, 7))
+    ax_true = fig.add_subplot(121, projection='3d')
+    ax_pred = fig.add_subplot(122, projection='3d')
+
+    # use shared z-limits for fair visual comparison
+    z_min = min(np.nanmin(eta_true), np.nanmin(eta_pred))
+    z_max = max(np.nanmax(eta_true), np.nanmax(eta_pred))
+    z_margin = (z_max - z_min) * 0.05
+    z_lim = [z_min - z_margin, z_max + z_margin]
+    ls = LightSource(azdeg=135, altdeg=45)
+
+    for ax, surface, panel_title in (
+        (ax_true, eta_true, true_label),
+        (ax_pred, eta_pred, pred_label),
+    ):
+        rgb = ls.shade(surface, cmap=plt.get_cmap(cmap), vert_exag=0.1, blend_mode='soft')
+        ax.plot_surface(
+            X,
+            T,
+            surface,
+            facecolors=rgb,
+            linewidth=0,
+            antialiased=False,
+            shade=False,
+        )
+        ax.set_title(panel_title)
+        ax.set_xlabel('x')
+        ax.set_ylabel('t')
+        ax.set_zlabel('η')
+        ax.set_zlim(z_lim)
+        ax.view_init(elev=28, azim=-118)
+        ax.set_box_aspect((1, 1, 0.6))
+        ax.dist = 9
+        ax.grid(False)
+
+    fig.suptitle(title)
+    fig.subplots_adjust(left=0.05, right=0.95, bottom=0.02, top=0.90, wspace=0.10)
+    fig.savefig(outpath, dpi=150, bbox_inches='tight', pad_inches=0.02)
+    print(f'3d surface plot saved to {outpath}')
     plt.close(fig)

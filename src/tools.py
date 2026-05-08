@@ -29,7 +29,7 @@ def save_dataset(x_train, y_train, filepath, norm_stats=None):
     if norm_stats is not None:
         payload['norm_stats'] = norm_stats
     torch.save(payload, filepath)
-    print(f"Dataset saved to {filepath}")
+    print(f"dataset saved to {filepath}")
 
 
 def load_dataset(filepath):

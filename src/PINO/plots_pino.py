@@ -12,11 +12,12 @@ from _plots import (
     plot_model2_alpha_beta_panel,
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
+    plot_solution_surface_3d,
     save_solution_gif,
     compute_spectral_relative_error,
 )
 
-def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None, spectral_res=512):
+def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, spectral_res, output_dir=None):
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
@@ -61,7 +62,7 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
 
     alpha_true_list = []
     alpha_pred_list = []
-    print('start pino eval_model_2 alpha/beta panel')
+    print('start pino evaluation alpha/beta panel')
     for val in eval_params:
         bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
         solver = PseudoSpectralBoussinesq(bsq, Nx=median_res, Nt=median_res - 1, device=device)
@@ -116,7 +117,7 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         eval_params,
         outdir=outdir,
         filename=f'{label}_model2_alpha_beta_panel.png',
-        title=f'{label} evaluation: alpha-beta panel',
+        title=f'{"PINO" if label == "pino" else "PINO No Data"} Alpha-Beta Panel (res {int(median_res)})',
         res_label=f'{int(median_res)}',
     )
 
@@ -124,7 +125,7 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
     res_t_list = []
     res_true_list = []
     res_pred_list = []
-    print('start pino eval_model_2 resolution panel')
+    print('start pino evaluation resolution panel')
     for res in resolutions:
         bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
         solver = PseudoSpectralBoussinesq(bsq, Nx=res, Nt=res - 1, device=device)
@@ -168,6 +169,17 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
                 filename=f'{label}_animation_a{median_param:.3f}_res{res}.gif',
                 title=f'{label} animation a={median_param:.3f} res={res}',
             )
+            plot_solution_surface_3d(
+                x,
+                t,
+                eta_true_t,
+                eta_pred,
+                outdir=outdir,
+                filename=f'{label}_surface_a{median_param:.3f}_res{res}.png',
+                title=f'{label} surface a={median_param:.3f} res={res}',
+                true_label='Reference',
+                pred_label='Prediction',
+            )
         res_true_list.append(eta_true_t)
         res_pred_list.append(eta_pred)
         res_x_list.append(x)
@@ -181,11 +193,11 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         resolutions,
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
-        title=f'{label} evaluation: resolution panel',
+        title=f'{"PINO" if label == "pino" else "PINO No Data"} Resolution Panel (α=β {median_param:.3f})',
         param_label=f'{median_param:.3f}',
     )
 
-    print('start pino eval_model_2 spectral panel')
+    print('start pino evaluation spectral panel')
     bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
     # evaluate true solution on the spectral grid to match x_pred/t_pred used for spectral panel
     solver = PseudoSpectralBoussinesq(bsq, Nx=spectral_res, Nt=spectral_res - 1, device=device)
@@ -227,6 +239,54 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         eta_pred,
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
-        title=f'{label} evaluation: spectral panel',
+        title=f'{"PINO" if label == "pino" else "PINO No Data"} Spectral Panel (α=β {median_param:.3f}, res {int(spectral_res)})',
+        param_label=f'{median_param:.3f}',
         res_label=f'{int(spectral_res)}',
+    )
+
+    print('start pino evaluation surface panel')
+    surface_res = resolutions[-1]
+    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
+    solver = PseudoSpectralBoussinesq(bsq, Nx=surface_res, Nt=surface_res - 1, device=device)
+    x, t, eta_true, u_true = solver.solve()
+    eta_true_t = eta_true.T
+
+    eta0 = np.asarray(eta_true[0, :], dtype=np.float32)
+    u0 = np.asarray(u_true[0, :], dtype=np.float32)
+    ch0 = np.tile(eta0[:, None], (1, surface_res))
+    ch1 = np.tile(u0[:, None], (1, surface_res))
+    ch2 = np.ones((surface_res, surface_res), dtype=np.float32) * median_param
+    ch3 = np.ones((surface_res, surface_res), dtype=np.float32) * median_param
+    input_numpy = np.stack([ch0, ch1, ch2, ch3], axis=-1)
+    input_tensor = torch.from_numpy(input_numpy).permute(2, 0, 1).unsqueeze(0).float().to(device)
+    input_tensor = normalize_tensor(
+        input_tensor,
+        norm_stats['input_min'],
+        norm_stats['input_max'],
+        norm_stats['eps'],
+    )
+
+    model.eval()
+    with torch.no_grad():
+        pred = model(input_tensor)
+    pred = unnormalize_tensor(
+        pred,
+        norm_stats['output_min'],
+        norm_stats['output_max'],
+        norm_stats['eps'],
+    )
+
+    eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
+    x_surf = np.linspace(-x_limit, x_limit, surface_res, dtype=np.float32)
+    t_surf = np.linspace(0.0, t_limit, surface_res, dtype=np.float32)
+    plot_solution_surface_3d(
+        x_surf,
+        t_surf,
+        eta_true_t,
+        eta_pred,
+        outdir=outdir,
+        filename=f'{label}_surface_a{median_param:.3f}_res{surface_res}.png',
+        title=f'{"PINO" if label == "pino" else "PINO No Data"} Surface (α=β {median_param:.3f}, res {surface_res})',
+        true_label='Reference',
+        pred_label='Prediction',
     )

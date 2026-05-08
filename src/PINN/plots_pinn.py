@@ -11,11 +11,12 @@ from _plots import (
     plot_stacked_solution_curves,
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
+    plot_solution_surface_3d,
     save_solution_gif,
     compute_spectral_relative_error,
 )
 
-def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, output_dir=None, spectral_res=512):
+def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, spectral_res, output_dir=None):
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
 
     model_metadata = torch.load(model_metadata_file, map_location='cpu')
@@ -57,13 +58,13 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
     median_res = resolutions[len(resolutions) // 2]
 
     # PINN uses only one alpha=beta evaluation value for these panels.
-    print(f'start pinn eval_model_2 with single alpha=beta={median_param:.3f}')
+    print(f'start pinn evaluation with single alpha=beta={median_param:.3f}')
 
     res_x_list = []
     res_t_list = []
     res_true_list = []
     res_pred_list = []
-    print('start pinn eval_model_2 resolution panel')
+    print('start pinn evaluation resolution panel')
     for res in resolutions:
         bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
         solver = PseudoSpectralBoussinesq(bsq_eval, Nx=res, Nt=res - 1, device=device)
@@ -92,6 +93,17 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
                 filename=f'{label}_animation_a{median_param:.3f}_res{res}.gif',
                 title=f'{label} animation a={median_param:.3f} res={res}',
             )
+            plot_solution_surface_3d(
+                x_pred,
+                t_pred,
+                eta_true_t,
+                eta_pred,
+                outdir=outdir,
+                filename=f'{label}_surface_a{median_param:.3f}_res{res}.png',
+                title=f'{label} surface a={median_param:.3f} res={res}',
+                true_label='Reference',
+                pred_label='Prediction',
+            )
 
         res_true_list.append(eta_true_t)
         res_pred_list.append(eta_pred)
@@ -106,12 +118,13 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         resolutions,
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
-        title=f'{label} evaluation: resolution panel',
+        title=f'{"PINN" if label == "pinn" else "PINN No Data"} Resolution Panel (α=β {median_param:.3f})',
         param_label=f'{median_param:.3f}',
     )
 
-    print('start pinn eval_model_2 spectral panel')
+    print('start pinn evaluation spectral panel')
     bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
+    spectral_res = int(resolutions[0])
     solver = PseudoSpectralBoussinesq(bsq_eval, Nx=spectral_res, Nt=spectral_res - 1, device=device)
     x, t, eta_true, u_true = solver.solve()
     eta_true_t = eta_true.T
@@ -146,6 +159,37 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         eta_pred,
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
-        title=f'{label} evaluation: spectral panel',
+        title=f'{"PINN" if label == "pinn" else "PINN No Data"} Spectral Panel (α=β {median_param:.3f}, res {int(spectral_res)})',
+        param_label=f'{median_param:.3f}',
         res_label=f'{int(spectral_res)}',
+    )
+
+    print('start pinn evaluation surface panel')
+    surface_res = resolutions[-1]
+    bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
+    solver = PseudoSpectralBoussinesq(bsq_eval, Nx=surface_res, Nt=surface_res - 1, device=device)
+    x, t, eta_true, u_true = solver.solve()
+    eta_true_t = eta_true.T
+
+    x_pred = np.linspace(-x_limit, x_limit, surface_res, dtype=np.float32)
+    t_pred = np.linspace(0.0, t_limit, surface_res, dtype=np.float32)
+    X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
+    x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
+    t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
+
+    model.eval()
+    with torch.no_grad():
+        eta_pred, _ = model(x_tensor, t_tensor)
+    eta_pred = eta_pred.cpu().numpy().reshape(surface_res, surface_res).T
+
+    plot_solution_surface_3d(
+        x_pred,
+        t_pred,
+        eta_true_t,
+        eta_pred,
+        outdir=outdir,
+        filename=f'{label}_surface_a{median_param:.3f}_res{surface_res}.png',
+        title=f'{"PINN" if label == "pinn" else "PINN No Data"} Surface (α=β {median_param:.3f}, res {surface_res})',
+        true_label='Reference',
+        pred_label='Prediction',
     )

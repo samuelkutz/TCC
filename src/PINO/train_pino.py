@@ -39,11 +39,11 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
     nt = x_train.shape[3]
     dx = 2.0 * x_limit / nx
     dt = t_limit / (nt - 1)
-    print(f'Computed physics spacing dx={dx:.6f}, dt={dt:.6f} for x_limit={x_limit}, t_limit={t_limit}')
+    print(f'computed physics spacing dx={dx:.6f}, dt={dt:.6f} for x_limit={x_limit}, t_limit={t_limit}')
 
     model = PINO2d(modes1=modes1, modes2=modes2, width=width, out_channels=y_train.shape[1]).to(device)
     num_params = sum(p.numel() for p in model.parameters())
-    print(f'Model parameter count: {num_params:,}')
+    print(f'model parameter count: {num_params:,}')
     optimizer = Adam(model.parameters(), lr=lr)
 
     dataset = torch.utils.data.TensorDataset(x_train, y_train)
