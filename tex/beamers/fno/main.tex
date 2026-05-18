@@ -1,0 +1,299 @@
+% !TeX spellcheck = pt_BR
+\documentclass[usenames,dvipsnames,brazil,aspectratio=169]{beamer}
+
+% --- PREÂMBULO E CONFIGURAÇÕES ---
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage{helvet}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{physics}
+\usepackage{bm}
+\usepackage{graphicx}
+\graphicspath{ {./imgs/} } % Caminho para as imagens
+\usepackage{textpos}
+\usepackage{xcolor}
+\usepackage{csquotes}
+
+\usepackage[
+    backend=biber,
+    style=abnt,
+    maxcitenames=3,
+    mincitenames=1
+]{biblatex}
+\addbibresource{bibfile.bib} % Certifique-se de ter este arquivo
+\usepackage[breaklinks=true, hidelinks]{hyperref}
+
+% --- DEFINIÇÕES DE ESTILO BEAMER (Mantido do Original) ---
+\usefonttheme{serif}
+\setbeamertemplate{navigation symbols}{}
+
+% Cores
+\definecolor{UniBlue}{RGB}{42,97,167}
+\definecolor{BoxRed}{RGB}{200, 0, 0}
+\definecolor{TextBlack}{RGB}{40, 40, 40}
+
+\setbeamercolor{normal text}{fg=TextBlack}
+\setbeamercolor{title}{fg=UniBlue}
+\setbeamercolor{frametitle}{fg=UniBlue}
+\setbeamercolor{structure}{fg=UniBlue}
+\setbeamercolor{institute}{fg=UniBlue}
+\setbeamercolor{date}{fg=UniBlue}
+\setbeamercolor{block title}{fg=white, bg=UniBlue}
+\setbeamercolor{block body}{bg=UniBlue!10, fg=TextBlack}
+
+% Margens e Layout
+\setbeamersize{text margin left=1.5em, text margin right=1.5em}
+\setbeamertemplate{blocks}[rounded][shadow=true]
+\setbeamertemplate{itemize item}[►]
+
+% Rodapé
+\setbeamertemplate{footline}{
+    \begin{beamercolorbox}[ht=4ex,leftskip=0.3cm,rightskip=.3cm]{author in head/foot}
+        \usebeamercolor{UniBlue}
+        \line{\color{UniBlue}\hrulefill}
+        \vspace{0.1cm}
+         \insertdate \hfill \insertshortauthor \hspace{2cm} \insertshorttitle
+    \end{beamercolorbox}
+    \vspace*{0.1cm}
+}
+
+% Outras Configurações
+\renewcommand{\familydefault}{\sfdefault}
+\everymath{\displaystyle}
+
+% Página de Sumário para cada seção
+\AtBeginSection[]{
+  \begin{frame}
+    \frametitle{Sumário}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+% --- INFORMAÇÕES DO TÍTULO ---
+\title{Entendendo Operadores Neurais de Fourier para a Equação da Onda 1D Paramétrica}
+\author{Samuel Kutz Paranhos}
+\institute{Universidade Federal do Paraná}
+\date{2025}
+\def\insertshorttitle{FNO para Eq. da Onda}
+
+% --- CORPO DA APRESENTAÇÃO ---
+\begin{document}
+
+{
+    \setbeamertemplate{footline}{}
+    \begin{frame}[plain]
+        \maketitle
+    \end{frame}
+}
+
+\begin{frame}[t]
+    \frametitle{Sumário}
+    \tableofcontents
+\end{frame}
+
+\section{Introdução}
+
+\begin{frame}[t]
+    \frametitle{Introdução e Motivação}
+    Equações Diferenciais Parciais (EDPs) são fundamentais para modelar fenômenos físicos. Métodos numéricos tradicionais (diferenças finitas, espectrais) dependem de malhas discretas e exigem \textbf{simulações do zero} para cada novo parâmetro ou condição inicial.
+    \vspace{0.5cm}
+
+    O conceito de \textit{Operator Learning} (Aprendizado de Operadores) oferece uma alternativa:
+    \begin{itemize}
+        \item Em vez de resolver para uma instância, aprendemos o operador solução inteiro.
+        \item Mapeamento entre espaços de funções de dimensão infinita.
+    \end{itemize}
+    \vspace{0.5cm}
+    
+    \begin{block}{Fourier Neural Operators (FNO) \cite{li2020fourier}}
+        Generalizam redes neurais compondo operadores integrais lineares com não-linearidades, utilizando a Transformada Rápida de Fourier (FFT) para eficiência computacional.
+    \end{block}
+\end{frame}
+
+\section{O Problema Físico}
+
+\begin{frame}[t]
+    \frametitle{Equação da Onda 1D Paramétrica}
+    Consideramos a Equação da Onda com condições de contorno periódicas em $x \in [0, 2\pi]$ e $t \in [0, 2\pi]$:
+
+    \begin{block}{Definição do Problema}
+        $$ \frac{\partial^2 u}{\partial t^2} = c^2\,\frac{\partial^2 u}{\partial x^2} $$
+        \vspace{-0.3cm}
+        $$ u(x,0) = \sin(x), \quad \frac{\partial u}{\partial t}(x,0) = 0 $$
+    \end{block}
+
+    Onde $c$ é a velocidade da onda (parâmetro). A solução analítica é dada por:
+    $$ u(x,t) = \sin(x)\cos(c t) $$
+
+    \textbf{Objetivo:} Aprender o operador $G^\dagger : c \mapsto u(\cdot, \cdot; c)$ que mapeia o escalar $c$ para o campo de solução $u$.
+\end{frame}
+
+\section{Arquitetura FNO}
+
+\begin{frame}[t]
+    \frametitle{Arquitetura do Fourier Neural Operator}
+    O FNO, $G_\theta$, é uma arquitetura iterativa definida pela composição:
+    $$ G_\theta = Q \circ \sigma\Big(W_L + \mathcal{K}_L\Big) \circ \cdots \circ \sigma\Big(W_1 + \mathcal{K}_1\Big) \circ P $$
+
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \begin{itemize}
+                \item \textbf{Lifting ($P$):} Mapeia a entrada para uma dimensão de canais superior ($d_c$).
+                \item \textbf{Projeção ($Q$):} Retorna para a dimensão física da solução.
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+             \textbf{Camadas Espectrais:}
+             Atualizam $v_\ell$ via transformação linear $W$ e operador integral $\mathcal{K}$:
+             $$ v_{\ell+1} = \sigma ( W_\ell v_\ell + \mathcal{K}_\ell v_\ell ) $$
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\section{Aprendizado no Domínio da Frequência}
+
+\begin{frame}[t]
+    \frametitle{Aprendizado do Kernel via FFT}
+    A principal inovação do FNO é parametrizar o operador integral $\mathcal{K}_\ell$ como uma convolução, calculada eficientemente no domínio da frequência:
+    
+    \begin{block}{Aproximação FNO}
+        $$ (\mathcal{K}_\ell v_\ell)(x,t) \overset{\text{FNO}}{=} \int_{D} \kappa_\ell(x - y)\, v_\ell(y)\,dy = \mathcal{F}^{-1} \Big( \mathcal{F}(\kappa_\ell) \cdot \mathcal{F}(v_\ell) \Big)(x,t).
+        $$
+    \end{block}
+
+    Em vez de aprender uma função kernel $\kappa$ no espaço físico, aprendemos diretamente os coeficientes complexos $R_{\ell}$ no espaço de Fourier.
+    \vspace{0.3cm}
+
+    \begin{itemize}
+        \item Ocorre uma truncagem de modos: computação apenas nas baixas frequências ($|k| \le k_{\max}$).
+        \item Resulta em independência de malha (discretização).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[t]
+    \frametitle{Aprendizado do Kernel no Domínio da Frequência}
+    
+    Para implementar a camada espectral de forma eficiente, utilizamos a propriedade fundamental da série de Fourier para funções periódicas:
+    
+    \begin{block}{Teorema da Convolução}
+        A operação de convolução (integral) no domínio físico torna-se uma multiplicação pontual no domínio da frequência:
+        $$ (\kappa * v)(x) = \int_{0}^{2\pi} \kappa(x-y) v(y) dy \quad \longleftrightarrow \quad \sum_{k} \underbrace{(2\pi \hat{\kappa}_k \hat{v}_k)}_{\text{Produto}} e^{ikx} $$
+    \end{block}
+    
+    \vspace{0.2cm}
+
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \textbf{Ideia Central do FNO:}
+            \vspace{0.1cm}
+            
+            Em vez de aproximar $\kappa(x)$, parametrizamos seus coeficientes de Fourier como pesos aprendíveis complexos $R_{\ell,k} = 2\pi \hat{\kappa}_k \hat{v}_k$:
+        \end{column}
+        
+        \begin{column}{0.48\textwidth}
+            \textbf{Truncamento de Modos ($k_{\max}$):}
+            \vspace{0.1cm}
+            
+            Computacionalmente, multiplicamos apenas um conjunto truncado dos modos ($|k| \le k_{\max}$).
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\section{Metodologia}
+
+\begin{frame}[t]
+    \frametitle{Dataset e Treinamento}
+    
+    \begin{block}{Construção do Dataset}
+        \begin{itemize}
+            \item \textbf{Domínio:} Discretização $64 \times 64$ em $[0, 2\pi] \times [0, 2\pi]$.
+            \item \textbf{Amostras:} 18 valores de velocidade de onda $c \in [0.5, 5.0]$.
+            \item \textbf{Alvo:} Solução analítica $u(x,t) = \sin(x)\cos(ct)$.
+        \end{itemize}
+    \end{block}
+
+    \vspace{0.5cm}
+    \textbf{Função de Perda:} Erro Relativo $L^2$:
+    $$ \mathcal{L}(\theta) = \frac{1}{N} \sum_{i=1}^N \frac{\| G_\theta(c_i) - u_i \|_{2}}{\| u_i \|_{2}} $$
+    
+    O modelo foi otimizado utilizando Adam por 10.000 épocas.
+\end{frame}
+
+\section{Resultados}
+
+\begin{frame}[t]
+    \frametitle{Resultados: Convergência}
+    \begin{figure}
+        \centering
+        % Ajuste o nome do arquivo se necessário, conforme seu diretório
+        \includegraphics[height=0.75\textheight, keepaspectratio]{imgs/fno_loss.png}
+        \caption{Histórico de perda (Loss). A curva suavizada (vermelho) mostra a redução consistente do erro relativo $L^2$, atingindo $\approx 0.0033$.}
+    \end{figure}
+\end{frame}
+
+\begin{frame}[t]
+    \frametitle{Resultados: Predições}
+    \begin{figure}
+        \centering
+        % Ajuste o nome do arquivo se necessário
+        \includegraphics[width=0.8\textwidth]{imgs/fno_results.png}
+        \caption{Comparação para diferentes velocidades $c$. Alta fidelidade na interpolação ($c=1.25, 4.75$) e dificuldades na extrapolação ($c=5.5$).}
+    \end{figure}
+\end{frame}
+
+\section{Conclusões}
+
+\begin{frame}[t]
+    \frametitle{Conclusões e Considerações Finais}
+    Este trabalho demonstrou a aplicação do Fourier Neural Operator para aprender o operador solução paramétrico da Equação da Onda.
+
+    \vspace{0.5cm}
+    \begin{itemize}
+        \item \textbf{Eficácia:} O FNO construiu um modelo substituto para parâmetros dentro do intervalo de treino (interpolação).
+        \item \textbf{Limitações:} Como modelo \textit{data-driven}, a performance degrada na extrapolação, embora capture aspectos físicos fundamentais.
+        \item \textbf{Periodicidade:} O método assume periodicidade temporal (devido à FFT), o que é válido para este problema específico, mas requer cuidados (efeito Gibbs) em problemas gerais de evolução temporal.
+    \end{itemize}
+
+    \vspace{0.5cm}
+    Trabalhos futuros visarão o estudo de FNOs para EDPs não-lineares.
+\end{frame}
+
+% --- SLIDE DE REFERÊNCIAS ---
+\begin{frame}[allowframebreaks]
+    \frametitle{Referências}
+    \begin{columns}[T]
+        \begin{column}{0.05\textwidth}\end{column} 
+        \begin{column}{0.9\textwidth}
+            \footnotesize
+            \printbibliography[heading=none]
+        \end{column}
+        \begin{column}{0.05\textwidth}\end{column} 
+    \end{columns}
+\end{frame}
+
+% --- SLIDE DE AGRADECIMENTOS ---
+\begin{frame}[noframenumbering]
+    \begin{center}
+        {\Huge{Muito obrigado!}}\\[2cm]
+
+        % Substitua pelos logos que você tiver ou remova se não necessário
+        \begin{columns}[c]
+            \begin{column}{0.33\textwidth}
+                \centering
+                \includegraphics[width=0.7\textwidth, keepaspectratio]{CNPq.png} % Exemplo
+            \end{column}
+            \begin{column}{0.33\textwidth}
+                \centering
+                Espaço para outro logo
+                \includegraphics[width=0.7\textwidth]{LabFluidLogo.png} 
+            \end{column}
+            \begin{column}{0.33\textwidth}
+                \centering
+                \includegraphics[keepaspectratio, scale=0.45]{imgs/ufpr_logo.jpg} % Exemplo
+            \end{column}
+        \end{columns}
+    \end{center}
+\end{frame}
+
+\end{document}

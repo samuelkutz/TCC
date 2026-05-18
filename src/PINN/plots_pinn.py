@@ -12,6 +12,7 @@ from _plots import (
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
     plot_solution_surface_3d,
+    plot_radially_revolved_gif,
     save_solution_gif,
     compute_spectral_relative_error,
 )
@@ -104,6 +105,17 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
                 true_label='Reference',
                 pred_label='Prediction',
             )
+            plot_radially_revolved_gif(
+                x_pred,
+                t_pred,
+                eta_true_t,
+                eta_pred,
+                outdir=outdir,
+                filename=f'{label}_radial_evolution_a{median_param:.3f}_res{res}.gif',
+                title=f'{label.upper()} Radial Evolution a={median_param:.3f}',
+                true_label='Reference',
+                pred_label='Prediction',
+            )
 
         res_true_list.append(eta_true_t)
         res_pred_list.append(eta_pred)
@@ -162,34 +174,4 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         title=f'{"PINN" if label == "pinn" else "PINN No Data"} Spectral Panel (α=β {median_param:.3f}, res {int(spectral_res)})',
         param_label=f'{median_param:.3f}',
         res_label=f'{int(spectral_res)}',
-    )
-
-    print('start pinn evaluation surface panel')
-    surface_res = resolutions[-1]
-    bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
-    solver = PseudoSpectralBoussinesq(bsq_eval, Nx=surface_res, Nt=surface_res - 1, device=device)
-    x, t, eta_true, u_true = solver.solve()
-    eta_true_t = eta_true.T
-
-    x_pred = np.linspace(-x_limit, x_limit, surface_res, dtype=np.float32)
-    t_pred = np.linspace(0.0, t_limit, surface_res, dtype=np.float32)
-    X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
-    x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
-    t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
-
-    model.eval()
-    with torch.no_grad():
-        eta_pred, _ = model(x_tensor, t_tensor)
-    eta_pred = eta_pred.cpu().numpy().reshape(surface_res, surface_res).T
-
-    plot_solution_surface_3d(
-        x_pred,
-        t_pred,
-        eta_true_t,
-        eta_pred,
-        outdir=outdir,
-        filename=f'{label}_surface_a{median_param:.3f}_res{surface_res}.png',
-        title=f'{"PINN" if label == "pinn" else "PINN No Data"} Surface (α=β {median_param:.3f}, res {surface_res})',
-        true_label='Reference',
-        pred_label='Prediction',
     )

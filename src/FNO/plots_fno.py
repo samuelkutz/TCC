@@ -13,6 +13,7 @@ from _plots import (
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
     plot_solution_surface_3d,
+    plot_radially_revolved_gif,
     save_solution_gif,
     compute_spectral_relative_error,
 )
@@ -173,6 +174,17 @@ def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions, sp
                 true_label='Reference',
                 pred_label='Prediction',
             )
+            plot_radially_revolved_gif(
+                x,
+                t,
+                eta_true_t,
+                eta_pred,
+                outdir=outdir,
+                filename=f'fno_radial_evolution_a{median_param:.3f}_res{res}.gif',
+                title=f'FNO Radial Evolution a={median_param:.3f}',
+                true_label='Reference',
+                pred_label='Prediction',
+            )
         res_true_list.append(eta_true_t)
         res_pred_list.append(eta_pred)
         res_x_list.append(x)
@@ -235,51 +247,4 @@ def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions, sp
         title=f'FNO Spectral Panel (α=β {median_param:.3f}, res {int(spectral_res)})',
         param_label=f'{median_param:.3f}',
         res_label=f'{int(spectral_res)}',
-    )
-
-    print('start fno evaluation surface panel')
-    surface_res = resolutions[-1]
-    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, median_param, median_param, 1)
-    solver = PseudoSpectralBoussinesq(bsq, Nx=surface_res, Nt=surface_res - 1, device=device)
-    x, t, eta_true, u_true = solver.solve()
-    eta_true_t = eta_true.T
-
-    eta0 = np.asarray(eta_true[0, :], dtype=np.float32)
-    u0 = np.asarray(u_true[0, :], dtype=np.float32)
-    ch0 = np.tile(eta0[:, None], (1, surface_res))
-    ch1 = np.tile(u0[:, None], (1, surface_res))
-    ch2 = np.ones((surface_res, surface_res), dtype=np.float32) * median_param
-    ch3 = np.ones((surface_res, surface_res), dtype=np.float32) * median_param
-    input_numpy = np.stack([ch0, ch1, ch2, ch3], axis=-1)
-    input_tensor = torch.from_numpy(input_numpy).permute(2, 0, 1).unsqueeze(0).float().to(device)
-    input_tensor = normalize_tensor(
-        input_tensor,
-        norm_stats['input_min'],
-        norm_stats['input_max'],
-        norm_stats['eps'],
-    )
-
-    model.eval()
-    with torch.no_grad():
-        pred = model(input_tensor)
-    pred = unnormalize_tensor(
-        pred,
-        norm_stats['output_min'],
-        norm_stats['output_max'],
-        norm_stats['eps'],
-    )
-
-    eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
-    x_surf = np.linspace(-x_limit, x_limit, surface_res, dtype=np.float32)
-    t_surf = np.linspace(0.0, t_limit, surface_res, dtype=np.float32)
-    plot_solution_surface_3d(
-        x_surf,
-        t_surf,
-        eta_true_t,
-        eta_pred,
-        outdir=outdir,
-        filename=f'fno_surface_a{median_param:.3f}_res{surface_res}.png',
-        title=f'FNO Surface (α=β {median_param:.3f}, res {surface_res})',
-        true_label='Reference',
-        pred_label='Prediction',
     )

@@ -105,18 +105,18 @@ def main():
 
     os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
 
-    print('\n=== generating shared dataset ===')
-    run_dataset(
-        dataset_file=DATASET_FILE,
-        device=DEVICE,
-        param_values=PARAM_VALUES,
-        x_limit=X_LIMIT,
-        t_limit=T_LIMIT,
-        dataset_res=DATASET_RES,
-    )
+    # print('\n=== generating shared dataset ===')
+    # run_dataset(
+    #     dataset_file=DATASET_FILE,
+    #     device=DEVICE,
+    #     param_values=PARAM_VALUES,
+    #     x_limit=X_LIMIT,
+    #     t_limit=T_LIMIT,
+    #     dataset_res=DATASET_RES,
+    # )
 
-    print('\n=== training fno ===')
-    train_fno(**FNO_CONFIG)
+    # print('\n=== training fno ===')
+    # train_fno(**FNO_CONFIG)
 
     print('\n=== plotting fno ===')
     eval_fno(
@@ -125,8 +125,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    print('\n=== training pino with data ===')
-    train_pino('data', **PINO_CONFIG)
+    # print('\n=== training pino with data ===')
+    # train_pino('data', **PINO_CONFIG)
 
     print('\n=== plotting pino with data ===')
     eval_pino(
@@ -136,8 +136,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    print('\n=== training pino without data ===')
-    train_pino('no_data', **PINO_CONFIG)
+    # print('\n=== training pino without data ===')
+    # train_pino('no_data', **PINO_CONFIG)
 
     print('\n=== plotting pino without data ===')
     eval_pino(
@@ -147,8 +147,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    print('\n=== training pinn with data ===')
-    train_pinn('data', **PINN_CONFIG)
+    # print('\n=== training pinn with data ===')
+    # train_pinn('data', **PINN_CONFIG)
 
     print('\n=== plotting pinn with data ===')
     eval_pinn(
@@ -158,8 +158,8 @@ def main():
         **EVAL_CONFIG,
     )
 
-    print('\n=== training pinn without data ===')
-    train_pinn('no_data', **PINN_CONFIG)
+    # print('\n=== training pinn without data ===')
+    # train_pinn('no_data', **PINN_CONFIG)
 
     print('\n=== plotting pinn without data ===')
     eval_pinn(
