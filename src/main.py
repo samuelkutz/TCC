@@ -1,4 +1,5 @@
 import os
+import json
 import random
 import numpy as np
 import torch
@@ -13,72 +14,52 @@ from PINN.plots_pinn import eval_pinn
 from _plots import plot_soliton_profile, plot_spectral_bias_panel
 
 
-# experiment configuration for the full workflow.
-RESULTS_DIR = 'results'
-DATASET_FILE = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-PARAM_VALUES = list(np.linspace(0.1, 4.0, 20, dtype=np.float32))
-X_LIMIT = 60.0
-T_LIMIT = 30.0
-DATASET_RES = 128
-EVAL_PARAMS = [0.1, 3.21, 4.2]
+with open(os.path.join(os.path.dirname(__file__), 'settings.json')) as _f:
+    _S = json.load(_f)
+
+RESULTS_DIR      = _S['results_dir']
+SEED             = _S['seed']
+X_LIMIT          = _S['domain']['x_limit']
+T_LIMIT          = _S['domain']['t_limit']
+DATASET_RES      = _S['domain']['dataset_res']
+EVAL_PARAMS      = _S['eval']['params']
+
+_pv              = _S['domain']['param_values']
+PARAM_VALUES     = list(np.linspace(_pv['start'], _pv['stop'], _pv['n'], dtype=np.float32))
 MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
-EPOCHS = 5000
-SEED = 37
+
+DEVICE           = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+DATASET_FILE     = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
-    'epochs': EPOCHS,
-    'batch_size': 256,
-    'lr': 1e-3,
-    'modes1': 16,
-    'modes2': 16,
-    'width': 32,
-    'print_interval': 500,
-    'results_dir': RESULTS_DIR,
+    'results_dir':  RESULTS_DIR,
+    **_S['fno'],
 }
 
 PINO_CONFIG = {
     'dataset_file': DATASET_FILE,
-    'x_limit': X_LIMIT,
-    't_limit': T_LIMIT,
-    'epochs': EPOCHS,
-    'batch_size': 256,
-    'lr': 1e-3,
-    'phys_weight': 1.0,
-    'ic_weight': 1.0,
-    'data_weight': 1.0,
-    'modes1': 16,
-    'modes2': 16,
-    'width': 32,
-    'print_interval': 500,
-    'results_dir': RESULTS_DIR,
+    'x_limit':      X_LIMIT,
+    't_limit':      T_LIMIT,
+    'results_dir':  RESULTS_DIR,
+    **_S['pino'],
 }
 
-
 PINN_CONFIG = {
-    'x_limit': X_LIMIT,
-    't_limit': T_LIMIT,
+    'x_limit':          X_LIMIT,
+    't_limit':          T_LIMIT,
     'train_resolution': DATASET_RES,
-    'param_value': MEDIAN_PDE_PARAM,
-    'epochs': EPOCHS,
-    'neurons': 256,
-    'hidden_layers': 4,
-    'domain_points': 8000,
-    'ic_points': 500,
-    'optimizer_name': 'Adam',
-    'lr': 1e-3,
-    'data_weight': 1.0,
-    'print_interval': 500,
-    'results_dir': RESULTS_DIR,
+    'param_value':      MEDIAN_PDE_PARAM,
+    'results_dir':      RESULTS_DIR,
+    **_S['pinn'],
 }
 
 EVAL_CONFIG = {
-    'x_limit': X_LIMIT,
-    't_limit': T_LIMIT,
-    'eval_params': EVAL_PARAMS,
-    'resolutions': [DATASET_RES, DATASET_RES * 2, DATASET_RES * 4],
-    'spectral_res': 256,
+    'x_limit':      X_LIMIT,
+    't_limit':      T_LIMIT,
+    'eval_params':  EVAL_PARAMS,
+    'resolutions':  [DATASET_RES, DATASET_RES * 2, DATASET_RES * 4],
+    'spectral_res': _S['eval']['spectral_res'],
 }
 
 IMG_DIR = os.path.join(RESULTS_DIR, 'imgs')
@@ -109,18 +90,18 @@ def main():
     print('\n=== plotting soliton profile ===')
     plot_soliton_profile(outdir=IMG_DIR)
 
-    # print('\n=== generating shared dataset ===')
-    # run_dataset(
-    #     dataset_file=DATASET_FILE,
-    #     device=DEVICE,
-    #     param_values=PARAM_VALUES,
-    #     x_limit=X_LIMIT,
-    #     t_limit=T_LIMIT,
-    #     dataset_res=DATASET_RES,
-    # )
+    print('\n=== generating shared dataset ===')
+    run_dataset(
+        dataset_file=DATASET_FILE,
+        device=DEVICE,
+        param_values=PARAM_VALUES,
+        x_limit=X_LIMIT,
+        t_limit=T_LIMIT,
+        dataset_res=DATASET_RES,
+    )
 
-    # print('\n=== training fno ===')
-    # train_fno(**FNO_CONFIG)
+    print('\n=== training fno ===')
+    train_fno(**FNO_CONFIG)
 
     print('\n=== plotting fno ===')
     eval_fno(
@@ -129,8 +110,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    # print('\n=== training pino with data ===')
-    # train_pino('data', **PINO_CONFIG)
+    print('\n=== training pino with data ===')
+    train_pino('data', **PINO_CONFIG)
 
     print('\n=== plotting pino with data ===')
     eval_pino(
