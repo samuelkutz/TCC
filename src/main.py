@@ -14,27 +14,27 @@ from PINN.plots_pinn import eval_pinn
 from _plots import plot_soliton_profile, plot_spectral_bias_panel
 
 
-with open(os.path.join(os.path.dirname(__file__), 'settings.json')) as _f:
-    _S = json.load(_f)
+with open(os.path.join(os.path.dirname(__file__), 'settings.json')) as settings_file:
+    settings = json.load(settings_file)
 
-RESULTS_DIR      = _S['results_dir']
-SEED             = _S['seed']
-X_LIMIT          = _S['domain']['x_limit']
-T_LIMIT          = _S['domain']['t_limit']
-DATASET_RES      = _S['domain']['dataset_res']
-EVAL_PARAMS      = _S['eval']['params']
+RESULTS_DIR      = settings['results_dir']
+SEED             = settings['seed']
+X_LIMIT          = settings['domain']['x_limit']
+T_LIMIT          = settings['domain']['t_limit']
+DATASET_RES      = settings['domain']['dataset_res']
+EVAL_PARAMS      = settings['eval']['params']
 
-_pv              = _S['domain']['param_values']
-PARAM_VALUES     = list(np.linspace(_pv['start'], _pv['stop'], _pv['n'], dtype=np.float32))
-MEDIAN_PDE_PARAM = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
+param_values_spec = settings['domain']['param_values']
+PARAM_VALUES      = list(np.linspace(param_values_spec['start'], param_values_spec['stop'], param_values_spec['n'], dtype=np.float32))
+MEDIAN_PDE_PARAM  = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
 
-DEVICE           = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-DATASET_FILE     = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
+DEVICE       = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+DATASET_FILE = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
 
 FNO_CONFIG = {
     'dataset_file': DATASET_FILE,
     'results_dir':  RESULTS_DIR,
-    **_S['fno'],
+    **settings['fno'],
 }
 
 PINO_CONFIG = {
@@ -42,7 +42,7 @@ PINO_CONFIG = {
     'x_limit':      X_LIMIT,
     't_limit':      T_LIMIT,
     'results_dir':  RESULTS_DIR,
-    **_S['pino'],
+    **settings['pino'],
 }
 
 PINN_CONFIG = {
@@ -51,7 +51,7 @@ PINN_CONFIG = {
     'train_resolution': DATASET_RES,
     'param_value':      MEDIAN_PDE_PARAM,
     'results_dir':      RESULTS_DIR,
-    **_S['pinn'],
+    **settings['pinn'],
 }
 
 EVAL_CONFIG = {
@@ -59,7 +59,7 @@ EVAL_CONFIG = {
     't_limit':      T_LIMIT,
     'eval_params':  EVAL_PARAMS,
     'resolutions':  [DATASET_RES, DATASET_RES * 2, DATASET_RES * 4],
-    'spectral_res': _S['eval']['spectral_res'],
+    'spectral_res': settings['eval']['spectral_res'],
 }
 
 IMG_DIR = os.path.join(RESULTS_DIR, 'imgs')
