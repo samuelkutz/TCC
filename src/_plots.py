@@ -929,6 +929,24 @@ def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):
     plt.close()
 
 
+def plot_spectral_bias_evolution(ordered_metadata, outdir, filename='spectral_bias_evolution.png'):
+    models_data = []
+    for label, mf in ordered_metadata:
+        if not os.path.exists(mf):
+            print(f'  metadata not found: {mf}, skipping')
+            continue
+        md = torch.load(mf, map_location='cpu')
+        sh = md.get('spectral_history')
+        if sh is None or not sh.get('epochs'):
+            print(f'  no spectral_history in {mf}, skipping (retrain to populate)')
+            continue
+        models_data.append((label, sh))
+    if not models_data:
+        print('  no spectral history data available — retrain models first')
+        return
+    plot_spectral_bias_panel(models_data, outdir=outdir, filename=filename)
+
+
 def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolution.png'):
     """Plot per-frequency-band spectral error vs training epoch for each model.
 

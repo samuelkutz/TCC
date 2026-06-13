@@ -11,7 +11,7 @@ from PINO.train_pino import train_pino
 from PINO.plots_pino import eval_pino
 from PINN.train_pinn import train_pinn
 from PINN.plots_pinn import eval_pinn
-from _plots import plot_soliton_profile, plot_spectral_bias_panel
+from _plots import plot_soliton_profile, plot_spectral_bias_evolution
 
 
 with open(os.path.join(os.path.dirname(__file__), 'settings.json')) as settings_file:
@@ -121,8 +121,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    # print('\n=== training pino without data ===')
-    # train_pino('no_data', **PINO_CONFIG)
+    print('\n=== training pino without data ===')
+    train_pino('no_data', **PINO_CONFIG)
 
     print('\n=== plotting pino without data ===')
     eval_pino(
@@ -132,8 +132,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    # print('\n=== training pinn with data ===')
-    # train_pinn('data', **PINN_CONFIG)
+    print('\n=== training pinn with data ===')
+    train_pinn('data', **PINN_CONFIG)
 
     print('\n=== plotting pinn with data ===')
     eval_pinn(
@@ -143,8 +143,8 @@ def main():
         **EVAL_CONFIG,
     )
 
-    # print('\n=== training pinn without data ===')
-    # train_pinn('no_data', **PINN_CONFIG)
+    print('\n=== training pinn without data ===')
+    train_pinn('no_data', **PINN_CONFIG)
 
     print('\n=== plotting pinn without data ===')
     eval_pinn(
@@ -155,35 +155,18 @@ def main():
     )
 
     print('\n=== plotting spectral bias evolution ===')
-    _plot_spectral_bias_evolution()
+    plot_spectral_bias_evolution(
+        ordered_metadata=[
+            ('PINN (no data)',   PINN_NO_DATA_METADATA_FILE),
+            ('PINN (with data)', PINN_WITH_DATA_METADATA_FILE),
+            ('PINO (no data)',   PINO_NO_DATA_METADATA_FILE),
+            ('PINO (with data)', PINO_WITH_DATA_METADATA_FILE),
+            ('FNO',              FNO_METADATA_FILE),
+        ],
+        outdir=IMG_DIR,
+    )
 
     print('\nall experiments completed successfully.')
-
-
-def _plot_spectral_bias_evolution():
-    import torch as _torch
-    ordered_metadata = [
-        ('PINN (no data)',   PINN_NO_DATA_METADATA_FILE),
-        ('PINN (with data)', PINN_WITH_DATA_METADATA_FILE),
-        ('PINO (no data)',   PINO_NO_DATA_METADATA_FILE),
-        ('PINO (with data)', PINO_WITH_DATA_METADATA_FILE),
-        ('FNO',              FNO_METADATA_FILE),
-    ]
-    models_data = []
-    for label, mf in ordered_metadata:
-        if not os.path.exists(mf):
-            print(f'  metadata not found: {mf}, skipping')
-            continue
-        md = _torch.load(mf, map_location='cpu')
-        sh = md.get('spectral_history')
-        if sh is None or not sh.get('epochs'):
-            print(f'  no spectral_history in {mf}, skipping (retrain to populate)')
-            continue
-        models_data.append((label, sh))
-    if not models_data:
-        print('  no spectral history data available — retrain models first')
-        return
-    plot_spectral_bias_panel(models_data, outdir=IMG_DIR, filename='spectral_bias_evolution.png')
 
 
 if __name__ == '__main__':
