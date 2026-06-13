@@ -3,7 +3,10 @@ import torch
 from timeit import default_timer
 from torch.optim import Adam
 
-from tools import compute_norm_stats, load_dataset, normalize_dataset, save_model
+from tools import (
+    compute_norm_stats, load_dataset, normalize_dataset, save_model,
+    normalize_tensor, unnormalize_tensor, compute_spectral_band_errors, save_metadata_json,
+)
 from PINO.PINO import PINO2d, pino_loss
 
 
@@ -29,7 +32,13 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
 
     if norm_stats is None:
         norm_stats = compute_norm_stats(x_train, y_train)
+
+    # store raw reference sample before normalization for spectral snapshots
+    ref_x_raw = x_train[0:1].clone().cpu()   # (1, C_in, Nx, Nt)
+    eta_true_ref = y_train[0, 0].numpy().astype('float64')  # (Nx, Nt), eta channel
+
     x_train, y_train = normalize_dataset(x_train, y_train, norm_stats)
+    spectral_history = {'epochs': [], 'low_band': [], 'mid_band': [], 'high_band': []}
     norm_stats = {
         key: value.to(device) if isinstance(value, torch.Tensor) else value
         for key, value in norm_stats.items()
@@ -96,6 +105,18 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
                 f'ic_loss {epoch_ic:.4e}, '
                 f'data_loss {epoch_data:.4e}'
             )
+            model.eval()
+            with torch.no_grad():
+                ref_norm = normalize_tensor(ref_x_raw.to(device), norm_stats['input_min'], norm_stats['input_max'], norm_stats['eps'])
+                pred_norm = model(ref_norm)
+                pred = unnormalize_tensor(pred_norm, norm_stats['output_min'], norm_stats['output_max'], norm_stats['eps'])
+            model.train()
+            eta_pred = pred[0, 0].cpu().numpy().astype('float64')  # (Nx, Nt)
+            low, mid, high = compute_spectral_band_errors(eta_pred, eta_true_ref)
+            spectral_history['epochs'].append(epoch + 1)
+            spectral_history['low_band'].append(low)
+            spectral_history['mid_band'].append(mid)
+            spectral_history['high_band'].append(high)
 
     training_duration = default_timer() - start_time
     final_loss = train_history[-1] if train_history else None
@@ -105,6 +126,7 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
 
     model_metadata = {
         'train_history': train_history,
+        'spectral_history': spectral_history,
         'training_duration': training_duration,
         'final_loss': final_loss,
         'num_params': num_params,
@@ -133,6 +155,10 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
     model_metadata_file = os.path.join(metadata_dir, f'{label}_model_metadata.pth')
     torch.save(model_metadata, model_metadata_file)
     print(f'pino model metadata saved to {model_metadata_file}')
+
+    json_payload = {k: v for k, v in model_metadata.items() if k != 'norm_stats'}
+    json_payload['model'] = 'PINO'
+    save_metadata_json(json_payload, os.path.join(metadata_dir, f'{label}_metadata.json'))
 
 
 def train_pino_data(dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir):

@@ -54,6 +54,26 @@ def plot_training_loss(train_loss_history, outdir, filename, duration_seconds=No
     plt.close(fig)
 
 
+def plot_soliton_profile(outdir, filename='soliton_profile.png', A=1.0):
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
+
+    x = np.linspace(-6, 6, 600)
+    y = A / np.cosh(x) ** 2
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(x, y, color='#ff7f0e', lw=2.2)
+    ax.set_title(r'Initial soliton profile $\eta(x,0) = A\,\mathrm{sech}^2(x)$, $A=1$', fontsize=14)
+    ax.set_xlabel(r'$x$', fontsize=12)
+    ax.set_ylabel(r'$\eta(x,0)$', fontsize=12)
+    ax.grid(True, alpha=0.35)
+    ax.tick_params(axis='both', which='major', labelsize=10)
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=150)
+    print(f'soliton profile saved to {outpath}')
+    plt.close(fig)
+
+
 # plot training statistics across runs
 def plot_training_statistics(histories, labels, outdir, filename, log_scale=True, duration_seconds=None, final_loss=None, num_params=None):
     # compare multiple loss curves for the given runs
@@ -907,6 +927,60 @@ def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):
     plt.savefig(outpath, dpi=150)
     print(f'error heatmap saved to {outpath}')
     plt.close()
+
+
+def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolution.png'):
+    """Plot per-frequency-band spectral error vs training epoch for each model.
+
+    models_data: list of (label, spectral_history) tuples, where spectral_history is a dict
+                 with keys 'epochs', 'low_band', 'mid_band', 'high_band'.
+    Expected order: [pinn_no_data, pinn_data, pino_no_data, pino_data, fno].
+    The last model is rendered spanning the full width of the bottom row.
+    """
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
+
+    band_colors = ['#1f77b4', '#9467bd', '#d62728']   # blue, purple, red
+    band_labels = [
+        r'Low freq  ($k < N_x/4$)',
+        r'Mid freq  ($N_x/4 \leq k < N_x/2$)',
+        r'High freq ($k \geq N_x/2$)',
+    ]
+    band_keys = ['low_band', 'mid_band', 'high_band']
+
+    n = len(models_data)
+    # first n-1 models in 2-column pairs; last model spans full width
+    n_pair_rows = (n - 1 + 1) // 2  # ceiling of (n-1)/2
+    n_rows = n_pair_rows + 1         # +1 for the spanning bottom row
+
+    fig = plt.figure(figsize=(14, 4.5 * n_rows))
+    gs = fig.add_gridspec(n_rows, 2, hspace=0.50, wspace=0.32)
+
+    axes = []
+    for i in range(n - 1):
+        row = i // 2
+        col = i % 2
+        axes.append(fig.add_subplot(gs[row, col]))
+    axes.append(fig.add_subplot(gs[-1, :]))  # last model spans both columns
+
+    for i, (ax, (label, sh)) in enumerate(zip(axes, models_data)):
+        epochs = np.asarray(sh['epochs'])
+        for color, blab, key in zip(band_colors, band_labels, band_keys):
+            vals = np.asarray(sh[key])
+            ax.semilogy(epochs, vals, color=color, lw=2.0, label=blab, alpha=0.9)
+
+        ax.set_title(label, fontsize=13, fontweight='bold')
+        ax.set_xlabel('Epoch', fontsize=11)
+        ax.set_ylabel('Rel. Spectral Error', fontsize=11)
+        ax.grid(True, alpha=0.25)
+        ax.tick_params(labelsize=10)
+        if i == 0:
+            ax.legend(fontsize='small', loc='upper right')
+
+    fig.suptitle('Spectral Error Evolution by Frequency Band During Training', fontsize=14, y=1.01)
+    fig.savefig(outpath, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f'spectral bias panel saved to {outpath}')
 
 
 def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title):

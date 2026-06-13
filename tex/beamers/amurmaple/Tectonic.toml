@@ -1,8 +1,0 @@
-[doc]
-name = "amurmaple"
-bundle = "https://data1.fullyjustified.net/tlextras-2022.0r0.tar"
-
-[[output]]
-index = "main.tex"
-name = "amurmaple"
-type = "pdf"

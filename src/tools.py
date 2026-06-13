@@ -1,4 +1,6 @@
 import os
+import json
+import numpy as np
 import torch
 
 
@@ -95,3 +97,40 @@ class RelativeL2_loss(object):
         numerator = torch.sqrt(torch.sum(diff * diff, dim=[1, 2, 3]) + self.eps)
         denominator = torch.sqrt(torch.sum(y * y, dim=[1, 2, 3]) + self.eps)
         return torch.mean(numerator / (denominator + self.eps))
+
+
+def save_metadata_json(metadata: dict, filepath: str) -> None:
+    """Save a JSON-serializable subset of training metadata alongside the .pth file."""
+    def _coerce(obj):
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, torch.Tensor):
+            return obj.cpu().tolist()
+        if isinstance(obj, dict):
+            return {k: _coerce(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [_coerce(v) for v in obj]
+        return obj
+
+    os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(_coerce(metadata), f, indent=2)
+    print(f'metadata json saved to {filepath}')
+
+
+def compute_spectral_band_errors(eta_pred, eta_true):
+    # relative spectral error per spatial mode (rfft along axis=0), averaged over time, split into 3 bands
+    error = eta_pred - eta_true
+    fft_err = np.abs(np.fft.rfft(error, axis=0))    # (Nk, Nt)
+    fft_ref = np.abs(np.fft.rfft(eta_true, axis=0)) # (Nk, Nt)
+    rel_per_mode = fft_err.mean(axis=1) / (fft_ref.mean(axis=1) + 1e-12)  # (Nk,)
+    Nk = rel_per_mode.shape[0]
+    return (
+        float(rel_per_mode[:Nk // 4].mean()),          # low  k in [0, Nk/4)
+        float(rel_per_mode[Nk // 4: Nk // 2].mean()),  # mid  k in [Nk/4, Nk/2)
+        float(rel_per_mode[Nk // 2:].mean()),           # high k in [Nk/2, Nk)
+    )

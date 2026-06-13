@@ -1,0 +1,176 @@
+\begin{document}
+
+\AddToShipoutPicture*{\BackgroundPic}
+
+% --- CAPA ---
+\clearpage
+\thispagestyle{empty}
+
+\begin{bfseries}
+\begin{center}
+
+\vspace{0.5cm} 
+UNIVERSIDADE FEDERAL DO PARANÁ \\
+
+\vspace{0.6cm}
+SAMUEL KUTZ PARANHOS \\
+\vspace{2.5cm}
+
+\vspace*{1cm}
+\textbf{\MakeUppercase{Scientific Machine Learning Methods for the \\ Nonlinear Boussinesq System of Equations}} \\
+
+
+\vfill
+\textbf{\MakeUppercase{CURITIBA}} \\
+\textbf{\MakeUppercase{\textnormal{2026}}}
+\end{center}
+\end{bfseries}
+
+\ClearShipoutPicture
+\pagebreak
+
+% --- CAPA 2 ---
+\thispagestyle{empty}
+
+\begin{bfseries}
+\begin{center}
+
+
+\vspace{0.6cm}
+SAMUEL KUTZ PARANHOS \\
+\vspace{2.5cm}
+TRABALHO DE CONCLUSÃO DE CURSO \\
+
+\vspace*{1cm}
+\textbf{\MakeUppercase{Scientific Machine Learning Methods for the \\ Nonlinear Boussinesq System of Equations}} \\
+\end{center}
+\end{bfseries}
+
+\vfill
+\begin{flushright}
+\begin{minipage}{0.8\textwidth}
+\raggedleft
+\footnotesize
+Trabalho apresentado como requisito parcial à obtenção do grau de Bacharel em Matemática Industrial no Departamento de Matemática da Universidade Federal do Paraná.\\[1ex]
+Área de concentração: Matemática Industrial.\\[1ex]
+Orientador: Prof. Roberto Ribeiro.\\[1ex]
+Título do Projeto: Scientific Machine Learning Methods for the Nonlinear Boussinesq System of Equations.
+\end{minipage}
+\end{flushright}
+
+\vfill
+\begin{center}
+CURITIBA \\
+2026
+\end{center}
+\pagebreak
+
+% --- RESUMO ---
+\begin{center}
+\textbf{RESUMO}
+\end{center}
+\addcontentsline{toc}{section}{RESUMO}
+\noindent Este trabalho investiga a eficácia de métodos de Scientific Machine Learning (SciML) 
+  na resolução e aproximação do sistema não linear de Boussinesq, um sistema de Equações Diferenciais Parciais (EDPs) 
+  utilizado para modelar a dinâmica de ondas aquáticas. Neste estudo, o sistema de Boussinesq será tratado como uma 
+  EDP dependente de dois parâmetros: os parâmetros de não linearidade e de dispersão. O objetivo é analisar o uso do 
+  ecossistema contemporâneo de ferramentas desenvolvido em torno do recente crescimento de Machine Learning como 
+  complemento aos métodos numéricos clássicos empregados na solução do sistema de Boussinesq. Foi utilizado o método 
+  pseudoespectral para gerar um conjunto de dados consistindo de soluções de referência do sistema de Boussinesq para 
+  diversos parâmetros e é então empregado como base de treinamento para três arquiteturas de SciML investigadas neste trabalho: 
+  Redes Neurais Informadas pela Física (PINNs), treinadas a um único parâmetro tanto com restrições de dados quanto de forma puramente física; 
+  Operadores Neurais de Fourier (FNO), operando em regime puramente supervisionado a vários parâmetros com uso exclusivo de dados sem nenhuma 
+  informação do operador diferencial da EDP; e Operadores Neurais Informados pela Física (PINO), que consiste em uma FNO 
+  com a inclusão do operador diferencial da EDP na função de perda da arquitetura. Como métricas de eficiência dessas 
+  arquiteturas, utilizamos a evolução do erro espectral e do erro relativo ao longo do espaço-tempo com relação a solução 
+  de referência. Como resultados, percebe-se que as PINNs tradicionais, especialmente quando treinadas sem o auxílio de dados, 
+  sofrem de um fenômeno conhecido como viés espectral, apresentando tendência a aprender primeiramente as componentes de 
+  baixa frequência da solução e grandes dificuldades em capturar detalhes essenciais de alta frequência à medida que a 
+  não linearidade aumenta. Em contrapartida, por aprenderem diretamente no espaço das frequências, os modelos de 
+  aprendizado de operadores, como o FNO e o PINO treinado com dados, não exibem esse tipo de limitação, a qual reaparece 
+  apenas quando o PINO é treinado de forma puramente física. Assim, concluímos que a inclusão de dados na função de perda 
+  de redes neurais puramente físicas constitui uma estratégia eficaz para mitigar o viés espectral comumente presente 
+  nessas arquiteturas.
+
+\vspace{1cm}
+\noindent
+\textbf{Palavras-chave:} Scientific Machine Learning; Equações Diferenciais Parciais; Sistema de Boussinesq; Redes Neurais Informadas pela Física.
+
+\pagebreak
+
+% --- ABSTRACT ---
+\begin{center}
+\textbf{ABSTRACT}
+\end{center}
+\addcontentsline{toc}{section}{ABSTRACT}
+\noindent This work investigates the effectiveness of Scientific Machine Learning (SciML) methods in solving and approximating the nonlinear 
+Boussinesq system, a system of Partial Differential Equations (PDEs) used to model water wave dynamics. In this study, the Boussinesq system will 
+be treated as a PDE dependent on two parameters: the nonlinearity and dispersion parameters. The objective is to analyze the use of the contemporary 
+ecosystem of tools developed around the recent growth of Machine Learning as a complement to the classical numerical methods employed in solving the 
+Boussinesq system. The pseudospectral method was used to generate a dataset consisting of reference solutions of the Boussinesq system for various 
+parameters and is then employed as the training basis for three SciML architectures investigated in this work: Physics-Informed Neural Networks (PINNs), 
+trained at a single parameter both with data constraints and purely physics-informed; Fourier Neural Operators (FNOs), operating in a purely supervised 
+regime at multiple parameters using only data without any differential operator information from the PDE; and Physics-Informed Neural Operators (PINOs), 
+which consist of an FNO with the inclusion of the PDE differential operator in the architecture loss function. As efficiency metrics for these architectures, 
+we use the evolution of spectral error and relative error over space-time with respect to the reference solution. As results, it is observed that traditional PINNs, 
+especially when trained without the aid of data, suffer from a phenomenon known as spectral bias, showing a tendency to learn the low-frequency components of the solution 
+first and great difficulty capturing essential high-frequency details as nonlinearity increases. In contrast, by learning directly in the frequency space, operator learning 
+models such as FNO and PINO trained with data do not exhibit this type of limitation, which reappears only when PINO is trained in a purely physics-informed manner. Thus, 
+we conclude that including data in the loss function of purely physics-informed neural networks constitutes an effective strategy to mitigate the spectral bias commonly 
+present in these architectures.
+
+\vspace{1cm}
+\noindent
+\textbf{Keywords:} Scientific Machine Learning; Partial Differential Equations; Boussinesq System; Physics-Informed Neural Networks.
+
+\pagebreak
+
+% --- ACKNOWLEDGEMENTS ---
+\begin{center}
+\textbf{ACKNOWLEDGEMENTS}
+\end{center}
+\addcontentsline{toc}{chapter}{ACKNOWLEDGEMENTS}
+
+I would like to thank CNPq, the LabFluid laboratory, and the Federal University of Paraná (UFPR) for their support, infrastructure, and guidance during this research.
+
+This work was supported by CNPq and developed with the collaboration of the LabFluid research group at UFPR.
+
+\vfill
+\begin{center}
+  \includegraphics[height=1.2cm]{CNPq.png}\hspace{1.5cm}
+  \includegraphics[height=3.2cm]{LabFluidLogo.png}\hspace{1.5cm}
+  \includegraphics[height=1.6cm]{ufpr_logo.jpg}
+\end{center}
+
+
+
+\pagebreak
+
+\tableofcontents
+
+\begin{center}
+\textbf{LIST OF FIGURES}
+\end{center}
+\addcontentsline{toc}{chapter}{LIST OF FIGURES}
+\makeatletter
+\@starttoc{lof}
+\makeatother
+
+
+\pagebreak
+
+% --- CORPO DO TEXTO ---
+
+\include{chapters/01-introduction.tex} 
+
+\include{chapters/02-mathematical-background.tex}
+
+\include{chapters/03-metodology.tex}
+
+\include{chapters/04-numerical-results.tex}
+
+\include{chapters/05-conclusions.tex}
+
+\printbibliography
+
+\end{document}
