@@ -332,7 +332,19 @@ To understand how the PINN loss is minimized, consider gradient descent with lea
 \begin{equation}\label{eq:gd_discrete}
     \theta_{k+1} = \theta_k - \lambda\,\nabla_\theta\mathcal{L}(\theta_k).
 \end{equation}
-Introducing a continuous training-time variable $\tau = k\lambda$ and taking the limit $\lambda \to 0$ converts the discrete iteration to the gradient flow ODE:
+Rearranging~\eqref{eq:gd_discrete}:
+\begin{equation}
+    \theta_{k+1} - \theta_k = -\lambda\,\nabla_\theta\mathcal{L}(\theta_k).
+\end{equation}
+Dividing both sides by $\lambda$:
+\begin{equation}
+    \frac{\theta_{k+1} - \theta_k}{\lambda} = -\nabla_\theta\mathcal{L}(\theta_k).
+\end{equation}
+Introducing a continuous training-time variable $\tau = k\lambda$ so that $\Delta\tau = \lambda$, the left-hand side is a finite-difference quotient in $\tau$:
+\begin{equation}
+    \frac{\theta(\tau+\Delta\tau) - \theta(\tau)}{\Delta\tau} = -\nabla_\theta\mathcal{L}(\theta(\tau)).
+\end{equation}
+Taking the limit $\Delta\tau = \lambda \to 0$ converts this to the gradient flow ODE:
 \begin{equation}\label{eq:grad_flow}
     \frac{d\theta}{d\tau} = -\nabla_\theta \mathcal{L}(\theta).
 \end{equation}
