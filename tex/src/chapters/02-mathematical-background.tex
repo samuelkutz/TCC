@@ -359,7 +359,13 @@ Define the Jacobian of residuals with respect to parameters:
     J(\theta) = \frac{\partial e}{\partial\theta} \in \mathbb{R}^{N_r \times N_\theta},
     \qquad J_{ij} = \frac{\partial e_i}{\partial\theta_j},\quad i = 1,\ldots,N_r,\; j = 1,\ldots,N_\theta,
 \end{equation}
-where $N_\theta$ is the total number of trainable parameters. The matrix $J$ has $N_r$ rows, one per constraint point, and $N_\theta$ columns, one per parameter; each row $J_i \in \mathbb{R}^{N_\theta}$ is the parameter-gradient of the $i$-th residual. By the chain rule:
+where $N_\theta$ is the total number of trainable parameters. The matrix $J$ has $N_r$ rows, one per constraint point, and $N_\theta$ columns, one per parameter; each row $J_i \in \mathbb{R}^{N_\theta}$ is the parameter-gradient of the $i$-th residual. Since $\mathcal{L} = \tfrac{1}{2}\|e\|^2 = \tfrac{1}{2}\sum_i e_i^2$, the $j$-th component of the gradient is
+\begin{equation}
+    \frac{\partial \mathcal{L}}{\partial \theta_j}
+    = \sum_{i=1}^{N_r} e_i(\theta)\,\frac{\partial e_i}{\partial \theta_j}
+    = \sum_{i=1}^{N_r} J_{ij}\,e_i(\theta).
+\end{equation}
+Collecting all $j$ into a column vector gives:
 \begin{equation}\label{eq:loss_grad}
     \nabla_\theta\mathcal{L} = J(\theta)^T\,e(\theta) \in \mathbb{R}^{N_\theta}.
 \end{equation}
@@ -367,13 +373,20 @@ Substituting into the gradient flow~\eqref{eq:grad_flow}:
 \begin{equation}\label{eq:param_dynamics}
     \frac{d\theta}{d\tau} = -J(\theta)^T\,e(\tau).
 \end{equation}
-Differentiating $e(\theta(\tau))$ with respect to training time via the chain rule:
+To find how the residual vector itself evolves, differentiate $e_i(\theta(\tau))$ with respect to $\tau$ via the chain rule:
+\begin{equation}
+    \frac{de_i}{d\tau}
+    = \sum_{j=1}^{N_\theta} \frac{\partial e_i}{\partial \theta_j}\,\frac{d\theta_j}{d\tau}
+    = J_i(\theta)\cdot\frac{d\theta}{d\tau}.
+\end{equation}
+Stacking over all $i = 1,\ldots,N_r$:
 \begin{equation}
     \frac{de}{d\tau} = J(\theta)\,\frac{d\theta}{d\tau}.
 \end{equation}
 Substituting~\eqref{eq:param_dynamics}:
 \begin{equation}\label{eq:ntk_dynamics}
     \frac{de}{d\tau}
+    = J(\theta)\bigl(-J(\theta)^T e(\tau)\bigr)
     = -\underbrace{J(\theta)\,J(\theta)^T}_{K(\theta)\;\in\;\mathbb{R}^{N_r\times N_r}}\,e(\tau).
 \end{equation}
 The matrix $K(\theta) = J(\theta)J(\theta)^T$ is the empirical Neural Tangent Kernel (NTK) \parencite{jacot2018}. It is symmetric positive semi-definite by construction ($v^T K v = \|J^T v\|^2 \geq 0$ for every $v$).
@@ -467,6 +480,17 @@ The convolution $(\kappa * v)$ simplifies to:
 \end{equation}
 Instead of learning $\kappa_\ell$ as a function in physical space, the FNO directly parametrizes its Fourier coefficients as learnable complex-valued matrices $R_{\ell,k} \approx 2\pi\,\hat{\kappa}_\ell(k)$. Only the $|k| \le k_{\max}$ low-frequency modes are retained, with all others set to zero; $k_{\max}$ is a hyperparameter.
 
+\subsubsection{Training Objective}
+\label{subsubsec:fno_loss}
+
+The FNO is trained as a pure supervised learning problem. Given the dataset $\mathcal{D}$~\eqref{eq:dataset} of parameter-solution pairs, the training objective minimizes the mean squared error between the predicted and reference space-time fields:
+\begin{equation}\label{eq:fno_loss}
+    \mathcal{L}_{\text{FNO}} = \frac{1}{M}\sum_{i=1}^{M}\frac{1}{N_x N_t}\sum_{j=0}^{N_x-1}\sum_{n=0}^{N_t}
+    \Bigl[(\eta_\theta^i(x_j,t_n) - \eta_i(x_j,t_n))^2
+    + (u_\theta^i(x_j,t_n) - u_i(x_j,t_n))^2\Bigr],
+\end{equation}
+where $(\eta_\theta^i, u_\theta^i) \coloneqq G_\theta(\alpha_i, \beta_i)$ is the network prediction for sample $i$.
+
 \subsubsection{Application to Non-Time-Periodic Problems}
 \label{subsubsec:fno_time}
 
@@ -478,29 +502,31 @@ When the solution is also assumed to be periodic in time with period $T$ (so tha
 \end{equation}
 and the FNO parametrizes the two-dimensional Fourier modes $(k_x, k_t)$ with $|k_x| \le k_{x,\max}$ and $|k_t| \le k_{t,\max}$, both hyperparameters.
 
-For problems that are not time-periodic, however, applying the Fourier transform along the temporal axis implicitly extends the signal periodically, potentially introducing a jump discontinuity at the temporal boundary. This can trigger the \emph{Gibbs phenomenon} \parencite{gibbs1899}, producing oscillatory artifacts near the boundary that persist regardless of how many temporal modes are retained. Standard signal-processing techniques such as zero-padding and window functions (e.g.\ Hann, Hamming windows) can partially mitigate these effects, at the cost of altering the temporal structure of the signal. \textcite{li2020fourier} also propose a recurrent alternative, referred to as FNO-2D, in which the Fourier layers act only in the spatial domain while the model propagates forward in time step by step, bypassing the time-periodicity requirement entirely. Since the Boussinesq problems studied here do not exhibit time periodicity, we instead adopt the operator-splitting strategy described in Section~\ref{subsec:pino}, which similarly treats time as a marching direction rather than a spectral domain.
+For problems that are not time-periodic, however, applying the Fourier transform along the temporal axis implicitly extends the signal periodically, potentially introducing a jump discontinuity at the temporal boundary. This can trigger the Gibbs phenomenon \parencite{gibbs1899}, producing oscillatory artifacts near the boundary that persist regardless of how many temporal modes are retained. Standard signal-processing techniques such as zero-padding and window functions (e.g.\ Hann, Hamming windows) can partially mitigate these effects, at the cost of altering the temporal structure of the signal. \textcite{li2020fourier} acknowledge this limitation and provide an alternative formulation in which the Fourier layers operate only along the spatial axis while the model advances forward in time, avoiding the periodicity assumption in the temporal direction entirely. Since the Boussinesq problems studied here do not exhibit time periodicity, we adopt this strategy, treating time as a marching direction rather than a spectral domain.
 
 \subsection{Physics-Informed Neural Operators}
 \label{subsec:pino}
 
 Analogously to how PINNs add a physics-informed residual loss to the MLP training objective, the Physics-Informed Neural Operator (PINO) \parencite{li2023pino} incorporates PDE constraints into the FNO training. The FNO backbone remains unchanged; what differs is the loss function, which now combines a data term with residuals evaluated on the predicted space-time fields.
 
-Since the FNO outputs the predicted fields $(\eta_\theta, u_\theta)$ on a space-time grid of $N_x \times N_t$ nodes, the PDE residuals can be evaluated without automatic differentiation. Spatial derivatives are computed spectrally using $\xi_k$~\eqref{eq:xi_def}: the DFT of $u_\theta$ along the spatial axis at each time $t_n$ yields $\hat{u}_\theta(k, t_n)$, from which
+Unlike a PINN, which represents the solution as a single continuous function and differentiates it via automatic differentiation, the FNO outputs $(\eta_\theta, u_\theta)$ as a discrete $N_x \times N_t$ array in a single forward pass over the full space-time domain. Evaluating the PDE residuals therefore reduces to numerically differentiating this output array.
+
+Spatial derivatives are computed pseudospectrally using $\xi_k$~\eqref{eq:xi_def}: the DFT of $\eta_\theta$ along the spatial axis at each time $t_n$ yields $\hat{\eta}_\theta(k, t_n)$, from which
 \begin{equation}
-    (u_x)_j = \mathcal{F}^{-1}\!\left(i\,\xi_k\,\hat{u}_\theta(k,t_n)\right)_{\!j},
+    (\eta_x)_j = \mathcal{F}^{-1}\!\left(i\,\xi_k\,\hat{\eta}_\theta(k,t_n)\right)_{\!j},
     \qquad
-    (u_{xx})_j = \mathcal{F}^{-1}\!\left(-\xi_k^2\,\hat{u}_\theta(k,t_n)\right)_{\!j},
+    (\eta_{xx})_j = \mathcal{F}^{-1}\!\left(-\xi_k^2\,\hat{\eta}_\theta(k,t_n)\right)_{\!j},
 \end{equation}
-and identically for $\eta_\theta$. Applying a Fourier transform along the time axis is not viable: since the FNO output is defined on a finite temporal grid with no periodicity in time, treating the discrete sequence as periodic would introduce Gibbs oscillations at the temporal boundaries, precisely the artifact discussed in Section~\ref{subsec:fno}. Time derivatives are therefore evaluated by standard finite differences derived from Taylor series \parencite{leveque2007}. Expanding $\eta_\theta^{n+1} = \eta_\theta^n + \Delta t\,\partial_t\eta_\theta^n + O(\Delta t^2)$ and $\eta_\theta^{n-1} = \eta_\theta^n - \Delta t\,\partial_t\eta_\theta^n + O(\Delta t^2)$ and subtracting isolates the time derivative with second-order accuracy; at the temporal boundaries, only one-sided information is available, giving a first-order stencil. For $\eta_\theta$ sampled at $t_0, \ldots, t_{N_t}$ with uniform spacing $\Delta t$:
+and identically for $u_\theta$. Time derivatives are computed by finite differences: second-order central in the interior and first-order one-sided at the boundaries,
 \begin{equation}
     (\eta_\theta)_t^n =
     \begin{cases}
-        \dfrac{\eta_\theta^{n+1} - \eta_\theta^n}{\Delta t}, & n = 0, \\[8pt]
-        \dfrac{\eta_\theta^{n+1} - \eta_\theta^{n-1}}{2\,\Delta t}, & 1 \le n \le N_t - 1, \\[8pt]
+        \dfrac{\eta_\theta^{n+1} - \eta_\theta^n}{\Delta t}, & n = 0, \\[6pt]
+        \dfrac{\eta_\theta^{n+1} - \eta_\theta^{n-1}}{2\,\Delta t}, & 1 \le n \le N_t - 1, \\[6pt]
         \dfrac{\eta_\theta^n - \eta_\theta^{n-1}}{\Delta t}, & n = N_t,
     \end{cases}
 \end{equation}
-and identically for $(u_\theta)_t^n$. The mixed term $(u_\theta)_{xxt}$ is obtained by first computing $(u_\theta)_{xx}$ spectrally and then differencing the result in time with this stencil.
+and identically for $(u_\theta)_t^n$. The mixed term $(u_\theta)_{xxt}$ is obtained by first computing $(u_\theta)_{xx}$ spectrally and then applying the time-difference stencil to the result. This combination of spectral spatial derivatives and finite-difference temporal derivatives follows the reference implementation of \textcite{li2023pino} \parencite{li2023pino_code}.
 
 With all derivatives available, the Boussinesq equations~\eqref{eq:bou1}--\eqref{eq:bou2} define two differential operators acting on the predicted fields:
 \begin{align}
@@ -509,7 +535,7 @@ With all derivatives available, the Boussinesq equations~\eqref{eq:bou1}--\eqref
     \mathcal{D}_2(\eta_\theta, u_\theta) &\coloneqq (u_\theta)_t - \tfrac{\beta}{3}(u_\theta)_{xxt}
                + (\eta_\theta)_x + \alpha\,(u_\theta(u_\theta)_x). \label{eq:res2}
 \end{align}
-Here $(\eta_\theta^i, u_\theta^i) \coloneqq G_\theta(c_i)$ denotes the network output for sample $i$, and the subscript $_{j,n}$ indicates evaluation at the grid point $(x_j, t_n)$. The PINO loss is a weighted sum of three terms:
+Here $(\eta_\theta^i, u_\theta^i) \coloneqq G_\theta(\alpha_i, \beta_i)$ denotes the network output for sample $i$, and the subscript $_{j,n}$ indicates evaluation at the grid point $(x_j, t_n)$. The PINO loss is a weighted sum of three terms:
 \begin{equation}\label{eq:pino_loss}
     \mathcal{L}_{\text{PINO}} = \lambda_{\text{pde}}\,\mathcal{L}_{\text{pde}}
     + \lambda_{\text{ic}}\,\mathcal{L}_{\text{ic}}
@@ -527,8 +553,8 @@ Here $(\eta_\theta^i, u_\theta^i) \coloneqq G_\theta(c_i)$ denotes the network o
           enforces the shared initial condition~\eqref{eq:ic};
 
     \item $\mathcal{L}_{\text{data}} = \dfrac{1}{M}\displaystyle\sum_{i=1}^{M}\dfrac{1}{N_x N_t}\displaystyle\sum_{j=0}^{N_x-1}\sum_{n=0}^{N_t}
-          \Bigl[(\eta_\theta - \eta_i)_{j,n}^2 +
-          (u_\theta - u_i)_{j,n}^2\Bigr]$
+          \Bigl[(\eta_\theta^i(x_j,t_n) - \eta_i(x_j,t_n))^2 +
+          (u_\theta^i(x_j,t_n) - u_i(x_j,t_n))^2\Bigr]$
           measures deviation from the reference solutions $(\eta_i,u_i) \in \mathcal{D}$~\eqref{eq:dataset};
 
     \item $\lambda_{\text{pde}},\, \lambda_{\text{ic}},\, \lambda_{\text{data}} > 0$

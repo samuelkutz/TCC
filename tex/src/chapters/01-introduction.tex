@@ -95,17 +95,17 @@ pseudospectral reference solver, which sets a high-accuracy baseline. The study 
 by the following questions.
 
 \begin{itemize}
-    \item \textbf{Accuracy relative to the pseudospectral baseline.} How closely can
+    \item Accuracy relative to the pseudospectral baseline: how closely can
           each SciML method reproduce the reference solutions as nonlinearity and
           dispersion grow? Where does each method start to fail, and how does its error
           scale with the difficulty of the regime?
 
-    \item \textbf{Data-driven, physics-informed, and hybrid training.} How does the
+    \item Data-driven, physics-informed, and hybrid training: how does the
           presence or absence of supervised reference data affect the accuracy and
           training behavior of each method? Does adding a physics residual term improve
           generalization when data are scarce, or does it introduce new difficulties?
 
-    \item \textbf{Spectral bias across training regimes.} How does spectral bias
+    \item Spectral bias across training regimes: how does spectral bias
           manifest in each architecture, and to what extent does the inclusion of data
           or physics constraints alter the frequency at which errors concentrate during
           training?
@@ -122,18 +122,18 @@ recommend the reader to have some knowledge of scientific computing and linear a
 The remaining chapters are organized as follows.
 
 \begin{itemize}
-    \item \textbf{Chapter~2} develops the mathematical background. It covers the
+    \item Chapter~2 develops the mathematical background. It covers the
           Boussinesq system and its analytical properties, the pseudospectral solver,
           and the theoretical foundations of MLP, PINN, FNO, and PINO, including a
           discussion of spectral bias.
 
-    \item \textbf{Chapter~3} describes the experimental methodology. It details the
+    \item Chapter~3 describes the experimental methodology. It details the
           dataset generation procedure, the model architectures, the training setup,
           and the evaluation metrics used throughout.
 
-    \item \textbf{Chapter~4} presents the numerical results and discusses the
+    \item Chapter~4 presents the numerical results and discusses the
           performance of each method across parameter regimes and spatial resolutions.
 
-    \item \textbf{Chapter~5} summarizes the main findings and outlines directions for
+    \item Chapter~5 summarizes the main findings and outlines directions for
           future work.
 \end{itemize}

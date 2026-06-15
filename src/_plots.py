@@ -211,13 +211,8 @@ def plot_spectral_summary(eta_true, eta_pred, x, t, outdir, filename, title):
 
 
 def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename, title):
-    dir_text = os.path.join(outdir, 'text')
-    dir_beamer = os.path.join(outdir, 'beamer')
-    _ensure_outdir(dir_text)
-    _ensure_outdir(dir_beamer)
-    
-    outpath_text = os.path.join(dir_text, filename)
-    basename, ext = os.path.splitext(filename)
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
 
     x = np.asarray(x)
     t = np.asarray(t)
@@ -239,134 +234,69 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
     rel_spec = np.clip(rel_spec, 0.0, 1.0)
 
     fig = plt.figure(figsize=(14, 14), constrained_layout=False)
-    # The original creates a 3x2 grid. We replicate using GridSpec for manual assignment
     gs = fig.add_gridspec(3, 2)
-    axes = np.empty((3, 2), dtype=object)
-    
-    # row 0
-    fig_b_row0, axes_b_0 = plt.subplots(1, 2, figsize=(14, 4))
-    for idx, time_index in enumerate(indices):
-        if idx >= 2: break
-        
-        ax = fig.add_subplot(gs[0, idx])
-        axes[0, idx] = ax
-        ax_b = axes_b_0[idx]
-        
-        for a in (ax, ax_b):
-            a.plot(x, eta_true[:, time_index], color='black', lw=1.8, label='True')
-            a.plot(x, eta_pred[:, time_index], color='#ff7f0e', lw=1.8, linestyle='--', label='predicted')
-            a.set_title(f'Prediction at $t = {t[time_index]:.2f}$')
-            a.set_xlabel('Space (x)')
-            a.set_ylabel('eta(x,t)')
-            a.grid(True, alpha=0.3)
-            if idx == 0:
-                a.legend(fontsize='small', loc='best')
-    fig_b_row0.tight_layout()
-    fig_b_row0.savefig(os.path.join(dir_beamer, f'{basename}_row_0{ext}'), dpi=150)
-    plt.close(fig_b_row0)
 
-    # row 1
-    fig_b_row1, (ax_b_10, ax_b_11) = plt.subplots(1, 2, figsize=(14, 4))
-    axes[1, 0] = fig.add_subplot(gs[1, 0])
-    axes[1, 1] = fig.add_subplot(gs[1, 1])
-
-    for ax, ax_b in [(axes[1, 0], ax_b_10)]:
-        im = ax.imshow(
-            rel_error.T, extent=[x[0], x[-1], t[0], t[-1]],
-            origin='lower', aspect='auto', cmap='magma', vmin=0.0, vmax=1.0)
-        ax.set_title('Relative Error Heatmap')
+    for idx_pos, time_index in enumerate(indices):
+        if idx_pos >= 2:
+            break
+        ax = fig.add_subplot(gs[0, idx_pos])
+        ax.plot(x, eta_true[:, time_index], color='black', lw=1.8, label='True')
+        ax.plot(x, eta_pred[:, time_index], color='#ff7f0e', lw=1.8, linestyle='--', label='predicted')
+        ax.set_title(f'Prediction at $t = {t[time_index]:.2f}$')
         ax.set_xlabel('Space (x)')
-        ax.set_ylabel('Time (t)')
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        fig.colorbar(im, cax=cax, label='Relative Error')
-        
-        im_b = ax_b.imshow(
-            rel_error.T, extent=[x[0], x[-1], t[0], t[-1]],
-            origin='lower', aspect='auto', cmap='magma', vmin=0.0, vmax=1.0)
-        ax_b.set_title('Relative Error Heatmap')
-        ax_b.set_xlabel('Space (x)')
-        ax_b.set_ylabel('Time (t)')
-        divider_b = make_axes_locatable(ax_b)
-        cax_b = divider_b.append_axes('right', size='5%', pad=0.05)
-        fig_b_row1.colorbar(im_b, cax=cax_b, label='Relative Error')
-
-    for ax, ax_b in [(axes[1, 1], ax_b_11)]:
-        time_plot = t + 5.0
-        ax.plot(time_plot, time_relative_norm, color='crimson', lw=2)
-        ax.axvline(x=time_plot[-1], color='black', linestyle='--', linewidth=1.0, alpha=0.7, label='evaluation stop')
-        ax.set_title('Time-Resolved Relative Error Norm')
-        ax.set_xlabel('Time (t + 5)')
-        ax.set_ylabel('Relative error')
+        ax.set_ylabel('eta(x,t)')
         ax.grid(True, alpha=0.3)
-        mean_err = np.mean(time_relative_norm)
-        ax.text(0.5, 0.9, f'Mean: {mean_err:.2e}', transform=ax.transAxes, ha='center', va='center', bbox=dict(facecolor='white', alpha=0.8))
-        
-        ax_b.plot(time_plot, time_relative_norm, color='crimson', lw=2)
-        ax_b.axvline(x=time_plot[-1], color='black', linestyle='--', linewidth=1.0, alpha=0.7, label='evaluation stop')
-        ax_b.set_title('Time-Resolved Relative Error Norm')
-        ax_b.set_xlabel('Time (t + 5)')
-        ax_b.set_ylabel('Relative error')
-        ax_b.grid(True, alpha=0.3)
-        ax_b.text(0.5, 0.9, f'Mean: {mean_err:.2e}', transform=ax_b.transAxes, ha='center', va='center', bbox=dict(facecolor='white', alpha=0.8))
+        if idx_pos == 0:
+            ax.legend(fontsize='small', loc='best')
 
-    fig_b_row1.tight_layout()
-    fig_b_row1.savefig(os.path.join(dir_beamer, f'{basename}_row_1{ext}'), dpi=150)
-    plt.close(fig_b_row1)
+    ax10 = fig.add_subplot(gs[1, 0])
+    im = ax10.imshow(
+        rel_error.T, extent=[x[0], x[-1], t[0], t[-1]],
+        origin='lower', aspect='auto', cmap='magma', vmin=0.0, vmax=1.0)
+    ax10.set_title('Relative Error Heatmap')
+    ax10.set_xlabel('Space (x)')
+    ax10.set_ylabel('Time (t)')
+    divider = make_axes_locatable(ax10)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im, cax=cax, label='Relative Error')
 
-    # row 2
-    fig_b_row2, (ax_b_20, ax_b_21) = plt.subplots(1, 2, figsize=(14, 4))
-    axes[2, 0] = fig.add_subplot(gs[2, 0])
-    axes[2, 1] = fig.add_subplot(gs[2, 1])
+    ax11 = fig.add_subplot(gs[1, 1])
+    time_plot = t + 5.0
+    ax11.plot(time_plot, time_relative_norm, color='crimson', lw=2)
+    ax11.axvline(x=time_plot[-1], color='black', linestyle='--', linewidth=1.0, alpha=0.7, label='evaluation stop')
+    ax11.set_title('Time-Resolved Relative Error Norm')
+    ax11.set_xlabel('Time (t + 5)')
+    ax11.set_ylabel('Relative error')
+    ax11.grid(True, alpha=0.3)
+    mean_err = np.mean(time_relative_norm)
+    ax11.text(0.5, 0.9, f'Mean: {mean_err:.2e}', transform=ax11.transAxes,
+              ha='center', va='center', bbox=dict(facecolor='white', alpha=0.8))
 
-    for ax, ax_b in [(axes[2, 0], ax_b_20)]:
-        im2 = ax.imshow(
-            true_spec.T, extent=[kx[0], kx[-1], t[0], t[-1]],
-            origin='lower', aspect='auto', cmap='viridis')
-        ax.set_title('True Spatial Spectrum Over Time')
-        ax.set_xlabel('Spectral index n')
-        ax.set_ylabel('Time')
-        divider2 = make_axes_locatable(ax)
-        cax2 = divider2.append_axes('right', size='5%', pad=0.05)
-        fig.colorbar(im2, cax=cax2, label='Amplitude')
-        
-        im2_b = ax_b.imshow(
-            true_spec.T, extent=[kx[0], kx[-1], t[0], t[-1]],
-            origin='lower', aspect='auto', cmap='viridis')
-        ax_b.set_title('True Spatial Spectrum Over Time')
-        ax_b.set_xlabel('Spectral index n')
-        ax_b.set_ylabel('Time')
-        divider2_b = make_axes_locatable(ax_b)
-        cax2_b = divider2_b.append_axes('right', size='5%', pad=0.05)
-        fig_b_row2.colorbar(im2_b, cax=cax2_b, label='Amplitude')
+    ax20 = fig.add_subplot(gs[2, 0])
+    im2 = ax20.imshow(
+        true_spec.T, extent=[kx[0], kx[-1], t[0], t[-1]],
+        origin='lower', aspect='auto', cmap='viridis')
+    ax20.set_title('True Spatial Spectrum Over Time')
+    ax20.set_xlabel('Spectral index n')
+    ax20.set_ylabel('Time')
+    divider2 = make_axes_locatable(ax20)
+    cax2 = divider2.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im2, cax=cax2, label='Amplitude')
 
-    for ax, ax_b in [(axes[2, 1], ax_b_21)]:
-        im3 = ax.imshow(
-            rel_spec.T, extent=[kx[0], kx[-1], t[0], t[-1]],
-            origin='lower', aspect='auto', cmap='inferno', vmin=0.0, vmax=1.0)
-        ax.set_title('Relative Spatial Spectrum Error')
-        ax.set_xlabel('Spectral index n')
-        divider3 = make_axes_locatable(ax)
-        cax3 = divider3.append_axes('right', size='5%', pad=0.05)
-        fig.colorbar(im3, cax=cax3, label='Relative Error')
-        
-        im3_b = ax_b.imshow(
-            rel_spec.T, extent=[kx[0], kx[-1], t[0], t[-1]],
-            origin='lower', aspect='auto', cmap='inferno', vmin=0.0, vmax=1.0)
-        ax_b.set_title('Relative Spatial Spectrum Error')
-        ax_b.set_xlabel('Spectral index n')
-        divider3_b = make_axes_locatable(ax_b)
-        cax3_b = divider3_b.append_axes('right', size='5%', pad=0.05)
-        fig_b_row2.colorbar(im3_b, cax=cax3_b, label='Relative Error')
-
-    fig_b_row2.tight_layout()
-    fig_b_row2.savefig(os.path.join(dir_beamer, f'{basename}_row_2{ext}'), dpi=150)
-    plt.close(fig_b_row2)
+    ax21 = fig.add_subplot(gs[2, 1])
+    im3 = ax21.imshow(
+        rel_spec.T, extent=[kx[0], kx[-1], t[0], t[-1]],
+        origin='lower', aspect='auto', cmap='inferno', vmin=0.0, vmax=1.0)
+    ax21.set_title('Relative Spatial Spectrum Error')
+    ax21.set_xlabel('Spectral index n')
+    divider3 = make_axes_locatable(ax21)
+    cax3 = divider3.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im3, cax=cax3, label='Relative Error')
 
     fig.suptitle(title)
     fig.subplots_adjust(top=0.95, bottom=0.03, hspace=0.35, wspace=0.28)
-    fig.savefig(outpath_text, dpi=150)
-    print(f'relative error summary text saved to {outpath_text} and beamer rows to {dir_beamer}')
+    fig.savefig(outpath, dpi=150)
+    print(f'relative error summary saved to {outpath}')
     plt.close(fig)
 
 
@@ -413,13 +343,8 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    dir_text = os.path.abspath(os.path.join(outdir, 'text'))
-    dir_beamer = os.path.abspath(os.path.join(outdir, 'beamer'))
-    _ensure_outdir(dir_text)
-    _ensure_outdir(dir_beamer)
-
-    outpath_text = os.path.join(dir_text, filename)
-    basename, ext = os.path.splitext(filename)
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
 
     x = np.asarray(x, dtype=float)
     t = np.asarray(t, dtype=float)
@@ -498,62 +423,11 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         showlegend=False, **scene_layout,
     )
     try:
-        fig.write_image(outpath_text, scale=2.0)
-        print(f'alpha/beta panel saved to {outpath_text}')
+        fig.write_image(outpath, scale=2.0)
+        print(f'alpha/beta panel saved to {outpath}')
     except Exception as e:
         print('Erro ao salvar panel como PNG. Instale kaleido: pip install kaleido')
         raise e
-
-    # ---------- beamer rows ----------
-    for i, (alpha, eta_pred) in enumerate(zip(param_values, eta_pred_list)):
-        eta_pred = np.asarray(eta_pred, dtype=float)
-        fig_b = make_subplots(
-            rows=1, cols=2,
-            specs=[[{'type': 'scene'}, {'type': 'xy'}]],
-            subplot_titles=[f'Predicted eta(x,t) - alpha=beta={alpha:.3f}', f'Relative error - alpha=beta={alpha:.3f}'],
-            horizontal_spacing=0.05,
-        )
-        fig_b.add_trace(go.Surface(
-            x=t, y=x, z=eta_pred,
-            colorscale='Inferno', cmin=z_global_min, cmax=z_global_max,
-            showscale=False,
-        ), row=1, col=1)
-        fig_b.add_trace(go.Scatter(
-            x=t, y=time_rel_norms[i],
-            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
-        ), row=1, col=2)
-        fig_b.update_xaxes(title_text='Time (t)', row=1, col=2)
-        fig_b.update_yaxes(title_text='Relative error', row=1, col=2)
-        fig_b.update_layout(
-            title_text=f'alpha=beta={alpha:.3f}', title_x=0.5,
-            width=1500, height=650, showlegend=False,
-            scene=dict(**scene_kw, camera=camera),
-        )
-        try:
-            fig_b.write_image(os.path.join(dir_beamer, f'{basename}_row_{i}_a{alpha:.3f}{ext}'), scale=2.0)
-        except Exception as e:
-            print('Erro ao salvar beamer row como PNG. Instale kaleido: pip install kaleido')
-            raise e
-
-    fig_box = go.Figure()
-    for alpha, rel_norm in zip(param_values, time_rel_norms):
-        fig_box.add_trace(go.Box(
-            y=rel_norm, name=f'alpha={alpha:.2f}',
-            marker_color='#e6550d', fillcolor='#fdd0a2',
-            line_color='#e6550d', showlegend=False,
-            width=0.2,
-        ))
-    fig_box.update_layout(
-        title_text='Relative error distribution vs. alpha=beta', title_x=0.5,
-        xaxis_title='alpha=beta value', yaxis_title='Relative error',
-        width=1000, height=450,
-    )
-    try:
-        fig_box.write_image(os.path.join(dir_beamer, f'{basename}_boxplot{ext}'), scale=2.0)
-    except Exception as e:
-        print('Erro ao salvar boxplot como PNG. Instale kaleido: pip install kaleido')
-        raise e
-    print(f'alpha/beta beamer rows saved to {dir_beamer}')
 
 
 def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, resolutions, outdir, filename, title,
@@ -561,13 +435,8 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    dir_text = os.path.abspath(os.path.join(outdir, 'text'))
-    dir_beamer = os.path.abspath(os.path.join(outdir, 'beamer'))
-    _ensure_outdir(dir_text)
-    _ensure_outdir(dir_beamer)
-
-    outpath_text = os.path.join(dir_text, filename)
-    basename, ext = os.path.splitext(filename)
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
 
     x_list = [np.asarray(x, dtype=float) for x in x_list]
     t_list = [np.asarray(t, dtype=float) for t in t_list]
@@ -648,62 +517,11 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         showlegend=False, **scene_layout,
     )
     try:
-        fig.write_image(outpath_text, scale=2.0)
-        print(f'resolution panel saved to {outpath_text}')
+        fig.write_image(outpath, scale=2.0)
+        print(f'resolution panel saved to {outpath}')
     except Exception as e:
         print('Erro ao salvar panel como PNG. Instale kaleido: pip install kaleido')
         raise e
-
-    # ---------- beamer rows ----------
-    for i, (res, x_res, t_res, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_pred_list)):
-        eta_pred = np.asarray(eta_pred, dtype=float)
-        fig_b = make_subplots(
-            rows=1, cols=2,
-            specs=[[{'type': 'scene'}, {'type': 'xy'}]],
-            subplot_titles=[f'Predicted eta(x,t) - res={int(res)}', f'Relative error - res={int(res)}'],
-            horizontal_spacing=0.05,
-        )
-        fig_b.add_trace(go.Surface(
-            x=t_res, y=x_res, z=eta_pred,
-            colorscale='Inferno', cmin=z_global_min, cmax=z_global_max,
-            showscale=False,
-        ), row=1, col=1)
-        fig_b.add_trace(go.Scatter(
-            x=t_res, y=time_rel_norms[i],
-            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
-        ), row=1, col=2)
-        fig_b.update_xaxes(title_text='Time (t)', row=1, col=2)
-        fig_b.update_yaxes(title_text='Relative error', row=1, col=2)
-        fig_b.update_layout(
-            title_text=f'res={int(res)}', title_x=0.5,
-            width=1500, height=650, showlegend=False,
-            scene=dict(**scene_kw, camera=camera),
-        )
-        try:
-            fig_b.write_image(os.path.join(dir_beamer, f'{basename}_row_{i}_res{int(res)}{ext}'), scale=2.0)
-        except Exception as e:
-            print('Erro ao salvar beamer row como PNG. Instale kaleido: pip install kaleido')
-            raise e
-
-    fig_box = go.Figure()
-    for res, rel_norm in zip(resolutions, time_rel_norms):
-        fig_box.add_trace(go.Box(
-            y=rel_norm, name=str(int(res)),
-            marker_color='#e6550d', fillcolor='#fdae6b',
-            line_color='#e6550d', showlegend=False,
-            width=0.2,
-        ))
-    fig_box.update_layout(
-        title_text='Relative error distribution vs. resolution', title_x=0.5,
-        xaxis_title='Resolution', yaxis_title='Relative error',
-        width=1000, height=450,
-    )
-    try:
-        fig_box.write_image(os.path.join(dir_beamer, f'{basename}_boxplot{ext}'), scale=2.0)
-    except Exception as e:
-        print('Erro ao salvar boxplot como PNG. Instale kaleido: pip install kaleido')
-        raise e
-    print(f'resolution beamer rows saved to {dir_beamer}')
 
 
 def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title,
@@ -711,13 +529,8 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    dir_text = os.path.abspath(os.path.join(outdir, 'text'))
-    dir_beamer = os.path.abspath(os.path.join(outdir, 'beamer'))
-    _ensure_outdir(dir_text)
-    _ensure_outdir(dir_beamer)
-
-    outpath_text = os.path.join(dir_text, filename)
-    basename, ext = os.path.splitext(filename)
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
 
     x = np.asarray(x, dtype=float)
     t = np.asarray(t, dtype=float)
@@ -822,64 +635,11 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         legend=dict(x=0.01, y=0.99, xanchor='left', yanchor='top'),
     )
     try:
-        fig.write_image(outpath_text, scale=2.0)
-        print(f'spectral panel text saved to {outpath_text}')
+        fig.write_image(outpath, scale=2.0)
+        print(f'spectral panel saved to {outpath}')
     except Exception as e:
         print('Erro ao salvar spectral panel como PNG. Instale kaleido: pip install kaleido')
         raise e
-
-    # beamer: one figure per time snapshot
-    for row, (idx, tt) in enumerate(zip(indices, target_times)):
-        tl = _tl(tt)
-        fig_b = make_subplots(
-            rows=1, cols=2,
-            subplot_titles=[f'Spectrum at t = {tl}', f'Relative spectral error at t = {tl}'],
-            horizontal_spacing=0.1,
-        )
-        fig_b.add_trace(go.Scatter(
-            x=kx.tolist(), y=true_spec[:, idx].tolist(),
-            mode='lines', name='True', line=dict(color='#222222', width=2.0),
-        ), row=1, col=1)
-        fig_b.add_trace(go.Scatter(
-            x=kx.tolist(), y=pred_spec[:, idx].tolist(),
-            mode='lines', name='Predicted', line=dict(color='#ff7f0e', width=1.8, dash='dash'),
-        ), row=1, col=1)
-        fig_b.add_trace(go.Scatter(
-            x=kx.tolist(), y=rel_err[:, idx].tolist(),
-            mode='lines', showlegend=False, line=dict(color='crimson', width=1.8),
-        ), row=1, col=2)
-        fig_b.update_xaxes(title_text='Spectral index n', row=1, col=1)
-        fig_b.update_yaxes(title_text='Amplitude', row=1, col=1)
-        fig_b.update_xaxes(title_text='Spectral index n', row=1, col=2)
-        fig_b.update_yaxes(title_text='Relative error', row=1, col=2)
-        fig_b.update_layout(
-            title_text=f't = {tl}', title_x=0.5,
-            width=1200, height=450,
-        )
-        try:
-            fig_b.write_image(os.path.join(dir_beamer, f'{basename}_row_{row}_t{tl}{ext}'), scale=2.0)
-        except Exception as e:
-            print('Erro ao salvar beamer spectral row como PNG. Instale kaleido: pip install kaleido')
-            raise e
-
-    # beamer: bottom panel (mean error over time)
-    fig_bot = go.Figure()
-    fig_bot.add_trace(go.Scatter(
-        x=t.tolist(), y=mean_rel_err_over_time.tolist(),
-        mode='lines+markers', showlegend=False,
-        line=dict(color='#c28b00', width=2.0), marker=dict(size=6),
-    ))
-    fig_bot.update_layout(
-        title_text='Mean relative spectral error over time', title_x=0.5,
-        xaxis_title='Time (t)', yaxis_title='Mean relative error',
-        width=1000, height=400,
-    )
-    try:
-        fig_bot.write_image(os.path.join(dir_beamer, f'{basename}_bottom{ext}'), scale=2.0)
-    except Exception as e:
-        print('Erro ao salvar beamer spectral bottom como PNG. Instale kaleido: pip install kaleido')
-        raise e
-    print(f'spectral panel beamer rows saved to {dir_beamer}')
 
 
 def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):

@@ -34,7 +34,6 @@ def spectral_spatial_derivatives(u, dx):
 
     Nx = u.shape[-2]
     u_ft = torch.fft.fft(u, dim=-2, norm='forward')
-    # spectral derivative factor for spatial dimension
     kx = 2 * torch.pi * torch.fft.fftfreq(Nx, d=dx, device=u.device).view(1, Nx, 1)
 
     ux = torch.fft.ifft(1j * kx * u_ft, dim=-2, norm='forward').real
@@ -43,25 +42,16 @@ def spectral_spatial_derivatives(u, dx):
     return ux.unsqueeze(1), uxx.unsqueeze(1)
 
 
-def finite_time_derivative(u, dt, order):
+def finite_time_derivative(u, dt):
+    # central differences in interior, one-sided at boundaries; second-order accuracy
     if u.ndim == 4 and u.shape[1] == 1:
         u = u[:, 0, :, :]
 
     out = torch.zeros_like(u)
-    if order == 1:
-        # central difference interior, one-sided at boundaries
-        out[..., 0] = (u[..., 1] - u[..., 0]) / dt
-        out[..., -1] = (u[..., -1] - u[..., -2]) / dt
-        if u.shape[-1] > 2:
-            out[..., 1:-1] = (u[..., 2:] - u[..., :-2]) / (2.0 * dt)
-    elif order == 2:
-        # standard second-order centered stencil, one-sided at boundaries
-        out[..., 0] = (u[..., 2] - 2.0 * u[..., 1] + u[..., 0]) / (dt ** 2)
-        out[..., -1] = (u[..., -1] - 2.0 * u[..., -2] + u[..., -3]) / (dt ** 2)
-        if u.shape[-1] > 2:
-            out[..., 1:-1] = (u[..., 2:] - 2.0 * u[..., 1:-1] + u[..., :-2]) / (dt ** 2)
-    else:
-        raise ValueError('order must be 1 or 2')
+    out[..., 0] = (u[..., 1] - u[..., 0]) / dt
+    out[..., -1] = (u[..., -1] - u[..., -2]) / dt
+    if u.shape[-1] > 2:
+        out[..., 1:-1] = (u[..., 2:] - u[..., :-2]) / (2.0 * dt)
     return out.unsqueeze(1)
 
 
@@ -71,27 +61,24 @@ def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta):
     res_eq_1 = eta_t + u_x + alpha*partial_x(eta*u)
     res_eq_2 = u_t - (beta/3)*u_xxt + eta_x + alpha*u*u_x
     """
-    # eta_xx not needed; boussinesq has no d^2 eta/dx^2 term
     eta_x, _ = spectral_spatial_derivatives(eta, dx)
     u_x, u_xx = spectral_spatial_derivatives(u, dx)
 
-    eta_t = finite_time_derivative(eta, dt, order=1)
-    u_t = finite_time_derivative(u, dt, order=1)
-    u_xxt = finite_time_derivative(u_xx, dt, order=1)
+    eta_t = finite_time_derivative(eta, dt)
+    u_t = finite_time_derivative(u, dt)
+    u_xxt = finite_time_derivative(u_xx, dt)
     eta_u = eta * u
     eta_u_x, _ = spectral_spatial_derivatives(eta_u, dx)
     nonlinear = u * u_x
 
-    # continuity residual: eta_t + u_x + alpha * (eta*u)_x
     res_eq_1 = eta_t + u_x + alpha * eta_u_x
-    # momentum residual: u_t - (beta/3) u_xxt + eta_x + alpha u u_x
     res_eq_2 = u_t - (beta / 3.0) * u_xxt + eta_x + alpha * nonlinear
 
     return res_eq_1, res_eq_2
 
 
 def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
-              phys_weight=1.0, ic_weight=0.1, data_weight=0.01):
+              phys_weight=1.0, ic_weight=1.0, data_weight=0.01):
     pred = model(batch_x)
     if pred.shape[1] == 2:
         eta_pred_norm = pred[:, 0:1, :, :]
