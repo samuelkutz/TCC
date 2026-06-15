@@ -155,7 +155,7 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         resolutions,
         outdir=outdir,
         filename=f'{label}_model2_resolution_panel.png',
-        title=f'{"PINO" if label == "pino" else "PINO No Data"} Resolution Panel (α=β {median_param:.3f})',
+        title=f'{"PINO" if label == "pino" else "PINO No Data"} Resolution Panel (alpha=beta {median_param:.3f})',
         param_label=f'{median_param:.3f}',
     )
 
@@ -201,7 +201,7 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         eta_pred,
         outdir=outdir,
         filename=f'{label}_model2_spectral_panel.png',
-        title=f'{"PINO" if label == "pino" else "PINO No Data"} Spectral Panel (α=β {median_param:.3f}, res {int(spectral_res)})',
+        title=f'{"PINO" if label == "pino" else "PINO No Data"} Spectral Panel (alpha=beta {median_param:.3f}, res {int(spectral_res)})',
         param_label=f'{median_param:.3f}',
         res_label=f'{int(spectral_res)}',
     )

@@ -97,9 +97,9 @@ def plot_training_statistics(histories, labels, outdir, filename, log_scale=True
         annotation_lines.append(f'Final loss: {final_loss:.2e}')
 
     fig.update_layout(
-        title_text='Training L² Loss', title_x=0.5,
+        title_text='Training L2 Loss', title_x=0.5,
         xaxis_title='Epoch',
-        yaxis_title='L² Loss',
+        yaxis_title='L2 Loss',
         yaxis_type='log' if log_scale else 'linear',
         template='plotly_white',
         width=1000, height=500,
@@ -135,7 +135,7 @@ def compute_spectral_relative_error(eta_true, eta_pred):
 
 
 def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3):
-    # |eta_true - eta_pred| / max(|eta_true|, floor) — floor avoids spikes near zero
+    # |eta_true - eta_pred| / max(|eta_true|, floor) - floor avoids spikes near zero
     eta_true = np.asarray(eta_true, dtype=float)
     eta_pred = np.asarray(eta_pred, dtype=float)
     abs_true = np.abs(eta_true)
@@ -257,7 +257,7 @@ def plot_relative_error_panel(x, t, eta_true, eta_pred, times, outdir, filename,
             a.plot(x, eta_pred[:, time_index], color='#ff7f0e', lw=1.8, linestyle='--', label='predicted')
             a.set_title(f'Prediction at $t = {t[time_index]:.2f}$')
             a.set_xlabel('Space (x)')
-            a.set_ylabel('η(x,t)')
+            a.set_ylabel('eta(x,t)')
             a.grid(True, alpha=0.3)
             if idx == 0:
                 a.legend(fontsize='small', loc='best')
@@ -389,7 +389,7 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
         axes[row, 0].plot(x, eta_true[:, idx], label='True', color='black')
         axes[row, 0].plot(x, eta_pred[:, idx], label='Predicted', color='#ff7f0e', alpha=0.85)
         axes[row, 0].set_title(f'Time = {t[idx]:.2f}')
-        axes[row, 0].set_ylabel('η(x,t)')
+        axes[row, 0].set_ylabel('eta(x,t)')
         axes[row, 0].legend()
         axes[row, 0].grid(True, alpha=0.3)
 
@@ -440,7 +440,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
     camera = dict(eye=dict(x=-1.5, y=-1.8, z=0.8), center=dict(x=0, y=0, z=0), up=dict(x=0, y=0, z=1))
     scene_kw = dict(
-        xaxis_title='Time (t)', yaxis_title='Space (x)', zaxis_title='η',
+        xaxis_title='Time (t)', yaxis_title='Space (x)', zaxis_title='eta',
         zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=dict(x=2.8, y=1.8, z=0.6),
     )
 
@@ -448,8 +448,8 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     specs = [[{'type': 'scene'}, {'type': 'xy'}]] * n_params + [[{'type': 'xy', 'colspan': 2}, None]]
     subplot_titles = []
     for alpha in param_values:
-        subplot_titles += [f'Predicted η(x,t) — α=β={alpha:.3f}', f'Relative error — α=β={alpha:.3f}']
-    subplot_titles.append('Relative error distribution vs. α=β')
+        subplot_titles += [f'Predicted eta(x,t) - alpha=beta={alpha:.3f}', f'Relative error - alpha=beta={alpha:.3f}']
+    subplot_titles.append('Relative error distribution vs. alpha=beta')
 
     fig = make_subplots(
         rows=n_params + 1, cols=2,
@@ -479,12 +479,12 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
     for alpha, rel_norm in zip(param_values, time_rel_norms):
         fig.add_trace(go.Box(
-            y=rel_norm, name=f'α={alpha:.2f}',
+            y=rel_norm, name=f'alpha={alpha:.2f}',
             marker_color='#e6550d', fillcolor='#fdd0a2',
             line_color='#e6550d', showlegend=False,
             width=0.2,
         ), row=n_params + 1, col=1)
-    fig.update_xaxes(title_text='α=β value', row=n_params + 1, col=1)
+    fig.update_xaxes(title_text='alpha=beta value', row=n_params + 1, col=1)
     fig.update_yaxes(title_text='Relative error', row=n_params + 1, col=1)
 
     suptitle = title
@@ -510,7 +510,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         fig_b = make_subplots(
             rows=1, cols=2,
             specs=[[{'type': 'scene'}, {'type': 'xy'}]],
-            subplot_titles=[f'Predicted η(x,t) — α=β={alpha:.3f}', f'Relative error — α=β={alpha:.3f}'],
+            subplot_titles=[f'Predicted eta(x,t) - alpha=beta={alpha:.3f}', f'Relative error - alpha=beta={alpha:.3f}'],
             horizontal_spacing=0.05,
         )
         fig_b.add_trace(go.Surface(
@@ -525,7 +525,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         fig_b.update_xaxes(title_text='Time (t)', row=1, col=2)
         fig_b.update_yaxes(title_text='Relative error', row=1, col=2)
         fig_b.update_layout(
-            title_text=f'α=β={alpha:.3f}', title_x=0.5,
+            title_text=f'alpha=beta={alpha:.3f}', title_x=0.5,
             width=1500, height=650, showlegend=False,
             scene=dict(**scene_kw, camera=camera),
         )
@@ -538,14 +538,14 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     fig_box = go.Figure()
     for alpha, rel_norm in zip(param_values, time_rel_norms):
         fig_box.add_trace(go.Box(
-            y=rel_norm, name=f'α={alpha:.2f}',
+            y=rel_norm, name=f'alpha={alpha:.2f}',
             marker_color='#e6550d', fillcolor='#fdd0a2',
             line_color='#e6550d', showlegend=False,
             width=0.2,
         ))
     fig_box.update_layout(
-        title_text='Relative error distribution vs. α=β', title_x=0.5,
-        xaxis_title='α=β value', yaxis_title='Relative error',
+        title_text='Relative error distribution vs. alpha=beta', title_x=0.5,
+        xaxis_title='alpha=beta value', yaxis_title='Relative error',
         width=1000, height=450,
     )
     try:
@@ -590,7 +590,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
     camera = dict(eye=dict(x=-1.5, y=-1.8, z=0.8), center=dict(x=0, y=0, z=0), up=dict(x=0, y=0, z=1))
     scene_kw = dict(
-        xaxis_title='Time (t)', yaxis_title='Space (x)', zaxis_title='η',
+        xaxis_title='Time (t)', yaxis_title='Space (x)', zaxis_title='eta',
         zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=dict(x=2.8, y=1.8, z=0.6),
     )
 
@@ -598,7 +598,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     specs = [[{'type': 'scene'}, {'type': 'xy'}]] * n_res + [[{'type': 'xy', 'colspan': 2}, None]]
     subplot_titles = []
     for res in resolutions:
-        subplot_titles += [f'Predicted η(x,t) — res={int(res)}', f'Relative error — res={int(res)}']
+        subplot_titles += [f'Predicted eta(x,t) - res={int(res)}', f'Relative error - res={int(res)}']
     subplot_titles.append('Relative error distribution vs. resolution')
 
     fig = make_subplots(
@@ -639,9 +639,9 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
     suptitle = title
     if param_label is not None:
-        suptitle = f'{suptitle} (eval α=β = {param_label})'
+        suptitle = f'{suptitle} (eval alpha=beta = {param_label})'
     elif eval_alpha_beta is not None:
-        suptitle = f'{suptitle} (eval α=β = {eval_alpha_beta:.3f})'
+        suptitle = f'{suptitle} (eval alpha=beta = {eval_alpha_beta:.3f})'
     fig.update_layout(
         title_text=suptitle, title_x=0.5,
         width=1900, height=680 * n_res + 480,
@@ -660,7 +660,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         fig_b = make_subplots(
             rows=1, cols=2,
             specs=[[{'type': 'scene'}, {'type': 'xy'}]],
-            subplot_titles=[f'Predicted η(x,t) — res={int(res)}', f'Relative error — res={int(res)}'],
+            subplot_titles=[f'Predicted eta(x,t) - res={int(res)}', f'Relative error - res={int(res)}'],
             horizontal_spacing=0.05,
         )
         fig_b.add_trace(go.Surface(
@@ -809,7 +809,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
 
     suptitle = title
     if param_label is not None:
-        suptitle = f'{suptitle} (α=β={param_label})'
+        suptitle = f'{suptitle} (alpha=beta={param_label})'
     if res_label is not None:
         suptitle = f'{suptitle} (res={res_label})'
     elif eval_resolution is not None:
@@ -924,7 +924,7 @@ def plot_spectral_bias_evolution(ordered_metadata, outdir, filename='spectral_bi
             continue
         models_data.append((label, sh))
     if not models_data:
-        print('  no spectral history data available — retrain models first')
+        print('  no spectral history data available - retrain models first')
         return
     plot_spectral_bias_panel(models_data, outdir=outdir, filename=filename)
 
@@ -937,7 +937,7 @@ def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolut
     outpath = os.path.join(outdir, filename)
 
     band_colors = ['#1f77b4', '#9467bd', '#d62728']
-    band_labels = ['Low freq (k < Nx/4)', 'Mid freq (Nx/4 ≤ k < Nx/2)', 'High freq (k ≥ Nx/2)']
+    band_labels = ['Low freq (k < Nx/4)', 'Mid freq (Nx/4 <= k < Nx/2)', 'High freq (k >= Nx/2)']
     band_keys = ['low_band', 'mid_band', 'high_band']
 
     n = len(models_data)
@@ -1036,10 +1036,10 @@ def save_solution_surface_3d_html(x, t, eta_true, eta_pred, outdir, filename, ti
 
     surface_kw = dict(x=x.tolist(), y=t.tolist(), colorscale='Viridis', cmin=z_min, cmax=z_max)
     fig.add_trace(go.Surface(z=eta_true.T.tolist(), showscale=False, **surface_kw), row=1, col=1)
-    fig.add_trace(go.Surface(z=eta_pred.T.tolist(), colorbar=dict(title='η(x,t)', x=1.02), **surface_kw), row=1, col=2)
+    fig.add_trace(go.Surface(z=eta_pred.T.tolist(), colorbar=dict(title='eta(x,t)', x=1.02), **surface_kw), row=1, col=2)
 
     camera = dict(eye=dict(x=1.8, y=-1.8, z=1.2))
-    scene_common = dict(xaxis_title='Space (x)', yaxis_title='Time (t)', zaxis_title='η(x,t)', camera=camera)
+    scene_common = dict(xaxis_title='Space (x)', yaxis_title='Time (t)', zaxis_title='eta(x,t)', camera=camera)
     fig.update_layout(
         title_text=title, title_x=0.5,
         width=1400, height=650,
@@ -1075,14 +1075,14 @@ def save_solution_plotly_html(x, t, eta_true, eta_pred, outdir, filename, title)
 
     fig = make_subplots(
         rows=2, cols=2,
-        subplot_titles=['Reference η(x,t)', 'Predicted η(x,t)', 'Relative Error', 'Error Norm Over Time'],
+        subplot_titles=['Reference eta(x,t)', 'Predicted eta(x,t)', 'Relative Error', 'Error Norm Over Time'],
         vertical_spacing=0.13,
         horizontal_spacing=0.08,
     )
 
     heatmap_kw = dict(x=x.tolist(), y=t.tolist(), colorscale='Viridis', zmin=z_min, zmax=z_max)
     fig.add_trace(go.Heatmap(z=eta_true.T.tolist(), showscale=False, **heatmap_kw), row=1, col=1)
-    fig.add_trace(go.Heatmap(z=eta_pred.T.tolist(), colorbar=dict(title='η', x=1.02, len=0.45, y=0.78), **heatmap_kw), row=1, col=2)
+    fig.add_trace(go.Heatmap(z=eta_pred.T.tolist(), colorbar=dict(title='eta', x=1.02, len=0.45, y=0.78), **heatmap_kw), row=1, col=2)
     fig.add_trace(go.Heatmap(
         z=rel_error.T.tolist(), x=x.tolist(), y=t.tolist(),
         colorscale='Magma', zmin=0.0, zmax=1.0,
@@ -1102,3 +1102,79 @@ def save_solution_plotly_html(x, t, eta_true, eta_pred, outdir, filename, title)
 
     fig.write_html(outpath)
     print(f'solution html saved to {outpath}')
+
+
+def plot_pinn_ntk_panel(theta_rel_histories, k_rel_histories, log_epochs,
+                         eigenvalues_init, eigenvalues_final, widths, outdir, filename):
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    _colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
+
+    fig = make_subplots(
+        rows=1, cols=3,
+        subplot_titles=[
+            'Relative parameter change',
+            'Relative NTK change',
+            'NTK eigenvalue spectrum',
+        ],
+        horizontal_spacing=0.1,
+    )
+
+    for i, (w, theta_hist, k_hist) in enumerate(zip(widths, theta_rel_histories, k_rel_histories)):
+        color = _colors[i % len(_colors)]
+        name = f'width={w}'
+        fig.add_trace(go.Scatter(
+            x=log_epochs, y=theta_hist,
+            mode='lines', name=name,
+            line=dict(color=color, width=2.0),
+            legendgroup=name, showlegend=True,
+        ), row=1, col=1)
+        fig.add_trace(go.Scatter(
+            x=log_epochs, y=k_hist,
+            mode='lines', name=name,
+            line=dict(color=color, width=2.0),
+            legendgroup=name, showlegend=False,
+        ), row=1, col=2)
+
+    for i, (w, ev_init, ev_final) in enumerate(zip(widths, eigenvalues_init, eigenvalues_final)):
+        color = _colors[i % len(_colors)]
+        name = f'width={w}'
+        idx = np.arange(1, len(ev_init) + 1).tolist()
+        fig.add_trace(go.Scatter(
+            x=idx, y=list(ev_init),
+            mode='lines', name=f'{name} init',
+            line=dict(color=color, width=2.0, dash='solid'),
+            legendgroup=name, showlegend=False,
+        ), row=1, col=3)
+        idx_f = np.arange(1, len(ev_final) + 1).tolist()
+        fig.add_trace(go.Scatter(
+            x=idx_f, y=list(ev_final),
+            mode='lines', name=f'{name} final',
+            line=dict(color=color, width=2.0, dash='dash'),
+            legendgroup=name, showlegend=False,
+        ), row=1, col=3)
+
+    fig.update_xaxes(title_text='Iteration', row=1, col=1)
+    fig.update_yaxes(title_text='Relative parameter change', row=1, col=1)
+    fig.update_xaxes(title_text='Iteration', row=1, col=2)
+    fig.update_yaxes(title_text='Relative NTK change', row=1, col=2)
+    fig.update_xaxes(title_text='Eigenvalue index', type='log', row=1, col=3)
+    fig.update_yaxes(title_text='Eigenvalue', type='log', row=1, col=3)
+
+    fig.update_layout(
+        title_text='NTK Analysis (Wang et al. 2020)',
+        title_x=0.5,
+        template='plotly_white',
+        width=1800, height=600,
+        showlegend=True,
+        legend=dict(x=0.02, y=0.98, xanchor='left', yanchor='top'),
+    )
+    try:
+        fig.write_image(outpath, scale=2.0)
+        print(f'ntk panel saved to {outpath}')
+    except Exception as e:
+        print('Erro ao salvar ntk panel como PNG. Instale kaleido: pip install kaleido')
+        raise e

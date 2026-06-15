@@ -32,7 +32,7 @@ class PINN(nn.Module):
         self.net = nn.Sequential(*layers)
         self.to(self.device)
 
-        # pre-convert data to device tensors once; avoid repeated cpu→gpu per epoch
+        # pre-convert data to device tensors once; avoid repeated cpu->gpu per epoch
         self._x_flat = self._t_flat = self._eta_flat = self._u_flat = None
         if data is not None and data_weight > 0.0:
             x_data = torch.from_numpy(data['x']).float().to(self.device)

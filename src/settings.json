@@ -42,5 +42,15 @@
     "lr": 1e-3,
     "data_weight": 1.0,
     "print_interval": 500
+  },
+  "pinn_ntk": {
+    "widths": [8, 128, 512],
+    "hidden_layers": 4,
+    "epochs": 15000,
+    "lr": 1e-5,
+    "optimizer_name": "SGD",
+    "n_ntk": 40,
+    "log_interval": 500,
+    "param_value": 3.21
   }
 }

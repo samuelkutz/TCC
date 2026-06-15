@@ -44,7 +44,11 @@ simplejson==4.1.1
 six==1.16.0
 soupsieve==2.8.3
 sympy==1.14.0
-torch==2.7.0
+# PyTorch with CUDA 13.0 support -- install with:
+#   pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130
+torch==2.12.0+cu130
+torchaudio
+torchvision
 tqdm==4.67.3
 typing_extensions==4.14.0
 tzdata==2023.3

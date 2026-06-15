@@ -10,7 +10,7 @@ from FNO.plots_fno import eval_fno
 from PINO.train_pino import train_pino
 from PINO.plots_pino import eval_pino
 from PINN.train_pinn import train_pinn
-from PINN.plots_pinn import eval_pinn
+from PINN.plots_pinn import eval_pinn, run_ntk_experiment
 from _plots import plot_soliton_profile, plot_spectral_bias_evolution
 
 
@@ -64,6 +64,13 @@ EVAL_CONFIG = {
 
 IMG_DIR = os.path.join(RESULTS_DIR, 'imgs')
 
+PINN_NTK_CONFIG = {
+    'x_limit': X_LIMIT,
+    't_limit': T_LIMIT,
+    'outdir':  os.path.join(IMG_DIR, 'pinn', 'ntk'),
+    **settings['pinn_ntk'],
+}
+
 FNO_EVAL_DIR = os.path.join(IMG_DIR, 'fno')
 PINO_WITH_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pino', 'with_data')
 PINO_NO_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pino', 'no_data')
@@ -100,8 +107,8 @@ def main():
         dataset_res=DATASET_RES,
     )
 
-    # print('\n=== training fno ===')
-    # train_fno(**FNO_CONFIG)
+    print('\n=== training fno ===')
+    train_fno(**FNO_CONFIG)
 
     print('\n=== plotting fno ===')
     eval_fno(
@@ -110,8 +117,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    # print('\n=== training pino with data ===')
-    # train_pino('data', **PINO_CONFIG)
+    print('\n=== training pino with data ===')
+    train_pino('data', **PINO_CONFIG)
 
     print('\n=== plotting pino with data ===')
     eval_pino(
@@ -121,8 +128,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    # print('\n=== training pino without data ===')
-    # train_pino('no_data', **PINO_CONFIG)
+    print('\n=== training pino without data ===')
+    train_pino('no_data', **PINO_CONFIG)
 
     print('\n=== plotting pino without data ===')
     eval_pino(
@@ -132,8 +139,8 @@ def main():
        **EVAL_CONFIG,
     )
 
-    # print('\n=== training pinn with data ===')
-    # train_pinn('data', **PINN_CONFIG)
+    print('\n=== training pinn with data ===')
+    train_pinn('data', **PINN_CONFIG)
 
     print('\n=== plotting pinn with data ===')
     eval_pinn(
@@ -143,8 +150,8 @@ def main():
         **EVAL_CONFIG,
     )
 
-    # print('\n=== training pinn without data ===')
-    # train_pinn('no_data', **PINN_CONFIG)
+    print('\n=== training pinn without data ===')
+    train_pinn('no_data', **PINN_CONFIG)
 
     print('\n=== plotting pinn without data ===')
     eval_pinn(
@@ -153,6 +160,9 @@ def main():
         output_dir=PINN_NO_DATA_EVAL_DIR,
         **EVAL_CONFIG,
     )
+
+    print('\n=== running NTK experiment ===')
+    run_ntk_experiment(**PINN_NTK_CONFIG)
 
     print('\n=== plotting spectral bias evolution ===')
     plot_spectral_bias_evolution(
@@ -171,3 +181,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+ 

@@ -71,7 +71,7 @@ def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta):
     res_eq_1 = eta_t + u_x + alpha*partial_x(eta*u)
     res_eq_2 = u_t - (beta/3)*u_xxt + eta_x + alpha*u*u_x
     """
-    # eta_xx not needed; boussinesq has no d²eta/dx² term
+    # eta_xx not needed; boussinesq has no d^2 eta/dx^2 term
     eta_x, _ = spectral_spatial_derivatives(eta, dx)
     u_x, u_xx = spectral_spatial_derivatives(u, dx)
 
