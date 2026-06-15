@@ -12,7 +12,7 @@
     "spectral_res": 256
   },
   "fno": {
-    "epochs": 15000,
+    "epochs": 5000,
     "batch_size": 256,
     "lr": 1e-3,
     "modes1": 16,
@@ -21,7 +21,7 @@
     "print_interval": 500
   },
   "pino": {
-    "epochs": 15000,
+    "epochs": 5000,
     "batch_size": 256,
     "lr": 1e-3,
     "phys_weight": 1.0,
@@ -33,7 +33,7 @@
     "print_interval": 500
   },
   "pinn": {
-    "epochs": 15000,
+    "epochs": 5000,
     "neurons": 256,
     "hidden_layers": 4,
     "domain_points": 8000,
@@ -46,7 +46,7 @@
   "pinn_ntk": {
     "widths": [8, 128, 512],
     "hidden_layers": 4,
-    "epochs": 15000,
+    "epochs": 5000,
     "lr": 1e-5,
     "optimizer_name": "SGD",
     "n_ntk": 40,
