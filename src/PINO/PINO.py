@@ -47,26 +47,22 @@ def finite_time_derivative(u, dt, order):
     if u.ndim == 4 and u.shape[1] == 1:
         u = u[:, 0, :, :]
 
-    ut = torch.zeros_like(u)
-    utt = torch.zeros_like(u)
-
-    # first-order time derivative using forward/backward difference at boundaries
-    ut[..., 0] = (u[..., 1] - u[..., 0]) / dt
-    ut[..., -1] = (u[..., -1] - u[..., -2]) / dt
-    if u.shape[-1] > 2:
-        ut[..., 1:-1] = (u[..., 2:] - u[..., :-2]) / (2.0 * dt)
-
-    # second-order time derivative with one-sided boundary approximations
-    utt[..., 0] = (u[..., 2] - 2.0 * u[..., 1] + u[..., 0]) / (dt ** 2)
-    utt[..., -1] = (u[..., -1] - 2.0 * u[..., -2] + u[..., -3]) / (dt ** 2)
-    if u.shape[-1] > 2:
-        utt[..., 1:-1] = (u[..., 2:] - 2.0 * u[..., 1:-1] + u[..., :-2]) / (dt ** 2)
-
+    out = torch.zeros_like(u)
     if order == 1:
-        return ut.unsqueeze(1)
-    if order == 2:
-        return utt.unsqueeze(1)
-    raise ValueError('order must be 1 or 2')
+        # central difference interior, one-sided at boundaries
+        out[..., 0] = (u[..., 1] - u[..., 0]) / dt
+        out[..., -1] = (u[..., -1] - u[..., -2]) / dt
+        if u.shape[-1] > 2:
+            out[..., 1:-1] = (u[..., 2:] - u[..., :-2]) / (2.0 * dt)
+    elif order == 2:
+        # standard second-order centered stencil, one-sided at boundaries
+        out[..., 0] = (u[..., 2] - 2.0 * u[..., 1] + u[..., 0]) / (dt ** 2)
+        out[..., -1] = (u[..., -1] - 2.0 * u[..., -2] + u[..., -3]) / (dt ** 2)
+        if u.shape[-1] > 2:
+            out[..., 1:-1] = (u[..., 2:] - 2.0 * u[..., 1:-1] + u[..., :-2]) / (dt ** 2)
+    else:
+        raise ValueError('order must be 1 or 2')
+    return out.unsqueeze(1)
 
 
 def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta):
@@ -75,7 +71,8 @@ def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta):
     res_eq_1 = eta_t + u_x + alpha*partial_x(eta*u)
     res_eq_2 = u_t - (beta/3)*u_xxt + eta_x + alpha*u*u_x
     """
-    eta_x, eta_xx = spectral_spatial_derivatives(eta, dx)
+    # eta_xx not needed; boussinesq has no d²eta/dx² term
+    eta_x, _ = spectral_spatial_derivatives(eta, dx)
     u_x, u_xx = spectral_spatial_derivatives(u, dx)
 
     eta_t = finite_time_derivative(eta, dt, order=1)

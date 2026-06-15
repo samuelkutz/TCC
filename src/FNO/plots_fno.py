@@ -7,15 +7,9 @@ from FNO.FNO import FNO2d
 from tools import load_model, normalize_tensor, unnormalize_tensor
 from _plots import (
     plot_training_statistics,
-    plot_relative_error_panel,
-    plot_stacked_solution_curves,
     plot_model2_alpha_beta_panel,
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
-    plot_solution_surface_3d,
-    plot_radially_revolved_gif,
-    save_solution_gif,
-    compute_spectral_relative_error,
 )
 
 def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions, spectral_res, output_dir=None):
@@ -89,17 +83,6 @@ def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions, sp
         )
 
         eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
-        # save gif for the median parameter at median resolution
-        if val == median_param:
-            save_solution_gif(
-                x,
-                t,
-                eta_true_t,
-                eta_pred,
-                outdir=outdir,
-                filename=f'fno_animation_a{val:.3f}_res{int(median_res)}.gif',
-                title=f'fno animation a={val:.3f} res={int(median_res)}',
-            )
         alpha_true_list.append(eta_true_t)
         alpha_pred_list.append(eta_pred)
 
@@ -152,39 +135,6 @@ def eval_fno(model_metadata_file, x_limit, t_limit, eval_params, resolutions, sp
         )
 
         eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
-        # save gif for median resolution (use median_param supplied above)
-        if res == median_res:
-            save_solution_gif(
-                x,
-                t,
-                eta_true_t,
-                eta_pred,
-                outdir=outdir,
-                filename=f'fno_animation_a{median_param:.3f}_res{res}.gif',
-                title=f'fno animation a={median_param:.3f} res={res}',
-            )
-            plot_solution_surface_3d(
-                x,
-                t,
-                eta_true_t,
-                eta_pred,
-                outdir=outdir,
-                filename=f'fno_surface_a{median_param:.3f}_res{res}.png',
-                title=f'fno surface a={median_param:.3f} res={res}',
-                true_label='Reference',
-                pred_label='Prediction',
-            )
-            plot_radially_revolved_gif(
-                x,
-                t,
-                eta_true_t,
-                eta_pred,
-                outdir=outdir,
-                filename=f'fno_radial_evolution_a{median_param:.3f}_res{res}.gif',
-                title=f'FNO Radial Evolution a={median_param:.3f}',
-                true_label='Reference',
-                pred_label='Prediction',
-            )
         res_true_list.append(eta_true_t)
         res_pred_list.append(eta_pred)
         res_x_list.append(x)

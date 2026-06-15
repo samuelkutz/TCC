@@ -21,8 +21,7 @@ class SpectralConv2d(nn.Module):
         self.weight = nn.Parameter(
             self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat)
         )
-        self.bias = nn.Parameter(torch.zeros(out_channels, 1, 1, dtype=torch.cfloat))
-
+        self.bias = nn.Parameter(torch.zeros(out_channels, 1, 1))
     def compl_mul2d(self, input, weights):
         # complex multiplication in fourier space.
         return torch.einsum("bixy,ioxy->boxy", input, weights)
@@ -57,8 +56,7 @@ class SpectralConv2d(nn.Module):
         out_ft[:, :, start_x:end_x, :modes2_actual] = out_ft_modes
 
         out_ft = torch.fft.ifftshift(out_ft, dim=(-2,))
-        x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)), norm='forward')
-        return x + self.bias.real
+        return torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)), norm='forward') + self.bias
 
 
 class FNO2d(nn.Module):

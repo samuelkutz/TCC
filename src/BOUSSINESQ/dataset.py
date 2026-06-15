@@ -4,14 +4,7 @@ from BOUSSINESQ.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 
 
 def generate_dataset(param_values, nx, nt, x_limit, t_limit, device):
-    # generate training dataset by solving the boussinesq equation directly at the
-    # target dataset resolution, rather than downsampling from a previously
-    # generated high-resolution solution.
-    """
-    generate boussinesq dataset for fno training.
-    
-    returns: x_train (n, 4, nx, nt), y_train (n, 2, nx, nt)
-    """
+    # solve boussinesq at target resolution for each param value; returns x_train (n,4,nx,nt), y_train (n,2,nx,nt)
     n_cases = len(param_values)
     
     input_data = np.zeros((n_cases, nx, nt, 4), dtype=np.float32)

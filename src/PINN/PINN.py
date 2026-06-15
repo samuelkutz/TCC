@@ -31,7 +31,20 @@ class PINN(nn.Module):
 
         self.net = nn.Sequential(*layers)
         self.to(self.device)
-        self.optimizer = self._build_optimizer()
+
+        # pre-convert data to device tensors once; avoid repeated cpu→gpu per epoch
+        self._x_flat = self._t_flat = self._eta_flat = self._u_flat = None
+        if data is not None and data_weight > 0.0:
+            x_data = torch.from_numpy(data['x']).float().to(self.device)
+            t_data = torch.from_numpy(data['t']).float().to(self.device)
+            eta_data = torch.from_numpy(data['eta']).float().to(self.device)
+            u_data = torch.from_numpy(data['u']).float().to(self.device)
+            T = t_data.unsqueeze(1).repeat(1, x_data.shape[0])
+            X = x_data.unsqueeze(0).repeat(t_data.shape[0], 1)
+            self._x_flat = X.reshape(-1, 1)
+            self._t_flat = T.reshape(-1, 1)
+            self._eta_flat = eta_data.reshape(-1, 1)
+            self._u_flat = u_data.reshape(-1, 1)
 
     def _build_optimizer(self):
         # create optimizer for network parameters using selected lr
@@ -71,31 +84,14 @@ class PINN(nn.Module):
         return torch.mean((eta_pred - eta_true) ** 2 + (u_pred - u_true) ** 2)
 
     def _data_loss(self):
-        # supervised data loss for observed eta and u values from generated solution
-        if self.data is None or self.data_weight <= 0.0:
+        # supervised data loss: random subsample from pre-converted flat grid
+        if self._x_flat is None:
             return torch.tensor(0.0, device=self.device)
 
-        x_data = torch.from_numpy(self.data['x']).float().to(self.device)
-        t_data = torch.from_numpy(self.data['t']).float().to(self.device)
-        eta_data = torch.from_numpy(self.data['eta']).float().to(self.device)
-        u_data = torch.from_numpy(self.data['u']).float().to(self.device)
-
-        # build a (time, space) grid to match the solver output layout [nt+1, nx].
-        T = t_data.unsqueeze(1).repeat(1, x_data.shape[0])
-        X = x_data.unsqueeze(0).repeat(t_data.shape[0], 1)
-        X_flat = X.reshape(-1, 1)
-        T_flat = T.reshape(-1, 1)
-
-        sample_size = min(X_flat.shape[0], self.domain_points)
-        idx = torch.randperm(X_flat.shape[0], device=self.device)[:sample_size]
-        x_samples = X_flat[idx]
-        t_samples = T_flat[idx]
-
-        eta_true = eta_data.reshape(-1, 1)[idx]
-        u_true = u_data.reshape(-1, 1)[idx]
-
-        eta_pred, u_pred = self(x_samples, t_samples)
-        return torch.mean((eta_pred - eta_true) ** 2 + (u_pred - u_true) ** 2)
+        sample_size = min(self._x_flat.shape[0], self.domain_points)
+        idx = torch.randperm(self._x_flat.shape[0], device=self.device)[:sample_size]
+        eta_pred, u_pred = self(self._x_flat[idx], self._t_flat[idx])
+        return torch.mean((eta_pred - self._eta_flat[idx]) ** 2 + (u_pred - self._u_flat[idx]) ** 2)
 
     def _pde_loss(self):
         # estimate pde residual loss from sampled interior domain points
@@ -109,7 +105,7 @@ class PINN(nn.Module):
             torch.manual_seed(seed)
 
         self.Boussinesq = boussinesq
-        self.optimizer = self._build_optimizer()
+        self.optimizer = self._build_optimizer()  # single creation point
         history = []
         start_time = default_timer()
 

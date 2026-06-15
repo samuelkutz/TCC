@@ -76,16 +76,12 @@ class PseudoSpectralBoussinesq:
         self.u_hat = torch.fft.fft(u0)
 
         self.time_steps = np.linspace(self.t_min, self.t_max, Nt + 1)
-        self.eta_history = [eta0.cpu().numpy()]
-        self.u_history = [u0.cpu().numpy()]
 
     def field(self, eta_hat, u_hat):
         # compute time derivatives in spectral form from current fourier coefficients
+        # only physical fields needed: eta and u for nonlinear products
         eta = torch.fft.ifft(eta_hat).real
         u = torch.fft.ifft(u_hat).real
-
-        eta_x = torch.fft.ifft(self.ik * eta_hat).real
-        u_x = torch.fft.ifft(self.ik * u_hat).real
 
         nl_term1_hat = self.ik * torch.fft.fft(eta * u)
         nl_term2_hat = self.ik * torch.fft.fft(0.5 * u ** 2)

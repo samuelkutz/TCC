@@ -451,13 +451,7 @@ Instead of learning $\kappa_\ell$ as a function in physical space, the FNO direc
 \end{equation}
 and the FNO parametrizes the two-dimensional Fourier modes $(k_x, k_t)$ with $|k_x| \le k_{x,\max}$ and $|k_t| \le k_{t,\max}$, both hyperparameters.
 
-The time-periodicity assumption is essential: if the predicted solution at $t = T$ does not coincide with its value at $t = 0$, the Fourier representation implicitly extends the signal periodically, introducing a jump discontinuity of size $\delta = |v(T) - v(0)|$ at each period boundary. For a function with such a jump, the partial Fourier sum $S_K(t) = \sum_{|k_t| \le K} \hat{v}(k_t)\,e^{2\pi i k_t t / T}$ does not converge uniformly near the discontinuity. Instead, as $K \to \infty$, the partial sums overshoot the true value by a fixed fraction of the jump:
-\begin{equation}\label{eq:gibbs}
-    \lim_{K \to \infty}\Bigl(S_K(t_0^+) - v(t_0^+)\Bigr)
-    = \Bigl(\tfrac{\mathrm{Si}(\pi)}{\pi} - \tfrac{1}{2}\Bigr)\delta
-    \approx 0.0895\,\delta,
-\end{equation}
-where $\mathrm{Si}(\pi) = \int_0^\pi \frac{\sin\xi}{\xi}\,d\xi \approx 1.852$. This is the \emph{Gibbs phenomenon}: the ${\approx}9\%$ overshoot persists regardless of $k_{t,\max}$ --- increasing the number of temporal modes only concentrates the oscillations nearer to the boundary without reducing their amplitude. In the FNO, these artifacts propagate through the spectral layers, making the time-periodicity assumption a genuine constraint on the class of problems the architecture handles well.
+The time-periodicity assumption is essential: if the solution is not periodic in time, the Fourier representation implicitly extends it periodically, introducing a jump discontinuity at each period boundary. This triggers the \emph{Gibbs phenomenon} \parencite{gibbs1899}, whereby the partial Fourier sums exhibit persistent overshoots near the boundary that do not vanish as the number of modes increases. Since the problems considered here do not exhibit time periodicity, the FNO operating on the full $(x,t)$ domain is expected to suffer from Gibbs artifacts at the temporal boundaries, a limitation that motivates the operator-splitting strategy described in Section~\ref{subsec:pino}.
 
 The FNO training objective is the relative $L^2$ loss:
 \begin{equation}

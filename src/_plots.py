@@ -3,8 +3,6 @@ import os
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib.colors import LightSource
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
@@ -74,27 +72,21 @@ def plot_soliton_profile(outdir, filename='soliton_profile.png', A=1.0):
     plt.close(fig)
 
 
-# plot training statistics across runs
 def plot_training_statistics(histories, labels, outdir, filename, log_scale=True, duration_seconds=None, final_loss=None, num_params=None):
-    # compare multiple loss curves for the given runs
+    import plotly.graph_objects as go
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
-    epochs = np.arange(1, len(histories[0]) + 1)
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    for history, label in zip(histories, labels):
-        ax.plot(epochs, history, alpha=0.85, lw=2.0, label=label)
-
-    ax.set_title('Training $L^2$ Loss', fontsize=14)
-    ax.set_xlabel('Epoch', fontsize=12)
-    ax.set_ylabel('$L^2$ Loss', fontsize=12)
-    ax.grid(True, alpha=0.3)
-    ax.tick_params(axis='both', which='major', labelsize=10)
-    if log_scale:
-        ax.set_yscale('log')
-    if len(labels) > 1:
-        ax.legend(fontsize='small', loc='upper right')
+    _colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+    fig = go.Figure()
+    for i, (history, label) in enumerate(zip(histories, labels)):
+        epochs = list(range(1, len(history) + 1))
+        fig.add_trace(go.Scatter(
+            x=epochs, y=list(history),
+            mode='lines', name=label,
+            line=dict(color=_colors[i % len(_colors)], width=2.2),
+            opacity=0.9,
+        ))
 
     annotation_lines = []
     if num_params is not None:
@@ -103,22 +95,33 @@ def plot_training_statistics(histories, labels, outdir, filename, log_scale=True
         annotation_lines.append(f'Training time: {duration_seconds:.1f}s')
     if final_loss is not None:
         annotation_lines.append(f'Final loss: {final_loss:.2e}')
-    if annotation_lines:
-        ax.text(
-            0.02,
-            0.98,
-            '\n'.join(annotation_lines),
-            transform=ax.transAxes,
-            ha='left',
-            va='top',
-            fontsize=10,
-            bbox=dict(facecolor='white', alpha=0.85, edgecolor='gray', boxstyle='round,pad=0.4'),
-        )
 
-    fig.tight_layout()
-    fig.savefig(outpath, dpi=150)
-    print(f'training statistics plot saved to {outpath}')
-    plt.close(fig)
+    fig.update_layout(
+        title_text='Training L² Loss', title_x=0.5,
+        xaxis_title='Epoch',
+        yaxis_title='L² Loss',
+        yaxis_type='log' if log_scale else 'linear',
+        template='plotly_white',
+        width=1000, height=500,
+        showlegend=len(labels) > 1,
+        legend=dict(x=0.98, y=0.98, xanchor='right', yanchor='top'),
+    )
+    if annotation_lines:
+        fig.add_annotation(
+            text='<br>'.join(annotation_lines),
+            xref='paper', yref='paper',
+            x=0.02, y=0.98, xanchor='left', yanchor='top',
+            showarrow=False,
+            bordercolor='#aaaaaa', borderwidth=1, borderpad=8,
+            bgcolor='white', opacity=0.92,
+            font=dict(size=11),
+        )
+    try:
+        fig.write_image(outpath, scale=2.0)
+        print(f'training statistics plot saved to {outpath}')
+    except Exception as e:
+        print('Erro ao salvar training statistics como PNG. Instale kaleido: pip install kaleido')
+        raise e
 
 
 # spectral relative error metrics
@@ -132,11 +135,7 @@ def compute_spectral_relative_error(eta_true, eta_pred):
 
 
 def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3):
-    """compute a robust relative error map.
-
-    this avoids huge spikes from dividing by values near zero in the true field.
-    """
-    # relative error = |eta_true - eta_pred| / max(|eta_true|, floor)
+    # |eta_true - eta_pred| / max(|eta_true|, floor) — floor avoids spikes near zero
     eta_true = np.asarray(eta_true, dtype=float)
     eta_pred = np.asarray(eta_pred, dtype=float)
     abs_true = np.abs(eta_true)
@@ -147,11 +146,7 @@ def compute_relative_error(eta_true, eta_pred, floor_ratio=1e-2, floor_min=1e-3)
 
 
 def spatial_wavenumbers(x):
-    """return spatial wavenumbers kx normalized as n * π / L.
-
-    This maps the FFT frequency index to the standard integer-indexed
-    wavenumbers for a domain [-L, L].
-    """
+    # spatial wavenumbers kx = n*pi/L for domain [-L, L]
     x = np.asarray(x, dtype=float)
     if len(x) < 2:
         return np.array([0.0], dtype=float)
@@ -163,11 +158,7 @@ def spatial_wavenumbers(x):
 
 
 def spectral_mode_index(x):
-    """return spectral mode indices scaled to the spatial resolution.
-
-    This rescales the physical wavenumber axis by 2L/pi so that the
-    displayed values follow the discrete mode index convention.
-    """
+    # discrete mode index: kx * (2L/pi) so axis shows integer mode numbers
     x = np.asarray(x, dtype=float)
     if len(x) < 2:
         return np.array([0.0], dtype=float)
@@ -417,85 +408,16 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
     plt.close()
 
 
-def plot_stacked_solution_curves(x, t, eta_true, eta_pred, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3):
-    # stacked 2d curves for a few time slices, matching the gif style with reference solution
-    _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
-
-    x = np.asarray(x, dtype=float)
-    t = np.asarray(t, dtype=float)
-    eta_true = np.asarray(eta_true, dtype=float)
-    eta_pred = np.asarray(eta_pred, dtype=float)
-
-    if len(t) < n_curves:
-        indices = np.arange(len(t), dtype=int)
-    else:
-        fractions = np.linspace(0.0, 1.0, n_curves)
-        indices = [int(np.round(frac * (len(t) - 1))) for frac in fractions]
-
-    amp_true = np.max(eta_true) - np.min(eta_true)
-    amp_pred = np.max(eta_pred) - np.min(eta_pred)
-    amplitude = max(amp_true, amp_pred, 1.0)
-    offset = amplitude * offset_factor
-
-    fig, ax = plt.subplots(figsize=(12, 8))
-    for i, idx in enumerate(indices):
-        baseline = i * offset
-        ax.plot(x, eta_true[:, idx] + baseline, color='black', lw=1.8,
-                label='Reference' if i == 0 else '')
-        ax.plot(x, eta_pred[:, idx] + baseline, color='#1f77b4', lw=1.5,
-                linestyle='--', label='Predicted' if i == 0 else '')
-        ax.hlines(baseline, x[0], x[-1], color='gray', alpha=0.25, linewidth=0.7)
-
-    y_ticks = [i * offset for i in range(len(indices))]
-    y_tick_labels = [f'{t[idx]:.2f}' for idx in indices]
-    ax.set_yticks(y_ticks)
-    ax.set_yticklabels(y_tick_labels)
-    ax.set_title(title)
-    ax.set_xlabel('Space (x)')
-    ax.set_ylabel('Time (t)')
-    ax.legend(loc='upper left')
-    ax.grid(True, alpha=0.25)
-    fig.subplots_adjust(top=0.95, bottom=0.05, left=0.08, right=0.98)
-    fig.savefig(outpath, dpi=150)
-    print(f'stacked solution curves saved to {outpath}')
-    plt.close(fig)
-
-
-def _five_time_slice_indices_labels(t_array):
-    """return indices and labels for t=min, 1/4, 1/2, 3/4, max."""
-    t_array = np.asarray(t_array, dtype=float)
-    if t_array.size == 0:
-        return [], []
-
-    fractions = [0.0, 0.25, 0.5, 0.75, 1.0]
-    tags = ['min', '1/4', '1/2', '3/4', 'max']
-    idx_labels = []
-    for frac, tag in zip(fractions, tags):
-        target = t_array[0] + frac * (t_array[-1] - t_array[0])
-        idx = int(np.argmin(np.abs(t_array - target)))
-        idx_labels.append((idx, tag))
-
-    seen = set()
-    indices = []
-    labels = []
-    for idx, tag in idx_labels:
-        if idx in seen:
-            continue
-        seen.add(idx)
-        indices.append(idx)
-        labels.append(tag)
-    return indices, labels
-
-
 def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_values, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3, eval_resolution=None, res_label=None):
-    dir_text = os.path.join(outdir, 'text')
-    dir_beamer = os.path.join(outdir, 'beamer')
+                                 eval_resolution=None, res_label=None):
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    dir_text = os.path.abspath(os.path.join(outdir, 'text'))
+    dir_beamer = os.path.abspath(os.path.join(outdir, 'beamer'))
     _ensure_outdir(dir_text)
     _ensure_outdir(dir_beamer)
-    
+
     outpath_text = os.path.join(dir_text, filename)
     basename, ext = os.path.splitext(filename)
 
@@ -506,147 +428,144 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     if n_params == 0:
         raise ValueError('param_values must contain at least one value')
 
-    indices, _ = _five_time_slice_indices_labels(t)
-
-    amplitude = 0.0
-    for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
-        amplitude = max(amplitude, np.max(eta_true) - np.min(eta_true), np.max(eta_pred) - np.min(eta_pred))
-    amplitude = max(amplitude, 1.0)
-    offset = amplitude * offset_factor
-
     time_rel_norms = []
-    mean_rel_errors = []
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
         rel_norm = np.linalg.norm(eta_true - eta_pred, axis=0) / (np.linalg.norm(eta_true, axis=0) + 1e-12)
         time_rel_norms.append(rel_norm)
-        mean_rel_errors.append(np.mean(rel_norm))
 
-    fig = plt.figure(figsize=(14, 4 * n_params + 4))
-    gs = fig.add_gridspec(n_params + 1, 2, height_ratios=[1] * n_params + [0.8], hspace=0.4, wspace=0.3)
+    z_global_min = min(float(np.asarray(e).min()) for e in eta_pred_list)
+    z_global_max = max(float(np.asarray(e).max()) for e in eta_pred_list)
+    z_margin = (z_global_max - z_global_min) * 0.05
+    z_lim = [z_global_min - z_margin, z_global_max + z_margin]
 
-    for i, (alpha, eta_true, eta_pred) in enumerate(zip(param_values, eta_true_list, eta_pred_list)):
-        ax_left = fig.add_subplot(gs[i, 0])
-        ax_right = fig.add_subplot(gs[i, 1])
-
-        # create a beamer figure
-        fig_b, (ax_left_b, ax_right_b) = plt.subplots(1, 2, figsize=(14, 4))
-        
-        y_ticks = [j * offset for j in range(len(indices))]
-        y_tick_labels = [f'{t[idx]:.2f}' if idx < len(t) else '' for idx in indices]
-        
-        if res_label is not None:
-            res_text = str(res_label)
-        elif eval_resolution is not None:
-            res_text = f'{int(eval_resolution)}'
-        else:
-            res_text = None
-
-        for ax_l in (ax_left, ax_left_b):
-            for j, idx in enumerate(indices):
-                baseline = j * offset
-                ax_l.plot(x, eta_true[:, idx] + baseline, color='#2b1b17', lw=1.6,
-                             label='Reference' if j == 0 else '')
-                ax_l.plot(x, eta_pred[:, idx] + baseline, color='#d94801', lw=1.4, linestyle='--',
-                             label='Predicted' if j == 0 else '')
-                ax_l.hlines(baseline, x[0], x[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
-            
-            ax_l.set_yticks(y_ticks)
-            ax_l.set_yticklabels(y_tick_labels)
-            ax_l.set_title(f'Stacked Solutions for $\\alpha = \\beta = {alpha:.3f}$')
-            ax_l.set_xlabel('Space (x)')
-            ax_l.set_ylabel('Time (t)')
-            ax_l.grid(True, alpha=0.2)
-            
-            if res_text is not None:
-                ax_l.text(
-                    0.98,
-                    0.02,
-                    f'eval res = {res_text}',
-                    transform=ax_l.transAxes,
-                    ha='right',
-                    va='bottom',
-                    fontsize=9,
-                    bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'),
-                )
-            if i == 0 or ax_l == ax_left_b:
-                ax_l.legend(loc='upper left', fontsize='small')
-
-        for ax_r in (ax_right, ax_right_b):
-            ax_r.plot(t, time_rel_norms[i], lw=1.8, color='#b22222')
-            ax_r.set_title(f'Relative Error Over Time for $\\alpha = \\beta = {alpha:.3f}$')
-            ax_r.set_xlabel('Time (t)')
-            ax_r.set_ylabel('Relative error')
-            ax_r.grid(True, alpha=0.2)
-
-        fig_b.tight_layout()
-        fig_b.savefig(os.path.join(dir_beamer, f'{basename}_row_{i}_a{alpha:.3f}{ext}'), dpi=150)
-        plt.close(fig_b)
-
-    ax_bottom = fig.add_subplot(gs[-1, :])
-    box = ax_bottom.boxplot(
-        time_rel_norms,
-        positions=param_values,
-        widths=np.maximum(0.05 * (param_values.max() - param_values.min()), 0.05),
-        patch_artist=True,
-        showmeans=True,
-        meanline=True,
-        labels=[f'{val:.2f}' for val in param_values],
+    camera = dict(eye=dict(x=-1.5, y=-1.8, z=0.8), center=dict(x=0, y=0, z=0), up=dict(x=0, y=0, z=1))
+    scene_kw = dict(
+        xaxis_title='Time (t)', yaxis_title='Space (x)', zaxis_title='η',
+        zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=dict(x=2.8, y=1.8, z=0.6),
     )
-    for patch in box['boxes']:
-        patch.set_facecolor('#fdd0a2')
-        patch.set_edgecolor('#e6550d')
-        patch.set_alpha(0.7)
-    ax_bottom.set_title('Relative Error Distribution vs. $\\alpha = \\beta$')
-    ax_bottom.set_xlabel('$\\alpha = \\beta$ Value')
-    ax_bottom.set_ylabel('Relative Error')
-    ax_bottom.grid(True, alpha=0.2)
-    ax_bottom.set_xticks(param_values)
-    ax_bottom.set_xticklabels([f'{val:.2f}' for val in param_values], rotation=15, ha='right')
-    
-    # Save the boxplot part for beamer as well
-    fig_b_bottom, ax_b_bottom = plt.subplots(figsize=(10, 4))
-    box_b = ax_b_bottom.boxplot(
-        time_rel_norms,
-        positions=param_values,
-        widths=np.maximum(0.05 * (param_values.max() - param_values.min()), 0.05),
-        patch_artist=True,
-        showmeans=True,
-        meanline=True,
-        labels=[f'{val:.2f}' for val in param_values],
+
+    # ---------- main panel ----------
+    specs = [[{'type': 'scene'}, {'type': 'xy'}]] * n_params + [[{'type': 'xy', 'colspan': 2}, None]]
+    subplot_titles = []
+    for alpha in param_values:
+        subplot_titles += [f'Predicted η(x,t) — α=β={alpha:.3f}', f'Relative error — α=β={alpha:.3f}']
+    subplot_titles.append('Relative error distribution vs. α=β')
+
+    fig = make_subplots(
+        rows=n_params + 1, cols=2,
+        specs=specs,
+        subplot_titles=subplot_titles,
+        column_widths=[0.6, 0.4],
+        vertical_spacing=0.08,
+        horizontal_spacing=0.05,
     )
-    for patch in box_b['boxes']:
-        patch.set_facecolor('#fdd0a2')
-        patch.set_edgecolor('#e6550d')
-        patch.set_alpha(0.7)
-    ax_b_bottom.set_title('Relative Error Distribution vs. $\\alpha = \\beta$')
-    ax_b_bottom.set_xlabel('$\\alpha = \\beta$ Value')
-    ax_b_bottom.set_ylabel('Relative Error')
-    ax_b_bottom.grid(True, alpha=0.2)
-    ax_b_bottom.set_xticks(param_values)
-    ax_b_bottom.set_xticklabels([f'{val:.2f}' for val in param_values], rotation=15, ha='right')
-    fig_b_bottom.tight_layout()
-    fig_b_bottom.savefig(os.path.join(dir_beamer, f'{basename}_boxplot{ext}'), dpi=150)
-    plt.close(fig_b_bottom)
+
+    scene_layout = {}
+    for i, (alpha, eta_pred) in enumerate(zip(param_values, eta_pred_list)):
+        eta_pred = np.asarray(eta_pred, dtype=float)
+        fig.add_trace(go.Surface(
+            x=t, y=x, z=eta_pred,
+            colorscale='Inferno', cmin=z_global_min, cmax=z_global_max,
+            showscale=False,
+        ), row=i + 1, col=1)
+        fig.add_trace(go.Scatter(
+            x=t, y=time_rel_norms[i],
+            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
+        ), row=i + 1, col=2)
+        fig.update_xaxes(title_text='Time (t)', row=i + 1, col=2)
+        fig.update_yaxes(title_text='Relative error', row=i + 1, col=2)
+        scene_key = 'scene' if i == 0 else f'scene{i + 1}'
+        scene_layout[scene_key] = dict(**scene_kw, camera=camera)
+
+    for alpha, rel_norm in zip(param_values, time_rel_norms):
+        fig.add_trace(go.Box(
+            y=rel_norm, name=f'α={alpha:.2f}',
+            marker_color='#e6550d', fillcolor='#fdd0a2',
+            line_color='#e6550d', showlegend=False,
+            width=0.2,
+        ), row=n_params + 1, col=1)
+    fig.update_xaxes(title_text='α=β value', row=n_params + 1, col=1)
+    fig.update_yaxes(title_text='Relative error', row=n_params + 1, col=1)
 
     suptitle = title
     if res_label is not None:
-        suptitle = f"{suptitle} (eval res = {res_label})"
+        suptitle = f'{suptitle} (eval res = {res_label})'
     elif eval_resolution is not None:
         suptitle = f'{suptitle} (eval res = {int(eval_resolution)})'
-    fig.suptitle(suptitle)
-    fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
-    fig.savefig(outpath_text, dpi=150)
-    print(f'alpha/beta panel text saved to {outpath_text} and beamer rows to {dir_beamer}')
-    plt.close(fig)
+    fig.update_layout(
+        title_text=suptitle, title_x=0.5,
+        width=1900, height=680 * n_params + 480,
+        showlegend=False, **scene_layout,
+    )
+    try:
+        fig.write_image(outpath_text, scale=2.0)
+        print(f'alpha/beta panel saved to {outpath_text}')
+    except Exception as e:
+        print('Erro ao salvar panel como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+    # ---------- beamer rows ----------
+    for i, (alpha, eta_pred) in enumerate(zip(param_values, eta_pred_list)):
+        eta_pred = np.asarray(eta_pred, dtype=float)
+        fig_b = make_subplots(
+            rows=1, cols=2,
+            specs=[[{'type': 'scene'}, {'type': 'xy'}]],
+            subplot_titles=[f'Predicted η(x,t) — α=β={alpha:.3f}', f'Relative error — α=β={alpha:.3f}'],
+            horizontal_spacing=0.05,
+        )
+        fig_b.add_trace(go.Surface(
+            x=t, y=x, z=eta_pred,
+            colorscale='Inferno', cmin=z_global_min, cmax=z_global_max,
+            showscale=False,
+        ), row=1, col=1)
+        fig_b.add_trace(go.Scatter(
+            x=t, y=time_rel_norms[i],
+            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
+        ), row=1, col=2)
+        fig_b.update_xaxes(title_text='Time (t)', row=1, col=2)
+        fig_b.update_yaxes(title_text='Relative error', row=1, col=2)
+        fig_b.update_layout(
+            title_text=f'α=β={alpha:.3f}', title_x=0.5,
+            width=1500, height=650, showlegend=False,
+            scene=dict(**scene_kw, camera=camera),
+        )
+        try:
+            fig_b.write_image(os.path.join(dir_beamer, f'{basename}_row_{i}_a{alpha:.3f}{ext}'), scale=2.0)
+        except Exception as e:
+            print('Erro ao salvar beamer row como PNG. Instale kaleido: pip install kaleido')
+            raise e
+
+    fig_box = go.Figure()
+    for alpha, rel_norm in zip(param_values, time_rel_norms):
+        fig_box.add_trace(go.Box(
+            y=rel_norm, name=f'α={alpha:.2f}',
+            marker_color='#e6550d', fillcolor='#fdd0a2',
+            line_color='#e6550d', showlegend=False,
+            width=0.2,
+        ))
+    fig_box.update_layout(
+        title_text='Relative error distribution vs. α=β', title_x=0.5,
+        xaxis_title='α=β value', yaxis_title='Relative error',
+        width=1000, height=450,
+    )
+    try:
+        fig_box.write_image(os.path.join(dir_beamer, f'{basename}_boxplot{ext}'), scale=2.0)
+    except Exception as e:
+        print('Erro ao salvar boxplot como PNG. Instale kaleido: pip install kaleido')
+        raise e
+    print(f'alpha/beta beamer rows saved to {dir_beamer}')
 
 
 def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, resolutions, outdir, filename, title,
-                                 n_curves=5, offset_factor=1.3, eval_alpha_beta=None, param_label=None):
-    dir_text = os.path.join(outdir, 'text')
-    dir_beamer = os.path.join(outdir, 'beamer')
+                                 eval_alpha_beta=None, param_label=None):
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    dir_text = os.path.abspath(os.path.join(outdir, 'text'))
+    dir_beamer = os.path.abspath(os.path.join(outdir, 'beamer'))
     _ensure_outdir(dir_text)
     _ensure_outdir(dir_beamer)
-    
+
     outpath_text = os.path.join(dir_text, filename)
     basename, ext = os.path.splitext(filename)
 
@@ -659,145 +578,144 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     if len(x_list) != n_res or len(t_list) != n_res:
         raise ValueError('x_list and t_list must match the number of resolutions')
 
-    amplitude = 0.0
-    for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
-        amplitude = max(amplitude, np.max(eta_true) - np.min(eta_true), np.max(eta_pred) - np.min(eta_pred))
-    amplitude = max(amplitude, 1.0)
-    offset = amplitude * offset_factor
-
     time_rel_norms = []
-    mean_rel_errors = []
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
         rel_norm = np.linalg.norm(eta_true - eta_pred, axis=0) / (np.linalg.norm(eta_true, axis=0) + 1e-12)
         time_rel_norms.append(rel_norm)
-        mean_rel_errors.append(np.mean(rel_norm))
 
-    fig = plt.figure(figsize=(14, 4 * n_res + 4))
-    gs = fig.add_gridspec(n_res + 1, 2, height_ratios=[1] * n_res + [0.8], hspace=0.4, wspace=0.3)
+    z_global_min = min(float(np.asarray(e).min()) for e in eta_pred_list)
+    z_global_max = max(float(np.asarray(e).max()) for e in eta_pred_list)
+    z_margin = (z_global_max - z_global_min) * 0.05
+    z_lim = [z_global_min - z_margin, z_global_max + z_margin]
 
-    for i, (res, x_res, t_res, eta_true, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_true_list, eta_pred_list)):
-        ax_left = fig.add_subplot(gs[i, 0])
-        ax_right = fig.add_subplot(gs[i, 1])
-
-        # create a beamer figure
-        fig_b, (ax_left_b, ax_right_b) = plt.subplots(1, 2, figsize=(14, 4))
-
-        indices, _ = _five_time_slice_indices_labels(t_res)
-        y_ticks = [j * offset for j in range(len(indices))]
-        y_tick_labels = [f'{t_res[idx]:.2f}' if idx < len(t_res) else '' for idx in indices]
-
-        if param_label is not None:
-            p_text = str(param_label)
-        elif eval_alpha_beta is not None:
-            p_text = f'{eval_alpha_beta:.3f}'
-        else:
-            p_text = None
-
-        for ax_l in (ax_left, ax_left_b):
-            for j, idx in enumerate(indices):
-                if idx >= eta_true.shape[1]:
-                    continue
-                baseline = j * offset
-                ax_l.plot(x_res, eta_true[:, idx] + baseline, color='#2b1b17', lw=1.6,
-                             label='Reference' if j == 0 else '')
-                ax_l.plot(x_res, eta_pred[:, idx] + baseline, color='#d94801', lw=1.4, linestyle='--',
-                             label='Predicted' if j == 0 else '')
-                ax_l.hlines(baseline, x_res[0], x_res[-1], color='#8c564b', alpha=0.25, linewidth=0.7)
-            ax_l.set_yticks(y_ticks)
-            ax_l.set_yticklabels(y_tick_labels)
-            ax_l.set_title(f'Stacked solutions for res = {int(res)}')
-            ax_l.set_xlabel('Space (x)')
-            ax_l.set_ylabel('Time (t)')
-            ax_l.grid(True, alpha=0.2)
-            if p_text is not None:
-                ax_l.text(
-                    0.98,
-                    0.02,
-                    f'eval α=β = {p_text}',
-                    transform=ax_l.transAxes,
-                    ha='right',
-                    va='bottom',
-                    fontsize=9,
-                    bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'),
-                )
-            if i == 0 or ax_l == ax_left_b:
-                ax_l.legend(loc='upper left', fontsize='small')
-
-        for ax_r in (ax_right, ax_right_b):
-            ax_r.plot(t_res, time_rel_norms[i], lw=1.8, color='#b22222')
-            ax_r.set_title(f'Relative error over time for res = {int(res)}')
-            ax_r.set_xlabel('Time (t)')
-            ax_r.set_ylabel('Relative error')
-            ax_r.grid(True, alpha=0.2)
-
-        fig_b.tight_layout()
-        fig_b.savefig(os.path.join(dir_beamer, f'{basename}_row_{i}_res{int(res)}{ext}'), dpi=150)
-        plt.close(fig_b)
-
-    ax_bottom = fig.add_subplot(gs[-1, :])
-    box = ax_bottom.boxplot(
-        time_rel_norms,
-        positions=resolutions,
-        widths=np.maximum(0.05 * (resolutions.max() - resolutions.min()), 1.0),
-        patch_artist=True,
-        showmeans=True,
-        meanline=True,
-        labels=[str(int(res)) for res in resolutions],
+    camera = dict(eye=dict(x=-1.5, y=-1.8, z=0.8), center=dict(x=0, y=0, z=0), up=dict(x=0, y=0, z=1))
+    scene_kw = dict(
+        xaxis_title='Time (t)', yaxis_title='Space (x)', zaxis_title='η',
+        zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=dict(x=2.8, y=1.8, z=0.6),
     )
-    for patch in box['boxes']:
-        patch.set_facecolor('#fdae6b')
-        patch.set_edgecolor('#e6550d')
-        patch.set_alpha(0.7)
-    ax_bottom.set_title('Relative error distribution vs. resolution')
-    ax_bottom.set_xlabel('Resolution')
-    ax_bottom.set_ylabel('Relative error')
-    ax_bottom.grid(True, alpha=0.2)
-    ax_bottom.set_xticks(resolutions)
-    ax_bottom.set_xticklabels([str(int(res)) for res in resolutions], rotation=15, ha='right')
 
-    fig_b_bottom, ax_b_bottom = plt.subplots(figsize=(10, 4))
-    box_b = ax_b_bottom.boxplot(
-        time_rel_norms,
-        positions=resolutions,
-        widths=np.maximum(0.05 * (resolutions.max() - resolutions.min()), 1.0),
-        patch_artist=True,
-        showmeans=True,
-        meanline=True,
-        labels=[str(int(res)) for res in resolutions],
+    # ---------- main panel ----------
+    specs = [[{'type': 'scene'}, {'type': 'xy'}]] * n_res + [[{'type': 'xy', 'colspan': 2}, None]]
+    subplot_titles = []
+    for res in resolutions:
+        subplot_titles += [f'Predicted η(x,t) — res={int(res)}', f'Relative error — res={int(res)}']
+    subplot_titles.append('Relative error distribution vs. resolution')
+
+    fig = make_subplots(
+        rows=n_res + 1, cols=2,
+        specs=specs,
+        subplot_titles=subplot_titles,
+        column_widths=[0.6, 0.4],
+        vertical_spacing=0.08,
+        horizontal_spacing=0.05,
     )
-    for patch in box_b['boxes']:
-        patch.set_facecolor('#fdae6b')
-        patch.set_edgecolor('#e6550d')
-        patch.set_alpha(0.7)
-    ax_b_bottom.set_title('Relative error distribution vs. resolution')
-    ax_b_bottom.set_xlabel('Resolution')
-    ax_b_bottom.set_ylabel('Relative error')
-    ax_b_bottom.grid(True, alpha=0.2)
-    ax_b_bottom.set_xticks(resolutions)
-    ax_b_bottom.set_xticklabels([str(int(res)) for res in resolutions], rotation=15, ha='right')
-    fig_b_bottom.tight_layout()
-    fig_b_bottom.savefig(os.path.join(dir_beamer, f'{basename}_boxplot{ext}'), dpi=150)
-    plt.close(fig_b_bottom)
+
+    scene_layout = {}
+    for i, (res, x_res, t_res, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_pred_list)):
+        eta_pred = np.asarray(eta_pred, dtype=float)
+        fig.add_trace(go.Surface(
+            x=t_res, y=x_res, z=eta_pred,
+            colorscale='Inferno', cmin=z_global_min, cmax=z_global_max,
+            showscale=False,
+        ), row=i + 1, col=1)
+        fig.add_trace(go.Scatter(
+            x=t_res, y=time_rel_norms[i],
+            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
+        ), row=i + 1, col=2)
+        fig.update_xaxes(title_text='Time (t)', row=i + 1, col=2)
+        fig.update_yaxes(title_text='Relative error', row=i + 1, col=2)
+        scene_key = 'scene' if i == 0 else f'scene{i + 1}'
+        scene_layout[scene_key] = dict(**scene_kw, camera=camera)
+
+    for res, rel_norm in zip(resolutions, time_rel_norms):
+        fig.add_trace(go.Box(
+            y=rel_norm, name=str(int(res)),
+            marker_color='#e6550d', fillcolor='#fdae6b',
+            line_color='#e6550d', showlegend=False,
+            width=0.2,
+        ), row=n_res + 1, col=1)
+    fig.update_xaxes(title_text='Resolution', row=n_res + 1, col=1)
+    fig.update_yaxes(title_text='Relative error', row=n_res + 1, col=1)
 
     suptitle = title
     if param_label is not None:
-        suptitle = f"{suptitle} (eval α=β = {param_label})"
+        suptitle = f'{suptitle} (eval α=β = {param_label})'
     elif eval_alpha_beta is not None:
         suptitle = f'{suptitle} (eval α=β = {eval_alpha_beta:.3f})'
-    fig.suptitle(suptitle)
-    fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
-    fig.savefig(outpath_text, dpi=150)
-    print(f'resolution panel text saved to {outpath_text} and beamer rows to {dir_beamer}')
-    plt.close(fig)
+    fig.update_layout(
+        title_text=suptitle, title_x=0.5,
+        width=1900, height=680 * n_res + 480,
+        showlegend=False, **scene_layout,
+    )
+    try:
+        fig.write_image(outpath_text, scale=2.0)
+        print(f'resolution panel saved to {outpath_text}')
+    except Exception as e:
+        print('Erro ao salvar panel como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+    # ---------- beamer rows ----------
+    for i, (res, x_res, t_res, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_pred_list)):
+        eta_pred = np.asarray(eta_pred, dtype=float)
+        fig_b = make_subplots(
+            rows=1, cols=2,
+            specs=[[{'type': 'scene'}, {'type': 'xy'}]],
+            subplot_titles=[f'Predicted η(x,t) — res={int(res)}', f'Relative error — res={int(res)}'],
+            horizontal_spacing=0.05,
+        )
+        fig_b.add_trace(go.Surface(
+            x=t_res, y=x_res, z=eta_pred,
+            colorscale='Inferno', cmin=z_global_min, cmax=z_global_max,
+            showscale=False,
+        ), row=1, col=1)
+        fig_b.add_trace(go.Scatter(
+            x=t_res, y=time_rel_norms[i],
+            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
+        ), row=1, col=2)
+        fig_b.update_xaxes(title_text='Time (t)', row=1, col=2)
+        fig_b.update_yaxes(title_text='Relative error', row=1, col=2)
+        fig_b.update_layout(
+            title_text=f'res={int(res)}', title_x=0.5,
+            width=1500, height=650, showlegend=False,
+            scene=dict(**scene_kw, camera=camera),
+        )
+        try:
+            fig_b.write_image(os.path.join(dir_beamer, f'{basename}_row_{i}_res{int(res)}{ext}'), scale=2.0)
+        except Exception as e:
+            print('Erro ao salvar beamer row como PNG. Instale kaleido: pip install kaleido')
+            raise e
+
+    fig_box = go.Figure()
+    for res, rel_norm in zip(resolutions, time_rel_norms):
+        fig_box.add_trace(go.Box(
+            y=rel_norm, name=str(int(res)),
+            marker_color='#e6550d', fillcolor='#fdae6b',
+            line_color='#e6550d', showlegend=False,
+            width=0.2,
+        ))
+    fig_box.update_layout(
+        title_text='Relative error distribution vs. resolution', title_x=0.5,
+        xaxis_title='Resolution', yaxis_title='Relative error',
+        width=1000, height=450,
+    )
+    try:
+        fig_box.write_image(os.path.join(dir_beamer, f'{basename}_boxplot{ext}'), scale=2.0)
+    except Exception as e:
+        print('Erro ao salvar boxplot como PNG. Instale kaleido: pip install kaleido')
+        raise e
+    print(f'resolution beamer rows saved to {dir_beamer}')
 
 
 def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title,
                                n_times=3, eval_resolution=None, res_label=None, param_label=None):
-    dir_text = os.path.join(outdir, 'text')
-    dir_beamer = os.path.join(outdir, 'beamer')
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    dir_text = os.path.abspath(os.path.join(outdir, 'text'))
+    dir_beamer = os.path.abspath(os.path.join(outdir, 'beamer'))
     _ensure_outdir(dir_text)
     _ensure_outdir(dir_beamer)
-    
+
     outpath_text = os.path.join(dir_text, filename)
     basename, ext = os.path.splitext(filename)
 
@@ -807,97 +725,161 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     eta_pred = np.asarray(eta_pred, dtype=float)
 
     kx = spectral_mode_index(x)
-
     true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
     pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
     rel_err = compute_relative_error(true_spec, pred_spec)
     mean_rel_err_over_time = np.mean(rel_err, axis=0)
 
     if len(t) < n_times:
-        indices = np.arange(len(t), dtype=int)
-        target_times = t
+        indices = list(np.arange(len(t), dtype=int))
+        target_times = list(t)
     else:
-        target_times = np.linspace(t[0], t[-1], n_times)
+        target_times_arr = np.linspace(t[0], t[-1], n_times)
         selected = []
         seen = set()
-        for target in target_times:
+        for target in target_times_arr:
             idx = int(np.argmin(np.abs(t - target)))
             if idx not in seen:
                 seen.add(idx)
-                selected.append((idx, target))
-        if selected:
-            indices, target_times = zip(*selected)
-        else:
-            indices, target_times = [], []
+                selected.append((idx, float(target)))
+        indices, target_times = zip(*selected) if selected else ([], [])
+        indices = list(indices)
+        target_times = list(target_times)
 
-    fig = plt.figure(figsize=(16, 12))
-    gs = fig.add_gridspec(n_times + 1, 2, height_ratios=[1] * n_times + [0.8], hspace=0.35, wspace=0.3)
+    def _tl(tt):
+        return f'{int(round(tt))}' if abs(tt - round(tt)) < 1e-6 else f'{tt:.2f}'
 
-    for row, (idx, target_time) in enumerate(zip(indices, target_times)):
-        ax_spec = fig.add_subplot(gs[row, 0])
-        ax_err = fig.add_subplot(gs[row, 1])
+    n_snap = len(indices)
+    n_rows = n_snap + 1
+    specs = [[{'type': 'xy'}, {'type': 'xy'}]] * n_snap + [[{'type': 'xy', 'colspan': 2}, None]]
+    subplot_titles = []
+    for idx, tt in zip(indices, target_times):
+        tl = _tl(tt)
+        subplot_titles += [f'Spectrum at t = {tl}', f'Relative spectral error at t = {tl}']
+    subplot_titles += ['Mean relative spectral error over time', '']
 
-        # create a beamer figure
-        fig_b, (ax_spec_b, ax_err_b) = plt.subplots(1, 2, figsize=(14, 4))
-        
-        if abs(target_time - round(target_time)) < 1e-6:
-            time_label = f'{int(round(target_time))}'
-        else:
-            time_label = f'{target_time:.2f}'
+    fig = make_subplots(
+        rows=n_rows, cols=2,
+        specs=specs,
+        subplot_titles=subplot_titles,
+        vertical_spacing=0.07,
+        horizontal_spacing=0.1,
+    )
 
-        for ax_s in (ax_spec, ax_spec_b):
-            ax_s.plot(kx, true_spec[:, idx], color='black', lw=1.8, label='True spectrum')
-            ax_s.plot(kx, pred_spec[:, idx], color='#ff7f0e', lw=1.6, linestyle='--', label='predicted spectrum')
-            ax_s.set_title(f'Spectrum at t = {time_label}')
-            ax_s.set_xlabel('Spectral index n')
-            ax_s.set_ylabel('Amplitude')
-            ax_s.grid(True, alpha=0.2)
-            if row == 0 or ax_s == ax_spec_b:
-                ax_s.legend(fontsize='small', loc='upper right')
+    for row, (idx, tt) in enumerate(zip(indices, target_times)):
+        tl = _tl(tt)
+        show_legend = (row == 0)
+        fig.add_trace(go.Scatter(
+            x=kx.tolist(), y=true_spec[:, idx].tolist(),
+            mode='lines', name='True', showlegend=show_legend,
+            line=dict(color='#222222', width=2.0),
+        ), row=row + 1, col=1)
+        fig.add_trace(go.Scatter(
+            x=kx.tolist(), y=pred_spec[:, idx].tolist(),
+            mode='lines', name='Predicted', showlegend=show_legend,
+            line=dict(color='#ff7f0e', width=1.8, dash='dash'),
+        ), row=row + 1, col=1)
+        fig.update_xaxes(title_text='Spectral index n', row=row + 1, col=1)
+        fig.update_yaxes(title_text='Amplitude', row=row + 1, col=1)
 
-        for ax_e in (ax_err, ax_err_b):
-            ax_e.plot(kx, rel_err[:, idx], color='crimson', lw=1.6)
-            mean_rel = mean_rel_err_over_time[idx]
-            ax_e.set_title(f'Relative Spectral Error at $t = {time_label}$')
-            ax_e.set_xlabel('Spectral index n')
-            ax_e.set_ylabel('Relative error')
-            ax_e.grid(True, alpha=0.2)
-            ax_e.text(0.05, 0.9, f'Mean rel error: {mean_rel:.2e}', transform=ax_e.transAxes,
-                        fontsize=10, bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
+        mean_rel = float(mean_rel_err_over_time[idx])
+        fig.add_trace(go.Scatter(
+            x=kx.tolist(), y=rel_err[:, idx].tolist(),
+            mode='lines', showlegend=False,
+            line=dict(color='crimson', width=1.8),
+        ), row=row + 1, col=2)
+        fig.add_annotation(
+            text=f'Mean: {mean_rel:.2e}',
+            xref=f'x{(row * 2 + 2) if row > 0 else "2"} domain', yref=f'y{(row * 2 + 2) if row > 0 else "2"} domain',
+            x=0.97, y=0.97, xanchor='right', yanchor='top',
+            showarrow=False, font=dict(size=10),
+            bgcolor='white', bordercolor='#cccccc', borderwidth=1, borderpad=4,
+        )
+        fig.update_xaxes(title_text='Spectral index n', row=row + 1, col=2)
+        fig.update_yaxes(title_text='Relative error', row=row + 1, col=2)
 
-        fig_b.tight_layout()
-        fig_b.savefig(os.path.join(dir_beamer, f'{basename}_row_{row}_t{time_label}{ext}'), dpi=150)
-        plt.close(fig_b)
-
-    ax_bottom = fig.add_subplot(gs[-1, :])
-    ax_bottom.plot(t, mean_rel_err_over_time, color='#c28b00', lw=2, marker='o')
-    ax_bottom.set_title('Mean Relative Spectral Error Over Time')
-    ax_bottom.set_xlabel('Time (t)')
-    ax_bottom.set_ylabel('Mean Relative Error')
-    ax_bottom.grid(True, alpha=0.2)
-    
-    fig_b_bottom, ax_b_bottom = plt.subplots(figsize=(10, 4))
-    ax_b_bottom.plot(t, mean_rel_err_over_time, color='#c28b00', lw=2, marker='o')
-    ax_b_bottom.set_title('Mean Relative Spectral Error Over Time')
-    ax_b_bottom.set_xlabel('Time (t)')
-    ax_b_bottom.set_ylabel('Mean Relative Error')
-    ax_b_bottom.grid(True, alpha=0.2)
-    fig_b_bottom.tight_layout()
-    fig_b_bottom.savefig(os.path.join(dir_beamer, f'{basename}_bottom{ext}'), dpi=150)
-    plt.close(fig_b_bottom)
+    fig.add_trace(go.Scatter(
+        x=t.tolist(), y=mean_rel_err_over_time.tolist(),
+        mode='lines+markers', showlegend=False,
+        line=dict(color='#c28b00', width=2.0),
+        marker=dict(size=5),
+    ), row=n_rows, col=1)
+    fig.update_xaxes(title_text='Time (t)', row=n_rows, col=1)
+    fig.update_yaxes(title_text='Mean relative error', row=n_rows, col=1)
 
     suptitle = title
     if param_label is not None:
-        suptitle = f'{suptitle} (alpha=beta={param_label})'
+        suptitle = f'{suptitle} (α=β={param_label})'
     if res_label is not None:
-        suptitle = f"{suptitle} (eval res = {res_label})"
+        suptitle = f'{suptitle} (res={res_label})'
     elif eval_resolution is not None:
-        suptitle = f'{suptitle} (eval res = {int(eval_resolution)})'
-    fig.suptitle(suptitle)
-    fig.subplots_adjust(top=0.95, bottom=0.03, left=0.05, right=0.98, hspace=0.35, wspace=0.3)
-    fig.savefig(outpath_text, dpi=150)
-    print(f'spectral panel text saved to {outpath_text} and beamer rows to {dir_beamer}')
-    plt.close(fig)
+        suptitle = f'{suptitle} (res={int(eval_resolution)})'
+
+    fig.update_layout(
+        title_text=suptitle, title_x=0.5,
+        width=1400, height=420 * n_snap + 350,
+        showlegend=True,
+        legend=dict(x=0.01, y=0.99, xanchor='left', yanchor='top'),
+    )
+    try:
+        fig.write_image(outpath_text, scale=2.0)
+        print(f'spectral panel text saved to {outpath_text}')
+    except Exception as e:
+        print('Erro ao salvar spectral panel como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+    # beamer: one figure per time snapshot
+    for row, (idx, tt) in enumerate(zip(indices, target_times)):
+        tl = _tl(tt)
+        fig_b = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=[f'Spectrum at t = {tl}', f'Relative spectral error at t = {tl}'],
+            horizontal_spacing=0.1,
+        )
+        fig_b.add_trace(go.Scatter(
+            x=kx.tolist(), y=true_spec[:, idx].tolist(),
+            mode='lines', name='True', line=dict(color='#222222', width=2.0),
+        ), row=1, col=1)
+        fig_b.add_trace(go.Scatter(
+            x=kx.tolist(), y=pred_spec[:, idx].tolist(),
+            mode='lines', name='Predicted', line=dict(color='#ff7f0e', width=1.8, dash='dash'),
+        ), row=1, col=1)
+        fig_b.add_trace(go.Scatter(
+            x=kx.tolist(), y=rel_err[:, idx].tolist(),
+            mode='lines', showlegend=False, line=dict(color='crimson', width=1.8),
+        ), row=1, col=2)
+        fig_b.update_xaxes(title_text='Spectral index n', row=1, col=1)
+        fig_b.update_yaxes(title_text='Amplitude', row=1, col=1)
+        fig_b.update_xaxes(title_text='Spectral index n', row=1, col=2)
+        fig_b.update_yaxes(title_text='Relative error', row=1, col=2)
+        fig_b.update_layout(
+            title_text=f't = {tl}', title_x=0.5,
+            width=1200, height=450,
+        )
+        try:
+            fig_b.write_image(os.path.join(dir_beamer, f'{basename}_row_{row}_t{tl}{ext}'), scale=2.0)
+        except Exception as e:
+            print('Erro ao salvar beamer spectral row como PNG. Instale kaleido: pip install kaleido')
+            raise e
+
+    # beamer: bottom panel (mean error over time)
+    fig_bot = go.Figure()
+    fig_bot.add_trace(go.Scatter(
+        x=t.tolist(), y=mean_rel_err_over_time.tolist(),
+        mode='lines+markers', showlegend=False,
+        line=dict(color='#c28b00', width=2.0), marker=dict(size=6),
+    ))
+    fig_bot.update_layout(
+        title_text='Mean relative spectral error over time', title_x=0.5,
+        xaxis_title='Time (t)', yaxis_title='Mean relative error',
+        width=1000, height=400,
+    )
+    try:
+        fig_bot.write_image(os.path.join(dir_beamer, f'{basename}_bottom{ext}'), scale=2.0)
+    except Exception as e:
+        print('Erro ao salvar beamer spectral bottom como PNG. Instale kaleido: pip install kaleido')
+        raise e
+    print(f'spectral panel beamer rows saved to {dir_beamer}')
 
 
 def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):
@@ -948,308 +930,175 @@ def plot_spectral_bias_evolution(ordered_metadata, outdir, filename='spectral_bi
 
 
 def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolution.png'):
-    """Plot per-frequency-band spectral error vs training epoch for each model.
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
 
-    models_data: list of (label, spectral_history) tuples, where spectral_history is a dict
-                 with keys 'epochs', 'low_band', 'mid_band', 'high_band'.
-    Expected order: [pinn_no_data, pinn_data, pino_no_data, pino_data, fno].
-    The last model is rendered spanning the full width of the bottom row.
-    """
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
-    band_colors = ['#1f77b4', '#9467bd', '#d62728']   # blue, purple, red
-    band_labels = [
-        r'Low freq  ($k < N_x/4$)',
-        r'Mid freq  ($N_x/4 \leq k < N_x/2$)',
-        r'High freq ($k \geq N_x/2$)',
-    ]
+    band_colors = ['#1f77b4', '#9467bd', '#d62728']
+    band_labels = ['Low freq (k < Nx/4)', 'Mid freq (Nx/4 ≤ k < Nx/2)', 'High freq (k ≥ Nx/2)']
     band_keys = ['low_band', 'mid_band', 'high_band']
 
     n = len(models_data)
-    # first n-1 models in 2-column pairs; last model spans full width
-    n_pair_rows = (n - 1 + 1) // 2  # ceiling of (n-1)/2
-    n_rows = n_pair_rows + 1         # +1 for the spanning bottom row
+    n_top = n - 1
+    n_pair_rows = (n_top + 1) // 2 if n_top > 0 else 0
+    n_rows = n_pair_rows + 1
 
-    fig = plt.figure(figsize=(14, 4.5 * n_rows))
-    gs = fig.add_gridspec(n_rows, 2, hspace=0.50, wspace=0.32)
+    specs = []
+    for r in range(n_pair_rows):
+        has_right = (r * 2 + 1) < n_top
+        specs.append([{'type': 'xy'}, {'type': 'xy'} if has_right else None])
+    specs.append([{'type': 'xy', 'colspan': 2}, None])
 
-    axes = []
-    for i in range(n - 1):
-        row = i // 2
-        col = i % 2
-        axes.append(fig.add_subplot(gs[row, col]))
-    axes.append(fig.add_subplot(gs[-1, :]))  # last model spans both columns
+    subplot_titles = []
+    for r in range(n_pair_rows):
+        li, ri = r * 2, r * 2 + 1
+        subplot_titles.append(models_data[li][0] if li < n_top else '')
+        subplot_titles.append(models_data[ri][0] if ri < n_top else '')
+    subplot_titles += [models_data[-1][0], '']
 
-    for i, (ax, (label, sh)) in enumerate(zip(axes, models_data)):
-        epochs = np.asarray(sh['epochs'])
+    fig = make_subplots(
+        rows=n_rows, cols=2,
+        specs=specs,
+        subplot_titles=subplot_titles,
+        vertical_spacing=0.12,
+        horizontal_spacing=0.1,
+    )
+
+    for i in range(n_top):
+        row = i // 2 + 1
+        col = i % 2 + 1
+        label, sh = models_data[i]
+        epochs = np.asarray(sh['epochs']).tolist()
         for color, blab, key in zip(band_colors, band_labels, band_keys):
-            vals = np.asarray(sh[key])
-            ax.semilogy(epochs, vals, color=color, lw=2.0, label=blab, alpha=0.9)
+            vals = np.asarray(sh[key]).tolist()
+            fig.add_trace(go.Scatter(
+                x=epochs, y=vals, mode='lines', name=blab,
+                line=dict(color=color, width=2.0), opacity=0.9,
+                showlegend=(i == 0),
+            ), row=row, col=col)
+        fig.update_yaxes(type='log', row=row, col=col)
+        fig.update_xaxes(title_text='Epoch', row=row, col=col)
+        fig.update_yaxes(title_text='Rel. spectral error', row=row, col=col)
 
-        ax.set_title(label, fontsize=13, fontweight='bold')
-        ax.set_xlabel('Epoch', fontsize=11)
-        ax.set_ylabel('Rel. Spectral Error', fontsize=11)
-        ax.grid(True, alpha=0.25)
-        ax.tick_params(labelsize=10)
-        if i == 0:
-            ax.legend(fontsize='small', loc='upper right')
+    last_label, last_sh = models_data[-1]
+    epochs = np.asarray(last_sh['epochs']).tolist()
+    for color, blab, key in zip(band_colors, band_labels, band_keys):
+        vals = np.asarray(last_sh[key]).tolist()
+        fig.add_trace(go.Scatter(
+            x=epochs, y=vals, mode='lines', name=blab,
+            line=dict(color=color, width=2.0), opacity=0.9,
+            showlegend=False,
+        ), row=n_rows, col=1)
+    fig.update_yaxes(type='log', row=n_rows, col=1)
+    fig.update_xaxes(title_text='Epoch', row=n_rows, col=1)
+    fig.update_yaxes(title_text='Rel. spectral error', row=n_rows, col=1)
 
-    fig.suptitle('Spectral Error Evolution by Frequency Band During Training', fontsize=14, y=1.01)
-    fig.savefig(outpath, dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f'spectral bias panel saved to {outpath}')
-
-
-def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title):
-    # create animation of predicted and true eta(x,t) over time
-    _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
-
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=100)
-    ax.set_title(title)
-    ax.set_xlabel('Space (x)')
-    ax.set_ylabel('η(x,t)')
-    ax.set_xlim(x[0], x[-1])
-    ymin = min(np.nanmin(eta_true), np.nanmin(eta_pred))
-    ymax = max(np.nanmax(eta_true), np.nanmax(eta_pred))
-    ax.set_ylim(ymin - 0.1 * abs(ymin), ymax + 0.1 * abs(ymax))
-    ax.grid(True, alpha=0.3)
-
-    true_line, = ax.plot([], [], color='black', lw=2, label='True')
-    pred_line, = ax.plot([], [], color='#ff7f0e', lw=2, linestyle='--', label='predicted')
-    time_text = ax.text(0.02, 0.92, '', transform=ax.transAxes, fontsize=12,
-                        bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
-    ax.legend()
-
-    def init():
-        true_line.set_data([], [])
-        pred_line.set_data([], [])
-        time_text.set_text('')
-        return true_line, pred_line, time_text
-
-    def update(frame):
-        true_line.set_data(x, eta_true[:, frame])
-        pred_line.set_data(x, eta_pred[:, frame])
-        time_text.set_text(f'Time: {t[frame]:.2f}')
-        return true_line, pred_line, time_text
-
-    # extend animation runtime by +5 seconds for evaluation
-    original_duration = len(t) / 20.0
-    extended_duration = original_duration + 5.0
-    fps = max(1, int(round(len(t) / extended_duration)))
-    interval = 1000.0 / fps
-
-    ani = animation.FuncAnimation(fig, update, frames=len(t), init_func=init, blit=True, interval=interval)
-    ani.save(outpath, writer='pillow', fps=fps)
-    print(f'animation saved to {outpath}')
-    plt.close(fig)
+    fig.update_layout(
+        title_text='Spectral error evolution by frequency band during training', title_x=0.5,
+        width=1400, height=480 * n_rows,
+        template='plotly_white',
+        showlegend=True,
+        legend=dict(x=0.01, y=0.99, xanchor='left', yanchor='top'),
+    )
+    try:
+        fig.write_image(outpath, scale=2.0)
+        print(f'spectral bias panel saved to {outpath}')
+    except Exception as e:
+        print('Erro ao salvar spectral bias panel como PNG. Instale kaleido: pip install kaleido')
+        raise e
 
 
-def plot_solution_surface_3d(x, t, eta_true, eta_pred, outdir, filename, title,
-                              true_label='Reference', pred_label='Prediction', cmap='inferno'):
-    # create side-by-side 3d surfaces for reference and prediction using Plotly
+def save_solution_surface_3d_html(x, t, eta_true, eta_pred, outdir, filename, title):
+    # plotly interactive html: side-by-side 3d surface of reference and predicted eta(x,t)
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
-    
+
     _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
+    base = filename.rsplit('.', 1)[0] if '.' in filename else filename
+    outpath = os.path.join(outdir, base + '.html')
 
     x = np.asarray(x, dtype=float)
     t = np.asarray(t, dtype=float)
     eta_true = np.asarray(eta_true, dtype=float)
     eta_pred = np.asarray(eta_pred, dtype=float)
 
-    # use shared z-limits for fair visual comparison
-    z_min = min(np.nanmin(eta_true), np.nanmin(eta_pred))
-    z_max = max(np.nanmax(eta_true), np.nanmax(eta_pred))
-    z_margin = (z_max - z_min) * 0.05
-    z_lim = [z_min - z_margin, z_max + z_margin]
+    z_min = min(float(eta_true.min()), float(eta_pred.min()))
+    z_max = max(float(eta_true.max()), float(eta_pred.max()))
 
-    # Create subplots for 3D surfaces
     fig = make_subplots(
         rows=1, cols=2,
-        specs=[[{'type': 'surface'}, {'type': 'surface'}]],
-        subplot_titles=(true_label, pred_label),
-        horizontal_spacing=0.05
+        specs=[[{'type': 'scene'}, {'type': 'scene'}]],
+        subplot_titles=['Reference', 'Prediction'],
+        horizontal_spacing=0.05,
     )
 
-    # True Surface
-    fig.add_trace(
-        go.Surface(
-            x=t, y=x, z=eta_true,
-            colorscale=cmap,
-            cmin=z_min, cmax=z_max,
-            colorbar=dict(title='η(x,t)', x=1.05, len=0.75),
-            showscale=True
-        ),
-        row=1, col=1
-    )
+    surface_kw = dict(x=x.tolist(), y=t.tolist(), colorscale='Viridis', cmin=z_min, cmax=z_max)
+    fig.add_trace(go.Surface(z=eta_true.T.tolist(), showscale=False, **surface_kw), row=1, col=1)
+    fig.add_trace(go.Surface(z=eta_pred.T.tolist(), colorbar=dict(title='η(x,t)', x=1.02), **surface_kw), row=1, col=2)
 
-    # Predicted Surface
-    fig.add_trace(
-        go.Surface(
-            x=t, y=x, z=eta_pred,
-            colorscale=cmap,
-            cmin=z_min, cmax=z_max,
-            showscale=False
-        ),
-        row=1, col=2
-    )
-
-    # Camera view settings (similar to previous matplotlib angles)
-    # x/y/z correspond to eye coordinates. 
-    camera = dict(
-        eye=dict(x=-1.5, y=-1.8, z=0.8),
-        center=dict(x=0, y=0, z=0),
-        up=dict(x=0, y=0, z=1)
-    )
-
-    # Shared axis/scene configurations
-    scene_config = dict(
-        xaxis_title='Time (t)',
-        yaxis_title='Space (x)',
-        zaxis_title='η',
-        zaxis=dict(range=z_lim),
-        aspectmode='manual',
-        # Set realistic proportional bounding box scale
-        aspectratio=dict(x=1.5, y=1, z=0.4) 
-    )
-
+    camera = dict(eye=dict(x=1.8, y=-1.8, z=1.2))
+    scene_common = dict(xaxis_title='Space (x)', yaxis_title='Time (t)', zaxis_title='η(x,t)', camera=camera)
     fig.update_layout(
-        title_text=title,
-        title_x=0.5,
-        scene=scene_config,
-        scene2=scene_config,
-        margin=dict(l=0, r=0, b=0, t=60), # Remove excessive white space
-        width=1200,
-        height=600
+        title_text=title, title_x=0.5,
+        width=1400, height=650,
+        scene=scene_common, scene2=scene_common,
     )
-    
-    # Apply camera to both scenes
-    fig.layout.scene.camera = camera
-    fig.layout.scene2.camera = camera
-
-    # Save to file (requires 'kaleido')
-    try:
-        fig.write_image(outpath, scale=2.0)
-        print(f'Plotly 3d surface plot saved to {outpath}')
-    except Exception as e:
-        print("Erro ao salvar Plotly em PNG. Certifique-se de ter rodado: pip install kaleido")
-        raise e
+    fig.write_html(outpath)
+    print(f'solution surface html saved to {outpath}')
 
 
-def plot_radially_revolved_gif(x, t, eta_true, eta_pred, outdir, filename, title,
-                               true_label='Reference', pred_label='Prediction', cmap='inferno'):
-    # create a plotly 3D GIF animating the radial revolution of eta
+def save_solution_plotly_html(x, t, eta_true, eta_pred, outdir, filename, title):
+    # plotly interactive html: reference + predicted eta(x,t) heatmaps + relative error
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
-    from PIL import Image
-    import io
-    
+
     _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
-    if not outpath.endswith('.gif'):
-        outpath = outpath.rsplit('.', 1)[0] + '.gif'
+    base = filename.rsplit('.', 1)[0] if '.' in filename else filename
+    outpath = os.path.join(outdir, base + '.html')
 
     x = np.asarray(x, dtype=float)
     t = np.asarray(t, dtype=float)
+    eta_true = np.asarray(eta_true, dtype=float)
+    eta_pred = np.asarray(eta_pred, dtype=float)
 
-    # 1. Create a 2D radial mesh (Full circle)
-    x_center = (np.max(x) + np.min(x)) / 2.0
-    r_max = np.max(np.abs(x - x_center))
-    
-    grid_pts = 160 # High resolution for "marolinhas"
-    linspace = np.linspace(-r_max, r_max, grid_pts)
-    X, Y = np.meshgrid(linspace, linspace)
-    R = np.sqrt(X**2 + Y**2)
-    R_clipped = np.clip(R, 0, np.max(np.abs(x - x_center)))
-
-    # Since we are not plotting true solution, scale bounds based on prediction
-    z_min = np.nanmin(eta_pred)
-    z_max = np.nanmax(eta_pred)
-    z_margin = (z_max - z_min) * 0.05
-    z_lim = [z_min - z_margin, z_max + z_margin]
-
-    def get_radially_revolved(eta_1d):
-        idx_right = x >= x_center
-        x_right = x[idx_right] - x_center
-        eta_right = eta_1d[idx_right]
-        Z = np.interp(R_clipped.ravel(), x_right, eta_right)
-        
-        # Zero out values outside the physical circle to make it look clean
-        Z = Z.reshape(R.shape)
-        Z[R > r_max] = np.nan
-        return Z
-
-    camera = dict(
-        eye=dict(x=-1.2, y=-1.6, z=0.8), # Pulled back slightly for the wider frame
-        center=dict(x=0, y=0, z=-0.1),
-        up=dict(x=0, y=0, z=1)
-    )
-    scene_config = dict(
-        xaxis_title='Space X',
-        yaxis_title='Space Y',
-        zaxis_title='η(x, y)',
-        zaxis=dict(range=z_lim),
-        xaxis=dict(range=[-r_max, r_max]),
-        yaxis=dict(range=[-r_max, r_max]),
-        aspectmode='manual',
-        aspectratio=dict(x=1.8, y=1.8, z=0.3) # Increased domain X/Y and reduced Z to avoid pointiness
+    rel_error = compute_relative_error(eta_true, eta_pred)
+    rel_error = np.clip(rel_error, 0.0, 1.0)
+    time_rel_norm = (
+        np.linalg.norm(np.abs(eta_true - eta_pred), axis=0)
+        / (np.linalg.norm(eta_true, axis=0) + 1e-8)
     )
 
-    max_frames = 48
-    step = max(1, len(t) // max_frames)
-    frame_indices = list(range(0, len(t), step))
-    # ensure last frame is included
-    if frame_indices[-1] != len(t) - 1:
-        frame_indices.append(len(t) - 1)
+    z_min = min(float(eta_true.min()), float(eta_pred.min()))
+    z_max = max(float(eta_true.max()), float(eta_pred.max()))
 
-    print(f"Generating radial 3D GIF ({len(frame_indices)} frames)...")
-    frames = []
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=['Reference η(x,t)', 'Predicted η(x,t)', 'Relative Error', 'Error Norm Over Time'],
+        vertical_spacing=0.13,
+        horizontal_spacing=0.08,
+    )
 
-    for idx in frame_indices:
-        Z_pred = get_radially_revolved(eta_pred[:, idx])
+    heatmap_kw = dict(x=x.tolist(), y=t.tolist(), colorscale='Viridis', zmin=z_min, zmax=z_max)
+    fig.add_trace(go.Heatmap(z=eta_true.T.tolist(), showscale=False, **heatmap_kw), row=1, col=1)
+    fig.add_trace(go.Heatmap(z=eta_pred.T.tolist(), colorbar=dict(title='η', x=1.02, len=0.45, y=0.78), **heatmap_kw), row=1, col=2)
+    fig.add_trace(go.Heatmap(
+        z=rel_error.T.tolist(), x=x.tolist(), y=t.tolist(),
+        colorscale='Magma', zmin=0.0, zmax=1.0,
+        colorbar=dict(title='Rel. err', x=1.02, len=0.45, y=0.22),
+    ), row=2, col=1)
+    fig.add_trace(go.Scatter(
+        x=t.tolist(), y=time_rel_norm.tolist(),
+        mode='lines', line=dict(color='crimson', width=2), name='error norm',
+    ), row=2, col=2)
 
-        fig = go.Figure()
+    fig.update_xaxes(title_text='Space (x)', row=1)
+    fig.update_xaxes(title_text='Space (x)', row=2, col=1)
+    fig.update_xaxes(title_text='Time (t)', row=2, col=2)
+    fig.update_yaxes(title_text='Time (t)', col=1)
+    fig.update_yaxes(title_text='Relative error', row=2, col=2)
+    fig.update_layout(title_text=title, title_x=0.5, width=1200, height=900, showlegend=False)
 
-        # Added lighting properties to create shadows/specular reflections and 'Viridis' color
-        fig.add_trace(
-            go.Surface(
-                x=X, y=Y, z=Z_pred, 
-                colorscale='Viridis', 
-                cmin=z_min, cmax=z_max, showscale=False,
-                lighting=dict(ambient=0.4, diffuse=0.8, roughness=0.5, specular=0.6, fresnel=0.2)
-            )
-        )
-
-        fig.update_layout(
-            title_text=f"{title} (t = {t[idx]:.2f})",
-            title_x=0.5,
-            scene=scene_config,
-            margin=dict(l=0, r=0, b=0, t=60),
-            width=1200,
-            height=850,
-            paper_bgcolor='white'
-        )
-        fig.layout.scene.camera = camera
-
-        try:
-            img_bytes = fig.to_image(format="png", width=1200, height=850, scale=1.5)
-            image = Image.open(io.BytesIO(img_bytes))
-            frames.append(image)
-        except Exception as e:
-            print("Erro ao gerar frame para o GIF. Verifique o pacote kaleido.")
-            return
-
-    if frames:
-        # approx 5 seconds total duration
-        duration_per_frame = max(50, 5000 // len(frames))
-        frames[0].save(
-            outpath,
-            save_all=True,
-            append_images=frames[1:],
-            loop=0,
-            duration=duration_per_frame
-        )
-        print(f"Radial evolution 3D GIF saved to: {outpath}")
+    fig.write_html(outpath)
+    print(f'solution html saved to {outpath}')

@@ -4,9 +4,8 @@ import numpy as np
 import torch
 
 
-def save_model(model, filepath, *, model_name='model', epochs=None, n_samples=None, modes=(16,16), width=None, seed=None, extra=''):
-    # save model weights to disk with descriptive filename metadata
-    """save model weights to disk using a descriptive filename."""
+def save_model(model, filepath):
+    # save model state dict to disk
     os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
     torch.save(model.state_dict(), filepath)
     print(f'model saved to {filepath}')
@@ -99,8 +98,8 @@ class RelativeL2_loss(object):
         return torch.mean(numerator / (denominator + self.eps))
 
 
-def save_metadata_json(metadata: dict, filepath: str) -> None:
-    """Save a JSON-serializable subset of training metadata alongside the .pth file."""
+def save_metadata_json(metadata, filepath):
+    # save json-serializable training metadata to disk
     def _coerce(obj):
         if isinstance(obj, (np.integer,)):
             return int(obj)
