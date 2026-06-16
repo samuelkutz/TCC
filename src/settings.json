@@ -33,10 +33,10 @@
     "print_interval": 500
   },
   "pinn": {
-    "epochs": 5000,
+    "epochs": 15000,
     "neurons": 256,
     "hidden_layers": 4,
-    "domain_points": 8000,
+    "domain_points": 5000,
     "ic_points": 500,
     "optimizer_name": "Adam",
     "lr": 1e-3,
