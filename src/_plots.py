@@ -53,23 +53,528 @@ def plot_training_loss(train_loss_history, outdir, filename, duration_seconds=No
 
 
 def plot_soliton_profile(outdir, filename='soliton_profile.png', A=1.0):
+    import plotly.graph_objects as go
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
     x = np.linspace(-6, 6, 600)
     y = A / np.cosh(x) ** 2
 
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(x, y, color='#ff7f0e', lw=2.2)
-    ax.set_title(r'Initial soliton profile $\eta(x,0) = A\,\mathrm{sech}^2(x)$, $A=1$', fontsize=14)
-    ax.set_xlabel(r'$x$', fontsize=12)
-    ax.set_ylabel(r'$\eta(x,0)$', fontsize=12)
-    ax.grid(True, alpha=0.35)
-    ax.tick_params(axis='both', which='major', labelsize=10)
-    fig.tight_layout()
-    fig.savefig(outpath, dpi=150)
-    print(f'soliton profile saved to {outpath}')
-    plt.close(fig)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=x.tolist(), y=y.tolist(),
+        mode='lines',
+        line=dict(color='#ff7f0e', width=2.2),
+        showlegend=False,
+    ))
+    fig.update_layout(
+        title_text=f'Initial soliton profile η(x,0) = A·sech²(x), A={A}',
+        title_x=0.5,
+        xaxis_title='x',
+        yaxis_title='η(x,0)',
+        template='plotly_white',
+        width=1000, height=400,
+    )
+    try:
+        fig.write_image(outpath, scale=2.0)
+        print(f'soliton profile saved to {outpath}')
+    except Exception as e:
+        print('Erro ao salvar soliton profile como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+
+def _build_tanh_mlp_on_grid(n_grid, width, hidden_layers, periodic, seed):
+    # build a tanh MLP u_theta(x): R -> R on a uniform periodic grid on [-1, 1).
+    # returns the grid x, the model, and the (embedded) network input on the grid.
+    import torch
+    import torch.nn as nn
+
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    device = torch.device('cpu')
+
+    # uniform periodic grid on [-1, 1), matching eq:grid
+    x = (-1.0 + 2.0 * np.arange(n_grid) / n_grid).astype(np.float32)
+    x_t = torch.tensor(x, device=device).unsqueeze(-1)
+    if periodic:
+        # periodic embedding: map the coordinate onto the circle
+        inp = torch.cat([torch.cos(np.pi * x_t), torch.sin(np.pi * x_t)], dim=1)
+        din = 2
+    else:
+        inp = x_t
+        din = 1
+
+    layers = [nn.Linear(din, width), nn.Tanh()]
+    for _ in range(hidden_layers - 1):
+        layers += [nn.Linear(width, width), nn.Tanh()]
+    layers += [nn.Linear(width, 1)]
+    model = nn.Sequential(*layers).to(device)
+    return x, model, inp
+
+
+def _empirical_ntk(model, inp):
+    # empirical NTK K0 = J J^T at the current parameters, J_i = d u_theta(x_i) / d theta
+    import torch
+
+    params = [p for p in model.parameters() if p.requires_grad]
+    out = model(inp).reshape(-1)
+    n = out.shape[0]
+    rows = []
+    for i in range(n):
+        grads = torch.autograd.grad(out[i], params, retain_graph=(i < n - 1), create_graph=False)
+        rows.append(torch.cat([g.reshape(-1) for g in grads]))
+    J = torch.stack(rows, dim=0)
+    return (J @ J.T).detach().cpu().numpy()
+
+
+def _empirical_ntk_on_grid(n_grid, width, hidden_layers, periodic, seed):
+    # build a tanh MLP on a uniform grid and return (x, K0) at initialization
+    x, model, inp = _build_tanh_mlp_on_grid(n_grid, width, hidden_layers, periodic, seed)
+    model.eval()
+    K0 = _empirical_ntk(model, inp)
+    return x, K0
+
+
+def plot_ntk_eigenvector_spectrogram(outdir, filename='ntk_eigenvector_spectrogram.png',
+                                     n_grid=128, width=128, hidden_layers=4, seed=37,
+                                     periodic=True, n_show=64):
+    # companion experiment for the simple argument: the Fourier content |F v_k| of each
+    # NTK eigenvector v_k, with eigenvectors ordered by descending eigenvalue lambda_k.
+    # if the bright band drifts from low frequency (top, large lambda) to high frequency
+    # (bottom, small lambda), the single empirical claim holds -- straight from the
+    # eigenvectors, with no S(xi_k) and no circulance assumption.
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
+
+    _, K0 = _empirical_ntk_on_grid(n_grid, width, hidden_layers, periodic, seed)
+
+    w, Q = np.linalg.eigh(K0)            # ascending eigenvalues, columns are eigenvectors
+    order = np.argsort(w)[::-1]          # sort by descending lambda_k
+    Q = Q[:, order]
+
+    # |F v_k| for each eigenvector: rfft along the grid axis, rows = eigenvectors
+    spec = np.abs(np.fft.rfft(Q, axis=0)).T   # (n_eig, n_pos)
+    spec = spec / (spec.max(axis=1, keepdims=True) + 1e-12)  # row-normalize for visibility
+    if n_show is not None:
+        spec = spec[:n_show]
+    n_eig, n_pos = spec.shape
+
+    import plotly.graph_objects as go
+
+    modes = np.arange(n_pos)
+    ranks = np.arange(1, n_eig + 1)
+    fig = go.Figure(data=go.Heatmap(
+        z=spec, x=modes.tolist(), y=ranks.tolist(),
+        colorscale='Viridis',
+        colorbar=dict(title='|F v_k| (row max = 1)'),
+    ))
+    fig.update_layout(
+        title_text='Fourier content |F v_k| of NTK eigenvectors (row-normalized)',
+        title_x=0.5,
+        xaxis_title='Fourier mode',
+        yaxis_title='Eigenvector rank (by descending lambda_k)',
+        template='plotly_white',
+        width=1000, height=600,
+    )
+    fig.update_yaxes(autorange='reversed')  # rank 1 (largest lambda_k) on top
+    try:
+        fig.write_image(outpath, scale=2.0)
+        print(f'ntk eigenvector spectrogram saved to {outpath}')
+    except Exception as e:
+        print('Erro ao salvar ntk eigenvector spectrogram como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+
+def plot_ntk_spectral_prediction(outdir, filename='ntk_spectral_prediction.png',
+                                 n_grid=128, width=128, hidden_layers=4, seed=37, periodic=True,
+                                 target_modes=(1, 2, 3, 4), probe_modes=(1, 2, 3, 4),
+                                 n_iters=30000, stability_factor=1.0, n_checkpoints=70):
+    # decisive experiment: predict the per-frequency error decay from the NTK at init and
+    # compare against actual gradient descent. linearized (lazy) prediction is
+    #   e(n) = (I - mu K0)^n e0,  the exact forward-Euler/GD integration of de/dtau = -K0 e.
+    # success = the trained curves overlay the NTK curves, and low modes decay before high.
+    import torch
+
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
+
+    x, model, inp = _build_tanh_mlp_on_grid(n_grid, width, hidden_layers, periodic, seed)
+    device = inp.device
+    params = [p for p in model.parameters() if p.requires_grad]
+
+    # target: a real periodic signal carrying unit amplitude in the chosen Fourier modes
+    n_pos = n_grid // 2 + 1
+    u_hat_target = np.zeros(n_pos, dtype=complex)
+    for m in target_modes:
+        u_hat_target[m] = 1.0
+    u = np.fft.irfft(u_hat_target, n=n_grid).astype(np.float32)
+    u_t = torch.tensor(u, device=device)
+
+    # NTK and initial error at initialization
+    model.eval()
+    K0 = _empirical_ntk(model, inp)
+    e0 = (model(inp).reshape(-1).detach().cpu().numpy() - u)
+
+    # linearized prediction  e(n) = Q (1 - mu w)^n Q^T e0
+    w, Q = np.linalg.eigh(K0)
+    w = np.clip(w, 0.0, None)
+    lam_max = float(w[-1])
+    mu = stability_factor / lam_max
+    coeff0 = Q.T @ e0
+    factor = 1.0 - mu * w
+
+    def e_pred(n):
+        return Q @ ((factor ** n) * coeff0)
+
+    # actual full-batch gradient descent on L = 1/2 sum (u_theta - u)^2
+    opt = torch.optim.SGD(params, lr=mu)
+
+    checkpoints = np.unique(np.round(np.logspace(0, np.log10(n_iters), n_checkpoints)).astype(int))
+    checkpoints = checkpoints[(checkpoints >= 1) & (checkpoints <= n_iters)]
+    cp_set = set(int(c) for c in checkpoints)
+
+    probe = list(probe_modes)
+    measured = {m: [] for m in probe}
+    predicted = {m: [] for m in probe}
+    rec_iters = []
+
+    for n in range(1, n_iters + 1):
+        opt.zero_grad()
+        out = model(inp).reshape(-1)
+        loss = 0.5 * ((out - u_t) ** 2).sum()
+        loss.backward()
+        opt.step()
+        if n in cp_set:
+            e_meas_hat = np.abs(np.fft.rfft(out.detach().cpu().numpy() - u))
+            e_pred_hat = np.abs(np.fft.rfft(e_pred(n)))
+            for m in probe:
+                measured[m].append(float(e_meas_hat[m]))
+                predicted[m].append(float(e_pred_hat[m]))
+            rec_iters.append(int(n))
+
+    import plotly.graph_objects as go
+
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+    fig = go.Figure()
+    for i, m in enumerate(probe):
+        c = colors[i % len(colors)]
+        fig.add_trace(go.Scatter(
+            x=rec_iters, y=measured[m], mode='lines', name=f'mode {m} (gradient descent)',
+            line=dict(color=c, width=2.6),
+        ))
+        fig.add_trace(go.Scatter(
+            x=rec_iters, y=predicted[m], mode='lines', name=f'mode {m} (NTK prediction)',
+            line=dict(color=c, width=1.6, dash='dash'),
+        ))
+    fig.update_layout(
+        title_text='Per-frequency error: gradient descent vs NTK prediction',
+        title_x=0.5,
+        xaxis_title='Iteration n',
+        yaxis_title='|error spectrum at mode k|',
+        xaxis_type='log', yaxis_type='log',
+        template='plotly_white', width=1000, height=560,
+        legend=dict(x=0.01, y=0.01, xanchor='left', yanchor='bottom'),
+    )
+    try:
+        fig.write_image(outpath, scale=2.0)
+        print(f'ntk spectral prediction saved to {outpath}')
+    except Exception as e:
+        print('Erro ao salvar ntk spectral prediction como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+
+def plot_ntk_iteration_estimator(outdir, filename='ntk_iteration_estimator.png',
+                                 n_grid=128, width=128, hidden_layers=4, seed=37, periodic=True,
+                                 target_modes=(1, 2, 3, 4, 5, 6, 8, 10), n_iters=40000,
+                                 stability_factor=1.0, eps_frac=1e-2, n_checkpoints=200):
+    # test of the iteration estimator n_k = ceil( ln(|c_k(0)|/eps) / (mu lambda_k) ): the
+    # predicted number of gradient-descent steps to bring eigen-mode k below eps. we run
+    # actual GD, project the measured error onto the init eigenvectors v_k, read off the
+    # iteration where |c_k(n)| first crosses eps, and scatter measured vs predicted. points
+    # on the diagonal mean the estimator is right.
+    import torch
+
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
+
+    x, model, inp = _build_tanh_mlp_on_grid(n_grid, width, hidden_layers, periodic, seed)
+    device = inp.device
+    params = [p for p in model.parameters() if p.requires_grad]
+
+    n_pos = n_grid // 2 + 1
+    u_hat_target = np.zeros(n_pos, dtype=complex)
+    for m in target_modes:
+        u_hat_target[m] = 1.0
+    u = np.fft.irfft(u_hat_target, n=n_grid).astype(np.float32)
+    u_t = torch.tensor(u, device=device)
+
+    model.eval()
+    K0 = _empirical_ntk(model, inp)
+    e0 = (model(inp).reshape(-1).detach().cpu().numpy() - u)
+
+    w, Q = np.linalg.eigh(K0)
+    w = np.clip(w, 0.0, None)
+    lam_max = float(w[-1])
+    mu = stability_factor / lam_max
+
+    c0 = Q.T @ e0                                  # modal amplitudes c_k(0) = v_k^T e0
+    eps = eps_frac * float(np.max(np.abs(c0)))
+
+    # estimator: n_k = ln(|c_k(0)|/eps) / (mu lambda_k)   (only where it is positive)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        n_pred = np.log(np.abs(c0) / eps) / (mu * w)
+
+    # actual GD, recording modal amplitudes c_k(n) = v_k^T e(n) at log-spaced checkpoints
+    opt = torch.optim.SGD(params, lr=mu)
+    checkpoints = np.unique(np.round(np.logspace(0, np.log10(n_iters), n_checkpoints)).astype(int))
+    checkpoints = checkpoints[(checkpoints >= 1) & (checkpoints <= n_iters)]
+    cp_set = set(int(c) for c in checkpoints)
+
+    rec_iters = []
+    c_hist = []                                    # |c_k(n)| at each checkpoint
+    for n in range(1, n_iters + 1):
+        opt.zero_grad()
+        out = model(inp).reshape(-1)
+        loss = 0.5 * ((out - u_t) ** 2).sum()
+        loss.backward()
+        opt.step()
+        if n in cp_set:
+            e_meas = out.detach().cpu().numpy() - u
+            c_hist.append(np.abs(Q.T @ e_meas))
+            rec_iters.append(int(n))
+    rec_iters = np.asarray(rec_iters)
+    c_hist = np.asarray(c_hist)                     # (n_cp, N)
+
+    # measured crossing iteration per mode: first checkpoint with |c_k(n)| < eps,
+    # refined by log-log interpolation between the bracketing checkpoints
+    n_meas = np.full(w.shape[0], np.nan)
+    for k in range(w.shape[0]):
+        below = np.where(c_hist[:, k] < eps)[0]
+        if below.size == 0 or c_hist[0, k] < eps:
+            continue
+        j = below[0]
+        if j == 0:
+            n_meas[k] = rec_iters[0]
+            continue
+        n1, n2 = rec_iters[j - 1], rec_iters[j]
+        a1, a2 = c_hist[j - 1, k], c_hist[j, k]
+        # interpolate in (log n, log amplitude)
+        t = (np.log(eps) - np.log(a1)) / (np.log(a2) - np.log(a1) + 1e-30)
+        n_meas[k] = np.exp(np.log(n1) + t * (np.log(n2) - np.log(n1)))
+
+    # keep eigen-modes whose predicted crossing falls inside the training budget
+    valid = np.isfinite(n_meas) & np.isfinite(n_pred) & (n_pred >= 1) & (n_pred <= n_iters)
+    xp = n_pred[valid]
+    yp = n_meas[valid]
+    lam = w[valid]
+
+    import plotly.graph_objects as go
+
+    lim_lo = max(1.0, float(min(xp.min(), yp.min())) * 0.6)
+    lim_hi = min(float(n_iters), float(max(xp.max(), yp.max())) * 1.5)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=[lim_lo, lim_hi], y=[lim_lo, lim_hi], mode='lines',
+        line=dict(color='black', width=1.3, dash='dash'),
+        name='n_measured = n_k',
+    ))
+    fig.add_trace(go.Scatter(
+        x=xp.tolist(), y=yp.tolist(), mode='markers', showlegend=False,
+        marker=dict(
+            size=11, color=np.log10(lam).tolist(), colorscale='Viridis',
+            showscale=True, colorbar=dict(title='log10 lambda_k'),
+            line=dict(color='black', width=0.5),
+        ),
+    ))
+    fig.update_layout(
+        title_text='Iteration estimator n_k vs measured crossing',
+        title_x=0.5,
+        xaxis_title='Predicted n_k = ln(|c_k(0)|/eps) / (mu lambda_k)',
+        yaxis_title='Measured iteration where |c_k(n)| < eps',
+        xaxis_type='log', yaxis_type='log',
+        xaxis_range=[np.log10(lim_lo), np.log10(lim_hi)],
+        yaxis_range=[np.log10(lim_lo), np.log10(lim_hi)],
+        template='plotly_white', width=820, height=760,
+        legend=dict(x=0.02, y=0.98, xanchor='left', yanchor='top'),
+    )
+    try:
+        fig.write_image(outpath, scale=2.0)
+        print(f'ntk iteration estimator saved to {outpath} ({int(valid.sum())} modes, eps={eps:.2e}, mu={mu:.2e})')
+    except Exception as e:
+        print('Erro ao salvar ntk iteration estimator como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+
+def plot_ntk_spectral_estimate(outdir, filename='ntk_spectral_estimate.png',
+                               n_grid=128, width=128, hidden_layers=4, seed=37, periodic=True,
+                               target_n_modes=16, snapshots=(0, 30, 300, 3000, 30000),
+                               n_iters=30000, stability_factor=1.0):
+    # test of the full spectral estimate: the linearized NTK predicts the entire error
+    # spectrum at any time,  e_hat(n) = F (I - mu K0)^n e0.  using a broadband target, we
+    # snapshot the measured spectrum |e_hat_k(n)| over all modes at several iterations and
+    # overlay the prediction. agreement (and the low-to-high erosion front) tests the
+    # estimate of the whole spectrum, not just a few probe modes over time.
+    import torch
+
+    _ensure_outdir(outdir)
+    outpath = os.path.join(outdir, filename)
+
+    x, model, inp = _build_tanh_mlp_on_grid(n_grid, width, hidden_layers, periodic, seed)
+    device = inp.device
+    params = [p for p in model.parameters() if p.requires_grad]
+
+    # broadband target: unit amplitude across the first target_n_modes Fourier modes
+    n_pos = n_grid // 2 + 1
+    u_hat_target = np.zeros(n_pos, dtype=complex)
+    u_hat_target[1:target_n_modes + 1] = 1.0
+    u = np.fft.irfft(u_hat_target, n=n_grid).astype(np.float32)
+    u_t = torch.tensor(u, device=device)
+
+    model.eval()
+    K0 = _empirical_ntk(model, inp)
+    e0 = (model(inp).reshape(-1).detach().cpu().numpy() - u)
+
+    w, Q = np.linalg.eigh(K0)
+    w = np.clip(w, 0.0, None)
+    lam_max = float(w[-1])
+    mu = stability_factor / lam_max
+    coeff0 = Q.T @ e0
+    factor = 1.0 - mu * w
+
+    def e_pred(n):
+        return Q @ ((factor ** n) * coeff0)
+
+    snaps = sorted(s for s in set(snapshots) if 0 <= s <= n_iters)
+    snap_set = set(snaps)
+    measured = {}
+    if 0 in snap_set:
+        measured[0] = np.abs(np.fft.rfft(e0))
+
+    opt = torch.optim.SGD(params, lr=mu)
+    for n in range(1, n_iters + 1):
+        opt.zero_grad()
+        out = model(inp).reshape(-1)
+        loss = 0.5 * ((out - u_t) ** 2).sum()
+        loss.backward()
+        opt.step()
+        if n in snap_set:
+            measured[n] = np.abs(np.fft.rfft(out.detach().cpu().numpy() - u))
+
+    import plotly.graph_objects as go
+    from plotly.colors import sample_colorscale
+
+    modes = np.arange(n_pos)
+    cs = sample_colorscale('Viridis', [i / max(len(snaps) - 1, 1) for i in range(len(snaps))])
+    fig = go.Figure()
+    for i, n in enumerate(snaps):
+        c = cs[i]
+        meas = np.clip(measured[n], 1e-12, None)
+        pred = np.clip(np.abs(np.fft.rfft(e_pred(n))), 1e-12, None)
+        fig.add_trace(go.Scatter(
+            x=modes.tolist(), y=meas.tolist(), mode='lines',
+            name=f'n={n} (gradient descent)', line=dict(color=c, width=2.6),
+        ))
+        fig.add_trace(go.Scatter(
+            x=modes.tolist(), y=pred.tolist(), mode='lines',
+            line=dict(color=c, width=1.5, dash='dash'), showlegend=False,
+        ))
+    fig.update_layout(
+        title_text='Error spectrum along training: gradient descent (solid) vs NTK prediction (dashed)',
+        title_x=0.5,
+        xaxis_title='Fourier mode',
+        yaxis_title='|e_hat_k|',
+        yaxis_type='log',
+        xaxis_range=[0, target_n_modes + 4],
+        template='plotly_white', width=1000, height=560,
+        legend=dict(x=0.99, y=0.01, xanchor='right', yanchor='bottom', title='dashed = NTK estimate'),
+    )
+    try:
+        fig.write_image(outpath, scale=2.0)
+        print(f'ntk spectral estimate saved to {outpath} (mu={mu:.2e})')
+    except Exception as e:
+        print('Erro ao salvar ntk spectral estimate como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+
+def plot_ntk_drift(outdir, filename='ntk_drift.png',
+                   n_grid=128, width=128, hidden_layers=4, seed=37, periodic=True,
+                   target_modes=(1, 2, 3, 4), n_iters=40000, stability_factor=1.0,
+                   n_checkpoints=60):
+    # Wang et al. (2020) style NTK stability diagnostic for the grid experiment: track the
+    # relative parameter change ||theta_n - theta_0|| / ||theta_0|| and the relative NTK
+    # change ||K_n - K_0||_F / ||K_0||_F along training, plus the eigenvalue spectrum at
+    # init vs final. a kink in the relative NTK change flags where the lazy (constant-kernel)
+    # regime ends -- i.e. where the linearized predictions start to depart from real GD.
+    import torch
+
+    _ensure_outdir(outdir)
+
+    x, model, inp = _build_tanh_mlp_on_grid(n_grid, width, hidden_layers, periodic, seed)
+    params = [p for p in model.parameters() if p.requires_grad]
+
+    def flat_params():
+        return torch.cat([p.detach().reshape(-1) for p in params]).cpu().numpy()
+
+    n_pos = n_grid // 2 + 1
+    u_hat_target = np.zeros(n_pos, dtype=complex)
+    for m in target_modes:
+        u_hat_target[m] = 1.0
+    u = np.fft.irfft(u_hat_target, n=n_grid).astype(np.float32)
+    u_t = torch.tensor(u, device=inp.device)
+
+    model.eval()
+    theta0 = flat_params()
+    theta0_norm = float(np.linalg.norm(theta0))
+    K0 = _empirical_ntk(model, inp)
+    K0_norm = float(np.linalg.norm(K0))
+    eig_init = np.sort(np.linalg.eigvalsh(K0))[::-1]
+    mu = stability_factor / float(eig_init[0])
+
+    opt = torch.optim.SGD(params, lr=mu)
+    # log-spaced checkpoints, plus a linear grid so the late iterations (around the suspected
+    # transition) are densely covered enough to resolve a sudden change
+    log_cp = np.round(np.logspace(0, np.log10(n_iters), n_checkpoints)).astype(int)
+    lin_cp = np.arange(2000, n_iters + 1, 2000)
+    checkpoints = np.unique(np.concatenate([log_cp, lin_cp]))
+    checkpoints = checkpoints[(checkpoints >= 1) & (checkpoints <= n_iters)]
+    cp_set = set(int(c) for c in checkpoints)
+
+    log_iters, theta_rel, k_rel = [], [], []
+    for n in range(1, n_iters + 1):
+        opt.zero_grad()
+        out = model(inp).reshape(-1)
+        loss = 0.5 * ((out - u_t) ** 2).sum()
+        loss.backward()
+        opt.step()
+        if n in cp_set:
+            th = flat_params()
+            theta_rel.append(float(np.linalg.norm(th - theta0) / theta0_norm))
+            Kn = _empirical_ntk(model, inp)
+            k_rel.append(float(np.linalg.norm(Kn - K0) / K0_norm))
+            log_iters.append(int(n))
+    eig_final = np.sort(np.linalg.eigvalsh(_empirical_ntk(model, inp)))[::-1]
+
+    # diagnostic: largest single-checkpoint jump in the relative NTK change (sudden change?)
+    kr = np.asarray(k_rel)
+    li = np.asarray(log_iters)
+    if kr.size > 1:
+        dk = np.diff(kr)
+        j = int(np.argmax(dk))
+        print(f'ntk drift (mu={mu:.2e}): final ||dtheta||/||theta0|| = {theta_rel[-1]:.3e}, '
+              f'final ||dK||_F/||K0||_F = {k_rel[-1]:.3e}')
+        print(f'  largest jump in rel NTK change: +{dk[j]:.3e} between iter {li[j]} and {li[j + 1]} '
+              f'({kr[j]:.3e} -> {kr[j + 1]:.3e})')
+
+    plot_pinn_ntk_panel(
+        theta_rel_histories=[theta_rel],
+        k_rel_histories=[k_rel],
+        log_epochs=log_iters,
+        eigenvalues_init=[eig_init],
+        eigenvalues_final=[eig_final],
+        widths=[width],
+        outdir=outdir,
+        filename=filename,
+    )
 
 
 def plot_training_statistics(histories, labels, outdir, filename, log_scale=True, duration_seconds=None, final_loss=None, num_params=None):
@@ -584,13 +1089,15 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         show_legend = (row == 0)
         fig.add_trace(go.Scatter(
             x=kx.tolist(), y=true_spec[:, idx].tolist(),
-            mode='lines', name='True', showlegend=show_legend,
+            mode='lines+markers', name='True', showlegend=show_legend,
             line=dict(color='#222222', width=2.0),
+            marker=dict(size=3, symbol='circle'),
         ), row=row + 1, col=1)
         fig.add_trace(go.Scatter(
             x=kx.tolist(), y=pred_spec[:, idx].tolist(),
-            mode='lines', name='Predicted', showlegend=show_legend,
+            mode='lines+markers', name='Predicted', showlegend=show_legend,
             line=dict(color='#ff7f0e', width=1.8, dash='dash'),
+            marker=dict(size=3, symbol='diamond'),
         ), row=row + 1, col=1)
         fig.update_xaxes(title_text='Spectral index n', row=row + 1, col=1)
         fig.update_yaxes(title_text='Amplitude', row=row + 1, col=1)
@@ -598,8 +1105,9 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         mean_rel = float(mean_rel_err_over_time[idx])
         fig.add_trace(go.Scatter(
             x=kx.tolist(), y=rel_err[:, idx].tolist(),
-            mode='lines', showlegend=False,
+            mode='lines+markers', showlegend=False,
             line=dict(color='crimson', width=1.8),
+            marker=dict(size=3, symbol='circle'),
         ), row=row + 1, col=2)
         fig.add_annotation(
             text=f'Mean: {mean_rel:.2e}',
@@ -864,6 +1372,57 @@ def save_solution_plotly_html(x, t, eta_true, eta_pred, outdir, filename, title)
     print(f'solution html saved to {outpath}')
 
 
+def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title_prefix, fps=20):
+    # animate eta(x, t) over time: reference (gray) vs prediction (orange line),
+    # with the evolving time value shown in the title. saves a .gif via matplotlib.
+    from matplotlib.animation import FuncAnimation, PillowWriter
+
+    _ensure_outdir(outdir)
+    base = filename.rsplit('.', 1)[0] if '.' in filename else filename
+    outpath = os.path.join(outdir, base + '.gif')
+
+    x = np.asarray(x, dtype=float)
+    t = np.asarray(t, dtype=float)
+    eta_true = np.asarray(eta_true, dtype=float)
+    eta_pred = np.asarray(eta_pred, dtype=float)
+
+    # eta_* are [space, time]; iterate over the (common) time axis
+    n_frames = int(min(eta_true.shape[1], eta_pred.shape[1], t.shape[0]))
+
+    y_min = float(min(eta_true.min(), eta_pred.min()))
+    y_max = float(max(eta_true.max(), eta_pred.max()))
+    pad = 0.08 * (y_max - y_min + 1e-9)
+    y_min, y_max = y_min - pad, y_max + pad
+
+    fig, ax = plt.subplots(figsize=(7.0, 4.0))
+    line_true, = ax.plot([], [], color='0.55', lw=2.0, label='Referência (pseudoespectral)')
+    line_pred, = ax.plot([], [], color='#E66C11', lw=2.4, label='Predição')
+    ax.set_xlim(float(x.min()), float(x.max()))
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlabel('x')
+    ax.set_ylabel(r'$\eta(x,t)$')
+    ax.legend(loc='upper right', fontsize=9)
+    # reserve room at the top so the per-frame title is never clipped
+    fig.subplots_adjust(left=0.11, right=0.97, top=0.86, bottom=0.13)
+    title = ax.set_title(f'{title_prefix},   t = {t[0]:.2f}', color='black')
+
+    def _init():
+        line_true.set_data([], [])
+        line_pred.set_data([], [])
+        return line_true, line_pred
+
+    def _update(n):
+        line_true.set_data(x, eta_true[:, n])
+        line_pred.set_data(x, eta_pred[:, n])
+        title.set_text(f'{title_prefix},   t = {t[n]:.2f}')
+        return line_true, line_pred
+
+    anim = FuncAnimation(fig, _update, frames=n_frames, init_func=_init, blit=False)
+    anim.save(outpath, writer=PillowWriter(fps=fps))
+    plt.close(fig)
+    print(f'solution gif saved to {outpath}')
+
+
 def plot_pinn_ntk_panel(theta_rel_histories, k_rel_histories, log_epochs,
                          eigenvalues_init, eigenvalues_final, widths, outdir, filename):
     import plotly.graph_objects as go
@@ -905,15 +1464,17 @@ def plot_pinn_ntk_panel(theta_rel_histories, k_rel_histories, log_epochs,
         idx = np.arange(1, len(ev_init) + 1).tolist()
         fig.add_trace(go.Scatter(
             x=idx, y=list(ev_init),
-            mode='lines', name=f'{name} init',
+            mode='lines+markers', name=f'{name} init',
             line=dict(color=color, width=2.0, dash='solid'),
+            marker=dict(size=4, symbol='circle'),
             legendgroup=name, showlegend=False,
         ), row=1, col=3)
         idx_f = np.arange(1, len(ev_final) + 1).tolist()
         fig.add_trace(go.Scatter(
             x=idx_f, y=list(ev_final),
-            mode='lines', name=f'{name} final',
+            mode='lines+markers', name=f'{name} final',
             line=dict(color=color, width=2.0, dash='dash'),
+            marker=dict(size=4, symbol='diamond'),
             legendgroup=name, showlegend=False,
         ), row=1, col=3)
 

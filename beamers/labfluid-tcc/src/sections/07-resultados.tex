@@ -1,0 +1,50 @@
+\section{Resultados e Discussão}
+
+\begin{frame}{Resultados e Discussão}
+  Os painéis (solução vs.\ referência, erro relativo e espectro de Fourier) e as animações
+  de cada método são apresentados \alert{ao vivo}. A seguir, os principais comentários por
+  arquitetura.
+
+  \vspace{0.3cm}
+  \begin{information}[O que observar]
+    Em todos os casos, o comportamento de interesse aparece ao \textbf{aumentar} $\alpha=\beta$:
+    é quando a solução espalha energia por mais frequências e o \alert{viés espectral} e o
+    \alert{efeito de Gibbs} se tornam visíveis.
+  \end{information}
+\end{frame}
+
+\begin{frame}{FNO}
+  \begin{itemize}
+    \item Inferência \alert{muito rápida} --- uma única passada direta, mesmo com
+          $\approx 1$M de parâmetros;
+    \item boa fidelidade nos regimes vistos no treino;
+    \item porém surge o \alert{efeito de Gibbs} na direção temporal: oscilações artificiais
+          que não desaparecem aumentando o número de modos.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{PINO --- com dados vs.\ sem dados}
+  \begin{itemize}
+    \item \textbf{Com dados:} o resíduo físico \alert{elimina o Gibbs} e a aproximação fica
+          consistente com a referência;
+    \item a \textbf{propagação da condição inicial} no tempo é o ponto mais delicado do
+          treino;
+    \item \textbf{Sem dados:} reaparece um \alert{viés espectral forte} --- o PINO puramente
+          físico tem dificuldade com os detalhes de alta frequência.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{PINN e o viés espectral}
+  \begin{itemize}
+    \item A PINN \alert{sofre viés espectral}: aprende primeiro as componentes suaves e
+          perde as altas frequências do perfil;
+    \item acrescentar um termo de \textbf{dados} \emph{atenua} (mas não elimina) o efeito;
+    \item \textbf{sem dados}, a dificuldade é mais severa à medida que a não linearidade cresce.
+  \end{itemize}
+
+  \begin{information}[Comparando as arquiteturas]
+    Por aprenderem diretamente no espaço de Fourier, o \textbf{FNO} e o \textbf{PINO com
+    dados} sofrem menos com o viés espectral; ele reaparece com força no \textbf{PINO sem
+    dados} e nas \textbf{PINNs}.
+  \end{information}
+\end{frame}

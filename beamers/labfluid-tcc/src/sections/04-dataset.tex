@@ -1,0 +1,64 @@
+\section{Geração do Conjunto de Dados}
+
+\begin{frame}{Antes dos métodos: precisamos de dados}
+  Todo método de ML precisa de um \textbf{conjunto de dados}. Aqui ele é gerado por um
+  \alert{solver pseudoespectral} de alta acurácia, que também servirá de \emph{referência}
+  para medir o erro:
+  \begin{equation*}
+    \mathcal{S} = \bigl\{\,((\alpha_i,\beta_i),\,(\eta_i,u_i))\,\bigr\}_{i=1}^{M}.
+  \end{equation*}
+
+  \begin{block}{Ideia do método pseudoespectral}
+    No domínio de Fourier, \textbf{derivar vira multiplicar}. Definindo o número de onda
+    $\xi_k = \pi k / L$, para uma função periódica:
+    \begin{equation*}
+      \widehat{(f_x)}(k) = i\,\xi_k\,\hat{f}(k),
+      \qquad
+      \widehat{(f_{xx})}(k) = -\xi_k^2\,\hat{f}(k).
+    \end{equation*}
+    Diferente das diferenças finitas, isto é \emph{exato} (acurácia espectral).
+  \end{block}
+\end{frame}
+
+\begin{frame}{Uma EDO por número de onda $k$}
+  Aplicando a DFT ao sistema de Boussinesq, cada modo $k$ obedece a um
+  \textbf{sistema de EDOs 2$\times$2 no tempo}:
+  \begin{block}{Sistema espectral (para cada $k \in \mathbb{Z}$)}
+    \small
+    \begin{equation*}
+      \begin{cases}
+        \hat{\eta}_t(k,t) = -\,i\,\xi_k\,\hat{u}(k,t) \;-\; \alpha\,i\,\xi_k\,\widehat{(\eta u)}(k,t), \\[10pt]
+        \hat{u}_t(k,t) = \dfrac{-\,i\,\xi_k\,\hat{\eta}(k,t) \;-\; \alpha\,i\,\xi_k\,\widehat{\bigl(\tfrac{1}{2}u^2\bigr)}(k,t)}{1 + \dfrac{\beta\,\xi_k^2}{3}}.
+      \end{cases}
+    \end{equation*}
+  \end{block}
+
+  \begin{itemize}
+    \item O operador dispersivo $1-\tfrac{\beta}{3}\partial_{xx}$ vira a \alert{divisão escalar}
+          por $1+\tfrac{\beta}{3}\xi_k^2$ --- uma divisão por modo.
+    \item Os termos não lineares ($\eta u$, $\tfrac{1}{2}u^2$) são montados em
+          \textbf{espaço físico} via FFT, a custo $O(N_x \log N_x)$.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Evolução no Tempo por Runge--Kutta 4}
+  Escrevendo o lado direito espectral como $F(\hat\eta,\hat u) = (\hat\eta_t,\hat u_t)$, a
+  solução avança no tempo com o \textbf{RK4 clássico}:
+  \begin{block}{Passo de RK4}
+    \small
+    \begin{equation*}
+      \begin{aligned}
+        \kappa_1 &= F(y_n), &
+        \kappa_2 &= F\!\left(y_n + \tfrac{\Delta t}{2}\kappa_1\right), \\
+        \kappa_3 &= F\!\left(y_n + \tfrac{\Delta t}{2}\kappa_2\right), &
+        \kappa_4 &= F\!\left(y_n + \Delta t\,\kappa_3\right),
+      \end{aligned}
+    \end{equation*}
+    \vspace{-0.2cm}
+    \begin{equation*}
+      y_{n+1} = y_n + \tfrac{\Delta t}{6}\,(\kappa_1 + 2\kappa_2 + 2\kappa_3 + \kappa_4).
+    \end{equation*}
+  \end{block}
+  A cada estágio, alterna-se entre \textbf{espaço físico} (produtos não lineares) e
+  \textbf{espaço de Fourier} (derivadas) --- a operação que define o método pseudoespectral.
+\end{frame}

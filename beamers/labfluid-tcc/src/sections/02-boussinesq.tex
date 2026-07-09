@@ -1,0 +1,75 @@
+\section{O Sistema de Boussinesq}
+
+\begin{frame}{De onde vem o modelo}
+  \begin{columns}[c,totalwidth=\textwidth]
+    \begin{column}{0.6\textwidth}
+      Em 1834, J.~Scott Russell observou num canal escocês uma \alert{onda solitária}:
+      uma elevação de água que viajava por quilômetros \emph{sem mudar de forma}.
+
+      \vspace{0.35cm}
+      Em 1872, J.~Boussinesq explicou o fenômeno como um \textbf{equilíbrio} entre
+      \alert{não linearidade} e \alert{dispersão}, dando origem ao modelo de ondas longas em
+      águas rasas que estudamos aqui \parencite{boussinesq1872}.
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{soliton_profile.png}\\[2pt]
+      {\footnotesize Condição inicial $\eta(x,0)=A\,\mathrm{sech}^2(x)$.}
+    \end{column}
+  \end{columns}
+
+  \begin{information}[Referências]
+    Teoria em \textcite{whitham1974} e \textcite{debnath2012}; forma moderna em
+    \textcite{peregrine1967} e \textcite{bona2002}; parametrização de
+    \textcite{martins2023, martins2024}.
+  \end{information}
+\end{frame}
+
+\begin{frame}{O Sistema Parametrizado}
+  Para a elevação da superfície $\eta(x,t)$ e a velocidade horizontal média $u(x,t)$, na
+  forma unidimensional e periódica:
+  \begin{block}{Sistema de Boussinesq}
+    \begin{equation*}
+      \begin{cases}
+        \eta_t + u_x + \alpha\,(\eta u)_x = 0, \\[4pt]
+        u_t - \dfrac{\beta}{3}\,u_{xxt} + \eta_x + \alpha\,u u_x = 0, \\[4pt]
+        \eta(x,0) = A\,\mathrm{sech}^2(x), \quad u(x,0) = 0, \quad x \in [-L,L].
+      \end{cases}
+    \end{equation*}
+  \end{block}
+
+  \begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.5\textwidth}
+      \begin{itemize}
+        \item $\alpha \geq 0$: parâmetro de \alert{não linearidade};
+        \item $\beta > 0$: parâmetro de \alert{dispersão}.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      No conjunto de dados deste trabalho fixamos $\alpha = \beta$: uma família de
+      \textbf{um parâmetro} cuja dificuldade cresce com o valor comum.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Caso Limite: a Equação da Onda}
+  Quando $\alpha = \beta = 0$, somem os termos não lineares e dispersivos, e o sistema
+  reduz-se à \textbf{equação da onda}:
+  \begin{equation*}
+    \eta_{tt} = \eta_{xx}.
+  \end{equation*}
+  Pela fórmula de d'Alembert, a elevação inicial se divide em \alert{dois pulsos que se
+  afastam} a velocidades $\pm 1$, sem mudar de forma:
+  \begin{block}{Solução de referência ($\alpha=\beta=0$)}
+    \begin{equation*}
+      \eta(x,t) = \frac{A}{2}\Bigl[\mathrm{sech}^2(x-t) + \mathrm{sech}^2(x+t)\Bigr].
+    \end{equation*}
+  \end{block}
+
+  \begin{information}[Intuição]
+    É exatamente esse comportamento --- duas ondas se separando --- que esperamos
+    \emph{recuperar} para $\alpha=\beta$ pequenos. Ao \textbf{aumentar} os parâmetros, surge
+    o desvio: dispersão e não linearidade produzem perfis mais ricos, com energia
+    espalhada por mais frequências, e \emph{fundamentalmente mais difíceis de aprender}.
+  \end{information}
+\end{frame}

@@ -1,0 +1,40 @@
+\section{Objetivos}
+
+\begin{frame}{Motivação}
+  As Equações Diferenciais Parciais (EDPs) são uma das principais linguagens com que
+  modelamos a natureza. Raramente possuem solução fechada, e por isso dependemos de
+  \textbf{métodos numéricos} --- tipicamente discretizando o domínio em malhas e avançando
+  no tempo.
+
+  \vspace{0.4cm}
+  \begin{information}[Uma ponte natural]
+    Com a ascensão dos métodos de \emph{Machine Learning} (ML) e de todo um ecossistema de
+    \emph{software} construído em torno deles, surge uma extensão natural: aproximar
+    soluções de EDPs \alert{aproveitando esse ferramental de Machine Learning} (ML).
+  \end{information}
+
+  \vspace{0.3cm}
+  Neste trabalho, o objeto de estudo é o \textbf{sistema de Boussinesq}, um modelo clássico
+  da hidrodinâmica para ondas longas, não lineares e dispersivas em águas rasas.
+\end{frame}
+
+\begin{frame}{Objetivos do Trabalho}
+  \begin{block}{Objetivo geral}
+    Estudar a \alert{eficácia} de três métodos de Machine Learning --- \textbf{PINN}, \textbf{FNO} e
+    \textbf{PINO} --- para aproximar a solução do sistema de Boussinesq, sempre medindo o
+    erro contra um \textbf{solver pseudoespectral} de alta acurácia tomado como referência.
+  \end{block}
+
+  \vspace{0.2cm}
+  Três perguntas guiam o estudo:
+  \begin{enumerate}
+    \item \textbf{Acurácia vs.\ regime físico:} quão bem cada método reproduz a referência à
+          medida que a não linearidade e a dispersão crescem? Onde cada um começa a falhar?
+    \item \textbf{Dados, física ou híbrido:} como a presença (ou ausência) de dados
+          supervisionados afeta a acurácia e o treinamento? Adicionar um resíduo físico
+          ajuda quando há poucos dados?
+    \item \textbf{Viés espectral:} como o \emph{spectral bias} se manifesta em cada
+          arquitetura, e em que medida dados ou física alteram \emph{quais} frequências do
+          erro são resolvidas primeiro?
+  \end{enumerate}
+\end{frame}

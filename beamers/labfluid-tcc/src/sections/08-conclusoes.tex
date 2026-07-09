@@ -1,0 +1,49 @@
+\section{Conclusões}
+
+\begin{frame}{Principais achados}
+  \begin{table}
+    \centering
+    \small
+    \begin{tabular}{@{}lccc@{}}
+      \toprule
+      \textbf{Método} & \textbf{Gibbs (tempo)} & \textbf{Viés espectral} & \textbf{Custo de inferência} \\
+      \midrule
+      PINN (sem dados)  & ---            & forte             & por amostra \\
+      PINN (com dados)  & ---            & atenuado          & por amostra \\
+      FNO               & \alert{presente} & moderado        & \alert{muito baixo} \\
+      PINO (com dados)  & ausente        & moderado          & muito baixo \\
+      PINO (sem dados)  & ausente        & \alert{forte}     & muito baixo \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+  \vspace{0.2cm}
+  \begin{itemize}
+    \item A \textbf{PINN} sofre viés espectral; \emph{com dados} ele é menos severo.
+    \item O \textbf{FNO} apresenta o \alert{efeito de Gibbs} no tempo, mas é
+          \textbf{extremamente rápido} (1M de parâmetros).
+    \item No \textbf{PINO} o Gibbs \emph{some}, porém a propagação da condição inicial
+          complica; \emph{sem dados}, o viés espectral volta a ser forte.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusão final}
+  \begin{alertblock}{O que (não) propomos}
+    Este trabalho \textbf{não} propõe uma solução para a patologia. O foco é
+    \alert{exibir} que técnicas de Machine Learning, aplicadas ao sistema de Boussinesq,
+    \textbf{reproduzem o viés espectral} --- de modo que um usuário interessado nessas
+    tecnologias \emph{deve levá-lo em consideração}.
+  \end{alertblock}
+
+  \begin{itemize}
+    \item Aplicar Machine Learning para capturar \textbf{ondas dispersivas} ainda \alert{não é
+          consolidado} para essas arquiteturas;
+    \item é necessária \textbf{alguma mitigação} do viés espectral;
+    \item estas técnicas se mostram um \alert{complemento} aos métodos numéricos clássicos
+          --- \textbf{não} um substituto.
+  \end{itemize}
+
+  \begin{information}[Hipótese de trabalho]
+    O ML aprende o caráter \textbf{não linear} com facilidade, mas tem grande
+    \alert{dificuldade com o caráter dispersivo} da solução.
+  \end{information}
+\end{frame}

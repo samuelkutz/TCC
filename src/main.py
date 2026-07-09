@@ -6,12 +6,19 @@ import torch
 
 from BOUSSINESQ.run_dataset import run_dataset
 from FNO.train_fno import train_fno
-from FNO.plots_fno import eval_fno
+from FNO.plots_fno import eval_fno, gif_fno
 from PINO.train_pino import train_pino
-from PINO.plots_pino import eval_pino
+from PINO.plots_pino import eval_pino, gif_pino
 from PINN.train_pinn import train_pinn
-from PINN.plots_pinn import eval_pinn, run_ntk_experiment
-from _plots import plot_soliton_profile, plot_spectral_bias_evolution
+from PINN.plots_pinn import eval_pinn, gif_pinn, run_ntk_experiment
+from _plots import (
+    plot_soliton_profile,
+    plot_spectral_bias_evolution,
+    plot_ntk_eigenvector_spectrogram,
+    plot_ntk_spectral_prediction,
+    plot_ntk_iteration_estimator,
+    plot_ntk_spectral_estimate,
+)
 
 
 with open(os.path.join(os.path.dirname(__file__), 'settings.json')) as settings_file:
@@ -83,6 +90,12 @@ PINO_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pi
 PINN_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pinn', 'with_data', 'pinn_model_metadata.pth')
 PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pinn', 'no_data', 'pinn_no_data_model_metadata.pth')
 
+# gifs: solution evolving in time (orange) vs reference, for the median and last eval params
+GIF_DIR        = os.path.join(IMG_DIR, 'gifs')
+GIF_LAST_PARAM = sorted(EVAL_PARAMS)[-1]
+GIF_PARAMS     = [MEDIAN_PDE_PARAM, GIF_LAST_PARAM]
+GIF_RES        = DATASET_RES
+
 
 def main():
     random.seed(SEED)
@@ -93,88 +106,118 @@ def main():
     torch.backends.cudnn.benchmark = False
 
     os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
+    os.makedirs(GIF_DIR, exist_ok=True)
 
-    print('\n=== plotting soliton profile ===')
-    plot_soliton_profile(outdir=IMG_DIR)
+    # --- solution gifs only (eta(x,t) evolving in time): 2 per method ---
+    print('\n=== generating FNO gifs (median + last param) ===')
+    gif_fno(FNO_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+            params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
 
-    print('\n=== generating shared dataset ===')
-    run_dataset(
-        dataset_file=DATASET_FILE,
-        device=DEVICE,
-        param_values=PARAM_VALUES,
-        x_limit=X_LIMIT,
-        t_limit=T_LIMIT,
-        dataset_res=DATASET_RES,
-    )
+    print('\n=== generating PINO gifs (with data + no data, median + last param) ===')
+    gif_pino('data', PINO_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+             params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
+    gif_pino('no_data', PINO_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+             params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
 
-    print('\n=== training fno ===')
-    train_fno(**FNO_CONFIG)
+    print('\n=== generating PINN gifs (with data + no data, median param) ===')
+    gif_pinn('data', PINN_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+             params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
+    gif_pinn('no_data', PINN_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+             params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
 
-    print('\n=== plotting fno ===')
-    eval_fno(
-       model_metadata_file=FNO_METADATA_FILE,
-       output_dir=FNO_EVAL_DIR,
-       **EVAL_CONFIG,
-    )
+    # print('\n=== plotting soliton profile ===')
+    # plot_soliton_profile(outdir=IMG_DIR)
 
-    print('\n=== training pino with data ===')
-    train_pino('data', **PINO_CONFIG)
+    # print('\n=== plotting ntk eigenvector spectrogram ===')
+    # plot_ntk_eigenvector_spectrogram(outdir=IMG_DIR)
 
-    print('\n=== plotting pino with data ===')
-    eval_pino(
-       'data',
-       PINO_WITH_DATA_METADATA_FILE,
-       output_dir=PINO_WITH_DATA_EVAL_DIR,
-       **EVAL_CONFIG,
-    )
+    # print('\n=== plotting ntk spectral prediction vs gradient descent ===')
+    # plot_ntk_spectral_prediction(outdir=IMG_DIR)
 
-    print('\n=== training pino without data ===')
-    train_pino('no_data', **PINO_CONFIG)
+    # print('\n=== plotting ntk iteration estimator test ===')
+    # plot_ntk_iteration_estimator(outdir=IMG_DIR)
 
-    print('\n=== plotting pino without data ===')
-    eval_pino(
-       'no_data',
-       PINO_NO_DATA_METADATA_FILE,
-       output_dir=PINO_NO_DATA_EVAL_DIR,
-       **EVAL_CONFIG,
-    )
+    # print('\n=== plotting ntk spectral estimate test ===')
+    # plot_ntk_spectral_estimate(outdir=IMG_DIR)
 
-    print('\n=== training pinn with data ===')
-    train_pinn('data', **PINN_CONFIG)
+    # print('\n=== generating shared dataset ===')
+    # run_dataset(
+    #     dataset_file=DATASET_FILE,
+    #     device=DEVICE,
+    #     param_values=PARAM_VALUES,
+    #     x_limit=X_LIMIT,
+    #     t_limit=T_LIMIT,
+    #     dataset_res=DATASET_RES,
+    # )
 
-    print('\n=== plotting pinn with data ===')
-    eval_pinn(
-        'data',
-        PINN_WITH_DATA_METADATA_FILE,
-        output_dir=PINN_WITH_DATA_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    # print('\n=== training fno ===')
+    # train_fno(**FNO_CONFIG)
 
-    print('\n=== training pinn without data ===')
-    train_pinn('no_data', **PINN_CONFIG)
+    # print('\n=== plotting fno ===')
+    # eval_fno(
+    #    model_metadata_file=FNO_METADATA_FILE,
+    #    output_dir=FNO_EVAL_DIR,
+    #    **EVAL_CONFIG,
+    # )
 
-    print('\n=== plotting pinn without data ===')
-    eval_pinn(
-        'no_data',
-        PINN_NO_DATA_METADATA_FILE,
-        output_dir=PINN_NO_DATA_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    # print('\n=== training pino with data ===')
+    # train_pino('data', **PINO_CONFIG)
 
-    print('\n=== running NTK experiment ===')
-    run_ntk_experiment(**PINN_NTK_CONFIG)
+    # print('\n=== plotting pino with data ===')
+    # eval_pino(
+    #    'data',
+    #    PINO_WITH_DATA_METADATA_FILE,
+    #    output_dir=PINO_WITH_DATA_EVAL_DIR,
+    #    **EVAL_CONFIG,
+    # )
 
-    print('\n=== plotting spectral bias evolution ===')
-    plot_spectral_bias_evolution(
-        ordered_metadata=[
-            ('PINN (no data)',   PINN_NO_DATA_METADATA_FILE),
-            ('PINN (with data)', PINN_WITH_DATA_METADATA_FILE),
-            ('PINO (no data)',   PINO_NO_DATA_METADATA_FILE),
-            ('PINO (with data)', PINO_WITH_DATA_METADATA_FILE),
-            ('FNO',              FNO_METADATA_FILE),
-        ],
-        outdir=IMG_DIR,
-    )
+    # print('\n=== training pino without data ===')
+    # train_pino('no_data', **PINO_CONFIG)
+
+    # print('\n=== plotting pino without data ===')
+    # eval_pino(
+    #    'no_data',
+    #    PINO_NO_DATA_METADATA_FILE,
+    #    output_dir=PINO_NO_DATA_EVAL_DIR,
+    #    **EVAL_CONFIG,
+    # )
+
+    # print('\n=== training pinn with data ===')
+    # train_pinn('data', **PINN_CONFIG)
+
+    # print('\n=== plotting pinn with data ===')
+    # eval_pinn(
+    #     'data',
+    #     PINN_WITH_DATA_METADATA_FILE,
+    #     output_dir=PINN_WITH_DATA_EVAL_DIR,
+    #     **EVAL_CONFIG,
+    # )
+
+    # print('\n=== training pinn without data ===')
+    # train_pinn('no_data', **PINN_CONFIG)
+
+    # print('\n=== plotting pinn without data ===')
+    # eval_pinn(
+    #     'no_data',
+    #     PINN_NO_DATA_METADATA_FILE,
+    #     output_dir=PINN_NO_DATA_EVAL_DIR,
+    #     **EVAL_CONFIG,
+    # )
+
+    # print('\n=== running NTK experiment ===')
+    # run_ntk_experiment(**PINN_NTK_CONFIG)
+
+    # print('\n=== plotting spectral bias evolution ===')
+    # plot_spectral_bias_evolution(
+    #     ordered_metadata=[
+    #         ('PINN (no data)',   PINN_NO_DATA_METADATA_FILE),
+    #         ('PINN (with data)', PINN_WITH_DATA_METADATA_FILE),
+    #         ('PINO (no data)',   PINO_NO_DATA_METADATA_FILE),
+    #         ('PINO (with data)', PINO_WITH_DATA_METADATA_FILE),
+    #         ('FNO',              FNO_METADATA_FILE),
+    #     ],
+    #     outdir=IMG_DIR,
+    # )
 
     print('\nall experiments completed successfully.')
 

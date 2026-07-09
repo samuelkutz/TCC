@@ -9,7 +9,7 @@ While modelling these equations, we cannot always afford them to have simple clo
 
 With the recent ascension of Machine Learning (ML) methods and a whole ecosystem of tools built around it, a natural extesion for finding numerical solution of PDEs is to build a bridge for ML methods, taking advantage of the many software and frameworks developed. This gives rise to a specific area of Scientific Machine Learning, focused on solving PDEs in numerous scenarios. Due to the vast literature around the topic, we discuss recent works limited to Hydrodyanamics equations. 
 
-\subsection{Literature Overview on Scientific Machine Learning}
+\section{Literature Overview on Scientific Machine Learning}
 
 The neural network building blocks underlying all of these approaches trace a line beginning with the formal neuron of \textcite{mcculloch1943} and Rosenblatt's perceptron \parencite{rosenblatt1958}, the first trainable single-layer model. The key algorithmic advance that unlocked multi-layer training was the backpropagation algorithm \parencite{rumelhart1986}, making gradient-based optimization practical for deep architectures. Shortly after, the universal approximation theorem \parencite{cybenko1989, hornik1989} provided the theoretical guarantee for a multilayer perceptron (MLP) with a single hidden layer of sufficient width to be able to approximate any continuous function on a compact domain to arbitrary precision. This combination of practical and universal approximation established the MLP as the backbone of modern deep learning. The term neural network itself reflects the biological metaphor at the heart of these models, in which \textcite{mcculloch1943} drew an explicit analogy to the firing of biological neurons, and this vocabulary propagated through the field, causing MLPs to be routinely and interchangeably referred to as artificial neural networks (ANNs) or feedforward neural networks. The idea of ``deep'' in deep learning, popularized following the breakthrough results of \textcite{lecun2015deep}, simply denotes an MLP with many hidden layers, a regime in which representational capacity grows substantially and where the backpropagation-based training paradigm proves to be exceptionally efficient.
 
@@ -28,12 +28,12 @@ systematically evaluated FNO, PINO, or PINNs on the parametric 1D Boussinesq sys
 both the nonlinearity coefficient $\alpha$ and the dispersion coefficient $\beta$ vary
 simultaneously. This gap motivates our work.
 
-\subsection{The Boussinesq System of Equations}
+\section{The Boussinesq System of Equations}
 
 The equations studied in this work originate from J.~Boussinesq's 1872 effort to give a
 theoretical account of the solitary wave of translation observed by J.~Scott Russell in a
 Scottish canal in 1834 \parencite{boussinesq1872}. Russell had noticed that a hump of water,
-set in motion by a stopping barge, could travel for miles without changing shape --- a
+set in motion by a stopping barge, could travel for miles without changing shape, a
 phenomenon the linear wave theory of the time could not explain. Boussinesq showed that the
 stability of such a wave is the result of a precise balance between nonlinear steepening
 and frequency dispersion, two effects that are separately destabilizing but mutually
@@ -83,10 +83,10 @@ capabilities of the approach. Complementary studies on related nonlinear wave eq
 \parencite{zhang2024, kumar2025} have confirmed that purely data-driven and purely
 physics-driven networks each display characteristic failure modes at strong nonlinearity.
 Taken together, these results suggest that a systematic, parametric evaluation of the full
-FNO/PINO/PINN family on the 1D Boussinesq system --- the focus of this work --- is both
+FNO/PINO/PINN family on the 1D Boussinesq system, which is the focus of this work, is both
 timely and necessary.
 
-\subsection{Research Goals}
+\section{Research Goals}
 
 This work implements and evaluates three SciML methods on the parametric 1D Boussinesq
 system: Physics-Informed Neural Networks (PINNs), Fourier Neural Operators (FNOs), and
@@ -115,10 +115,9 @@ Together, these questions aim to provide a clear picture of the strengths and li
 of each SciML approach for dispersive, nonlinear wave problems, and to offer practical
 guidance for choosing among them.
 
-\subsection{Work Structure}
+\section{Work Structure}
 
-This work is written with the goal of sharing SciML for senior undergraduates. We
-recommend the reader to have some knowledge of scientific computing and linear algebra.
+This work is written with the goal of sharing SciML for senior undergraduates in mathematics, physics, or engineering. We recommend the reader to have some knowledge of scientific computing and linear algebra.
 The remaining chapters are organized as follows.
 
 \begin{itemize}

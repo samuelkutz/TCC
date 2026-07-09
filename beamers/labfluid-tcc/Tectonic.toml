@@ -1,0 +1,7 @@
+[doc]
+name = "labfluid-tcc"
+bundle = "https://data1.fullyjustified.net/tlextras-2022.0r0.tar"
+
+[[output]]
+name = "labfluid-tcc"
+type = "pdf"

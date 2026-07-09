@@ -10,6 +10,7 @@ from _plots import (
     plot_model2_alpha_beta_panel,
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
+    save_solution_gif,
 )
 
 def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, spectral_res, output_dir=None):
@@ -205,3 +206,59 @@ def eval_pino(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         param_label=f'{median_param:.3f}',
         res_label=f'{int(spectral_res)}',
     )
+
+
+def gif_pino(mode, model_metadata_file, x_limit, t_limit, params, resolution, outdir):
+    # one gif per parameter: eta(x,t) evolving in time, reference vs PINO prediction
+    label = 'pino' if mode == 'data' else 'pino_no_data'
+    title_tag = 'PINO' if mode == 'data' else 'PINO (sem dados)'
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model_metadata = torch.load(model_metadata_file, map_location='cpu')
+    p = model_metadata['params']
+    model_file = model_metadata['model_file']
+    norm_stats = model_metadata['norm_stats']
+    norm = {
+        'input_min': norm_stats['input_min'].to(device),
+        'input_max': norm_stats['input_max'].to(device),
+        'output_min': norm_stats['output_min'].to(device),
+        'output_max': norm_stats['output_max'].to(device),
+        'eps': norm_stats.get('eps', 1e-12),
+    }
+
+    model = PINO2d(
+        modes1=p['modes1'],
+        modes2=p['modes2'],
+        width=p['width'],
+        out_channels=p['out_channels'],
+    ).to(device)
+    load_model(model_file, model, device=device)
+    model.eval()
+
+    res = int(resolution)
+    for val in params:
+        bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
+        solver = PseudoSpectralBoussinesq(bsq, Nx=res, Nt=res - 1, device=device)
+        x, t, eta_true, u_true = solver.solve()
+        eta_true_t = eta_true.T
+
+        eta0 = np.asarray(eta_true[0, :], dtype=np.float32)
+        u0 = np.asarray(u_true[0, :], dtype=np.float32)
+        ch0 = np.tile(eta0[:, None], (1, res))
+        ch1 = np.tile(u0[:, None], (1, res))
+        ch2 = np.ones((res, res), dtype=np.float32) * val
+        ch3 = np.ones((res, res), dtype=np.float32) * val
+        input_numpy = np.stack([ch0, ch1, ch2, ch3], axis=-1)
+        input_tensor = torch.from_numpy(input_numpy).permute(2, 0, 1).unsqueeze(0).float().to(device)
+        input_tensor = normalize_tensor(input_tensor, norm['input_min'], norm['input_max'], norm['eps'])
+        with torch.no_grad():
+            pred = model(input_tensor)
+        pred = unnormalize_tensor(pred, norm['output_min'], norm['output_max'], norm['eps'])
+        eta_pred = pred.squeeze().cpu().numpy()[0, :, :]
+
+        save_solution_gif(
+            x, t, eta_true_t, eta_pred,
+            outdir=outdir,
+            filename=f'{label}_{val:.2f}.gif',
+            title_prefix=rf'{title_tag}  $\alpha=\beta={val:.2f}$',
+        )

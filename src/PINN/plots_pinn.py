@@ -10,6 +10,7 @@ from _plots import (
     plot_model2_resolution_panel,
     plot_model2_spectral_panel,
     plot_pinn_ntk_panel,
+    save_solution_gif,
 )
 
 def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions, spectral_res, output_dir=None):
@@ -124,6 +125,59 @@ def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resoluti
         param_label=f'{median_param:.3f}',
         res_label=f'{int(spectral_res)}',
     )
+
+
+def gif_pinn(mode, model_metadata_file, x_limit, t_limit, params, resolution, outdir):
+    # one gif per parameter: eta(x,t) evolving in time, reference vs PINN prediction
+    label = 'pinn' if mode == 'data' else 'pinn_no_data'
+    title_tag = 'PINN' if mode == 'data' else 'PINN (sem dados)'
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model_metadata = torch.load(model_metadata_file, map_location='cpu')
+    p = model_metadata['params']
+    model_file = model_metadata['model_file']
+
+    bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, p['param_value'], p['param_value'], 1)
+    model = PINN(
+        input_size=2,
+        output_size=2,
+        neurons=p['neurons'],
+        hidden_layers=p['hidden_layers'],
+        Boussinesq=bsq,
+        domain_points=p['domain_points'],
+        ic_points=p['ic_points'],
+        optimizer_name=p['optimizer_name'],
+        lr=p['lr'],
+        data=None,
+        data_weight=p['data_weight'],
+        device=device,
+    )
+    load_model(model_file, model, device=device)
+    model.eval()
+
+    res = int(resolution)
+    for val in params:
+        bsq_eval = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
+        solver = PseudoSpectralBoussinesq(bsq_eval, Nx=res, Nt=res - 1, device=device)
+        x, t, eta_true, u_true = solver.solve()
+        eta_true_t = eta_true.T
+
+        x_pred = np.linspace(-x_limit, x_limit, res, dtype=np.float32)
+        t_pred = np.linspace(0.0, t_limit, res, dtype=np.float32)
+        X, T = np.meshgrid(x_pred, t_pred, indexing='xy')
+        x_tensor = torch.from_numpy(X.reshape(-1, 1)).float().to(device)
+        t_tensor = torch.from_numpy(T.reshape(-1, 1)).float().to(device)
+
+        with torch.no_grad():
+            eta_pred, _ = model(x_tensor, t_tensor)
+        eta_pred = eta_pred.cpu().numpy().reshape(res, res).T
+
+        save_solution_gif(
+            x, t, eta_true_t, eta_pred,
+            outdir=outdir,
+            filename=f'{label}_{val:.2f}.gif',
+            title_prefix=rf'{title_tag}  $\alpha=\beta={val:.2f}$',
+        )
 
 
 def run_ntk_experiment(param_value, x_limit, t_limit, widths=None, hidden_layers=4,

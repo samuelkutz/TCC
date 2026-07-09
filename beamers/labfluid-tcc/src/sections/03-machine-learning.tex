@@ -1,0 +1,81 @@
+\section{Machine Learning}
+
+\begin{frame}{O que é Machine Learning?}
+  \begin{block}{Uma definição de trabalho}
+    Em resumo, um método de Machine Learning pode ser visto como um
+    \alert{método numérico na presença de um conjunto de dados} e de um \alert{objetivo}:
+    dado um modelo paramétrico $u_\theta$ e uma \emph{função de perda} $\mathcal{L}(\theta)$
+    que mede o quão longe estamos do objetivo, ajustamos os parâmetros $\theta$ por
+    otimização (tipicamente descida do gradiente) até minimizá-la.
+  \end{block}
+
+  \vspace{0.3cm}
+  Os três ingredientes que reencontraremos em \emph{todos} os métodos a seguir:
+  \begin{enumerate}
+    \item um \textbf{modelo} flexível e diferenciável ($u_\theta$);
+    \item um \textbf{objetivo} codificado numa perda (dados, física, ou ambos);
+    \item um \textbf{otimizador} que segue o gradiente da perda.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Um breve histórico}
+  \begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.54\textwidth}
+      \begin{itemize}
+        \item \textbf{1943} --- neurônio formal de \textcite{mcculloch1943};
+        \item \textbf{1958} --- \emph{perceptron} de \textcite{rosenblatt1958}, o primeiro
+              modelo treinável;
+        \item \textbf{1986} --- \emph{backpropagation} \parencite{rumelhart1986}: torna
+              prático o treino de redes profundas;
+        \item \textbf{1989} --- teorema da aproximação universal
+              \parencite{cybenko1989,hornik1989};
+        \item \textbf{2015+} --- \emph{deep learning} \parencite{lecun2015deep} e a
+              revolução de IA em curso.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{information}[Por que agora?]
+        Vivemos uma \alert{expansão sem precedentes} da área: \emph{hardware} (GPUs),
+        \emph{frameworks} de diferenciação automática (PyTorch) e uma vasta literatura
+        tornaram esses métodos acessíveis.
+      \end{information}
+      \vspace{0.2cm}
+      \begin{remark}
+        Um dos objetivos deste trabalho é justamente \textbf{tirar proveito} desse
+        ferramental moderno, trazendo-o para a solução numérica de EDPs.
+      \end{remark}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{O cenário do ML para EDPs}
+  Para resolver EDPs, três famílias guiam este trabalho:
+  \begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.33\textwidth}
+      \begin{block}{PINN}
+        \footnotesize Rede neural com a \textbf{física na perda}
+        \parencite{raissi2019}. Resolve \emph{uma} instância da EDP.
+      \end{block}
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \begin{block}{FNO}
+        \footnotesize Aprende o \textbf{operador solução} entre espaços de funções, de
+        forma puramente \emph{data-driven} \parencite{li2020fourier}.
+      \end{block}
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \begin{block}{PINO}
+        \footnotesize Operador neural com \textbf{física na perda}
+        \parencite{li2023pino}: o híbrido dos dois.
+      \end{block}
+    \end{column}
+  \end{columns}
+
+  \vspace{0.4cm}
+  \begin{information}[Lacuna que motiva o trabalho]
+    Métodos de Machine Learning já foram aplicados a diversas equações de águas rasas e ondas
+    dispersivas, mas, até onde sabemos, \alert{nenhum estudo avaliou sistematicamente FNO,
+    PINO e PINN no sistema de Boussinesq paramétrico 1D}, com não linearidade e dispersão
+    variando simultaneamente.
+  \end{information}
+\end{frame}

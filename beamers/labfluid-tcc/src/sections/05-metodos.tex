@@ -1,0 +1,209 @@
+\section{Métodos de Machine Learning}
+
+% ---------------------------------------------------------------
+\begin{frame}{Bloco básico: redes neurais (MLP)}
+  Uma \emph{Multilayer Perceptron} (MLP) é uma composição de transformações afins com
+  ativações não lineares $\sigma$ (aqui, $\tanh$):
+  \begin{equation*}
+    h^{(0)} = x, \qquad
+    h^{(l)} = \sigma\!\left(W^{(l)} h^{(l-1)} + b^{(l)}\right), \qquad
+    u_\theta(x) = W^{(L)} h^{(L-1)} + b^{(L)}.
+  \end{equation*}
+  \begin{columns}[c,totalwidth=\textwidth]
+    \begin{column}{0.5\textwidth}
+      \footnotesize
+      Por aproximação universal \parencite{cybenko1989}, uma MLP aproxima qualquer função
+      contínua num compacto. Dado um conjunto $\{(x_i,u_i)\}$, ajustamos $\theta$
+      minimizando o erro quadrático médio:
+      \begin{equation*}
+        \mathcal{L}_{\text{MLP}}(\theta) = \frac{1}{N}\sum_{i=1}^{N}\|u_\theta(x_i)-u_i\|^2.
+      \end{equation*}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \centering
+      \resizebox{0.95\linewidth}{!}{%
+      \begin{tikzpicture}[
+          nnnode/.style={circle, draw, line width=0.7pt, minimum size=0.34cm, inner sep=0pt},
+          inout/.style={nnnode, fill=structure!80, draw=structure},
+          hidden/.style={nnnode, fill=gray!50, draw=gray},
+          conn/.style={draw=gray!60, line width=0.3pt}]
+        \node[inout] (x1) at (0,-2.0) {};
+        \node[inout] (x2) at (0,-2.8) {};
+        \node at (0,-0.4) {\scriptsize $(x,t)$};
+        \foreach \i in {1,...,5} { \node[hidden] (h1_\i) at (2.0,-0.8*\i) {}; }
+        \foreach \i in {1,...,5} { \node[hidden] (h2_\i) at (4.0,-0.8*\i) {}; }
+        \node[inout] (o1) at (6.0,-2.0) {};
+        \node[inout] (o2) at (6.0,-2.8) {};
+        \node at (6.0,-0.4) {\scriptsize $(\eta_\theta,u_\theta)$};
+        \foreach \j in {1,...,5}{ \draw[conn] (x1) -- (h1_\j); \draw[conn] (x2) -- (h1_\j); }
+        \foreach \i in {1,...,5} \foreach \j in {1,...,5} { \draw[conn] (h1_\i) -- (h2_\j); }
+        \foreach \i in {1,...,5}{ \draw[conn] (h2_\i) -- (o1); \draw[conn] (h2_\i) -- (o2); }
+      \end{tikzpicture}}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{Physics-Informed Neural Networks (PINNs)}
+  Introduzidas por \textcite{raissi2017}, as \textbf{PINNs} inserem a EDP \emph{diretamente
+  na perda}. Para um problema de valor inicial com operador diferencial $\mathcal{D}$:
+  \begin{equation*}
+    \mathcal{D}[u](x,t) = 0 \ \text{em } \Omega\times(0,T], \qquad u(x,0)=u_0(x).
+  \end{equation*}
+  \vspace{-0.45cm}
+  \begin{block}{Perda da PINN}
+    \begin{equation*}
+      \mathcal{L}_{\text{PINN}}(\theta) =
+      \underbrace{\frac{1}{N_\mathcal{D}}\sum_i \|\mathcal{D}[u_\theta](x_i,t_i)\|^2}_{\text{resíduo da EDP}}
+      \;+\;
+      \underbrace{\frac{1}{N_0}\sum_j \|u_\theta(x_j,0)-u_0(x_j)\|^2}_{\text{condição inicial}}.
+    \end{equation*}
+  \end{block}
+  Os resíduos são avaliados por \textbf{diferenciação automática}; a otimização usa Adam /
+  L-BFGS. Se houver dados de referência, basta acrescentar \alert{mais um termo}:
+  \begin{equation*}
+    \mathcal{L}_{\text{PINN}} \;\longrightarrow\;
+    \mathcal{L}_{\text{pde}} + \mathcal{L}_{\text{ic}}
+    + \lambda_{\text{data}}\,\underbrace{\tfrac{1}{N_d}\sum_l \|u_\theta(x_l,t_l)-u_l\|^2}_{\mathcal{L}_{\text{data}}}.
+  \end{equation*}
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{Objeto de estudo: o viés espectral}
+  \begin{block}{Princípio da frequência \parencite{rahaman2019,xu2019frequency}}
+    Redes treinadas por gradiente reduzem as componentes de \alert{baixa frequência} do erro
+    \textbf{mais rápido} do que as de alta frequência.
+  \end{block}
+
+  Na prática, ao aproximar a solução:
+  \begin{itemize}
+    \item as componentes \textbf{suaves} (baixa frequência) emergem \alert{primeiro};
+    \item os \alert{detalhes finos} (alta frequência) demoram a aparecer --- e, em regimes
+          difíceis, podem \textbf{nunca} ser bem resolvidos.
+  \end{itemize}
+  \begin{information}[Por que nos importa]
+    À medida que $\alpha=\beta$ cresce, a solução de Boussinesq espalha energia por
+    \alert{mais frequências}. O viés espectral é um obstáculo \textbf{bem documentado} no
+    treino de PINNs \parencite{wang2022ntk}, e é justamente o que investigamos em cada
+    arquitetura.
+  \end{information}
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{PINN para o sistema de Boussinesq}
+  Treina-se \alert{uma PINN por amostra} $(\alpha_i,\beta_i)$. O operador $\mathcal{D}$ vira o
+  par de resíduos de Boussinesq:
+  \begin{block}{Resíduos}
+    \small
+    \begin{align*}
+      \mathcal{D}_1[u_\theta] &= (\eta_\theta)_t + (u_\theta)_x + \alpha_i\,(\eta_\theta u_\theta)_x, \\
+      \mathcal{D}_2[u_\theta] &= (u_\theta)_t - \tfrac{\beta_i}{3}(u_\theta)_{xxt} + (\eta_\theta)_x + \alpha_i\,u_\theta (u_\theta)_x.
+    \end{align*}
+  \end{block}
+  \begin{equation*}
+    \mathcal{L}^{\,i}_{\text{PINN}}(\theta) =
+    \frac{1}{N_\mathcal{D}}\sum_l \bigl[\mathcal{D}_1^2 + \mathcal{D}_2^2\bigr]
+    + \frac{1}{N_0}\sum_l \bigl[(\eta_\theta(x_l,0)-\eta_0)^2 + (u_\theta(x_l,0)-u_0)^2\bigr].
+  \end{equation*}
+  Como os parâmetros entram explicitamente nos resíduos, \alert{cada PINN codifica uma única
+  amostra} e precisa ser retreinada para cada novo par $(\alpha,\beta)$.
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{De redes a operadores}
+  \begin{alertblock}{O problema}
+    É \textbf{muito difícil} construir uma PINN que funcione para \emph{vários} parâmetros de
+    uma EDP de uma só vez --- cada parâmetro exige um novo treino.
+  \end{alertblock}
+
+  \textbf{Operadores neurais} contornam isso: em vez de uma instância, aprendem o
+  \alert{operador solução} $G^\dagger:\mathcal{A}\to\mathcal{U}$ entre espaços de funções de
+  dimensão infinita. Compõem operadores integrais lineares com não linearidades pontuais:
+  \begin{block}{Definição geral de operador neural}
+    \begin{equation*}
+      G_\theta = Q \circ \sigma\!\bigl(W_L + \mathcal{K}_L\bigr)\circ\cdots\circ
+                 \sigma\!\bigl(W_1 + \mathcal{K}_1\bigr)\circ P,
+      \qquad
+      (\mathcal{K}v)(x) = \int_D \kappa(x,y)\,v(y)\,dy.
+    \end{equation*}
+  \end{block}
+  \footnotesize
+  $P$: \emph{lifting} (eleva a dimensão de canais); $Q$: projeção de volta; $\mathcal{K}_\ell$:
+  operador integral aprendido. No treino, basta uma \textbf{passada direta} para cada novo
+  parâmetro.
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{Fourier Neural Operator (FNO)}
+  O \textbf{FNO} \parencite{li2020fourier} escolhe um \alert{kernel invariante por translação},
+  $\kappa_\ell(x,y)=\kappa_\ell(x-y)$. O operador integral vira \emph{convolução}, eficiente
+  no domínio da frequência pelo teorema da convolução:
+  \begin{block}{Camada espectral}
+    \begin{equation*}
+      (\mathcal{K}_\ell v_\ell)(x) = \int_D \kappa_\ell(x-y)\,v_\ell(y)\,dy
+      = \mathcal{F}^{-1}\!\bigl(\mathcal{F}(\kappa_\ell)\cdot\mathcal{F}(v_\ell)\bigr)(x).
+    \end{equation*}
+  \end{block}
+  \begin{itemize}
+    \item Em vez de aprender $\kappa_\ell$, aprendem-se diretamente seus
+          \textbf{coeficientes de Fourier} $R_{\ell,k} \approx 2\pi\,\hat\kappa_\ell(k)$ (pesos complexos);
+    \item retêm-se apenas os \alert{$|k|\le k_{\max}$} modos de baixa frequência (hiperparâmetro);
+    \item resulta em \textbf{independência de malha} (\emph{zero-shot super-resolution}).
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{Um cuidado no tempo: o fenômeno de Gibbs}
+  Aplicar a transformada de Fourier \alert{também no eixo do tempo} supõe que a solução é
+  \emph{periódica em $t$} --- como se houvesse um \emph{tiling} temporal.
+
+  \vspace{0.2cm}
+  \begin{alertblock}{Problema}
+    A solução de Boussinesq \textbf{não} é periódica no tempo. A extensão periódica implícita
+    cria uma \emph{descontinuidade} na fronteira temporal, disparando o
+    \alert{fenômeno de Gibbs} \parencite{gibbs1899}: oscilações artificiais que persistem por
+    mais modos que se retenha.
+  \end{alertblock}
+
+  \textbf{Solução adotada} (seguindo \textcite{li2020fourier}): manter as camadas de Fourier
+  apenas no \emph{espaço} e tratar o tempo como \alert{direção de marcha}. O FNO é treinado de
+  forma puramente supervisionada:
+  \begin{equation*}
+    \mathcal{L}_{\text{FNO}}(\theta) = \frac{1}{M}\sum_{i=1}^{M}\frac{1}{N_x N_t}\sum_{j,n}
+    \bigl[(\eta_\theta^i - \eta_i)^2 + (u_\theta^i - u_i)^2\bigr].
+  \end{equation*}
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{Physics-Informed Neural Operator (PINO)}
+  O \textbf{PINO} \parencite{li2023pino} faz com o FNO o que a PINN fez com a MLP: acrescenta
+  o \alert{resíduo físico à perda}. O \emph{backbone} (FNO) é o mesmo; muda a perda.
+
+  \begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.5\textwidth}
+      \footnotesize
+      Como o FNO produz $(\eta_\theta,u_\theta)$ como um \textbf{array} $N_x\times N_t$,
+      avaliam-se os resíduos por diferenciação numérica:
+      \begin{itemize}
+        \item derivadas \alert{espaciais}: pseudoespectrais (via $\xi_k$);
+        \item derivadas \alert{temporais}: diferenças finitas.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Perda do PINO}
+        \footnotesize
+        \begin{equation*}
+          \mathcal{L}_{\text{PINO}} = \lambda_{\text{pde}}\mathcal{L}_{\text{pde}}
+          + \lambda_{\text{ic}}\mathcal{L}_{\text{ic}}
+          + \lambda_{\text{data}}\mathcal{L}_{\text{data}}.
+        \end{equation*}
+      \end{block}
+    \end{column}
+  \end{columns}
+
+  \vspace{0.1cm}
+  \begin{information}[Por que importa]
+    Com o resíduo físico, o PINO pode ser treinado com \textbf{menos dados rotulados}. Ele
+    será estudado em duas variantes: \alert{com dados} e \alert{sem dados}.
+  \end{information}
+\end{frame}

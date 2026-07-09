@@ -1,0 +1,55 @@
+% Copyright (C) 2022 by Maxime CHUPIN
+% Tema Amurmaple adaptado para a apresentacao do LabFluid.
+% Compilar com:  tectonic -X build
+
+\documentclass[10pt,aspectratio=169,brazil]{beamer}
+\usepackage{babel}
+\usepackage{tcolorbox}
+\usepackage{amsmath, amssymb}
+\usepackage{physics}
+\usepackage{bm}
+\usepackage{booktabs}
+
+\usepackage[backend=biber,style=authoryear,maxcitenames=2,mincitenames=1,uniquename=false,uniquelist=false]{biblatex}
+\addbibresource{bibfile.bib}
+
+% esquema azul (estilo dos beamers FNO/Boussinesq), mantendo a estrutura Amurmaple
+\usetheme[amurmapleblue]{Amurmaple}
+\usefonttheme{serif}
+
+% --- cores auxiliares ---
+\definecolor{GibbsRed}{RGB}{200,0,0}
+
+% --- slide divisor de secao (apenas o nome da secao, em portugues) ---
+\setbeamertemplate{section page}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[white] ([yshift=15pt]current page.west) rectangle (current page.north east);
+    \fill[structure] ([yshift=15pt]current page.west) rectangle (current page.south east);
+    \node[anchor=east, font=\huge\bfseries, text width=0.85\linewidth, align=right]
+      at ([yshift=-0.30\paperheight,xshift=-25pt]current page.north east) (section)
+      {\textcolor{structure}{\insertsection}};
+  \end{tikzpicture}%
+}
+\AtBeginSection[]{%
+  {%
+    \setbeamertemplate{background}{}%
+    \begin{frame}[plain,noframenumbering]
+      \sectionpage
+    \end{frame}%
+  }%
+}
+
+% --- imagens ---
+\graphicspath{{../imgs/}}
+
+% atalho para "gif rodando": poster clicavel que abre o gif/video externo em loop
+% uso: \rodando{altura}{arquivo-poster}{arquivo-gif}
+\newcommand{\rodando}[3]{%
+  \href{run:#3?autostart\&loop}{\includegraphics[height=#1,keepaspectratio]{#2}}%
+}
+
+\title[ML em Boussinesq]{Métodos de Machine Learning para Aproximação do Sistema de Boussinesq}
+\author[Samuel Kutz]{Samuel Kutz Paranhos}
+\institute[UFPR]{Universidade Federal do Paraná (UFPR)\\ Laboratório de Dinâmica dos Fluidos (LabFluid)}
+\date{Junho de 2026}
+\titlegraphic{\includegraphics[width=4cm]{LabFluidLogoh.png}}
