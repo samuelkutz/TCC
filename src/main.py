@@ -108,25 +108,25 @@ def main():
     os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
     os.makedirs(GIF_DIR, exist_ok=True)
 
-    # --- solution gifs only (eta(x,t) evolving in time): 2 per method ---
-    print('\n=== generating FNO gifs (median + last param) ===')
-    gif_fno(FNO_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-            params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
+    # --- solution gifs (unchanged by the styling pass): disabled for a plots-only run ---
+    # print('\n=== generating FNO gifs (median + last param) ===')
+    # gif_fno(FNO_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #         params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
 
-    print('\n=== generating PINO gifs (with data + no data, median + last param) ===')
-    gif_pino('data', PINO_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-             params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
-    gif_pino('no_data', PINO_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-             params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
+    # print('\n=== generating PINO gifs (with data + no data, median + last param) ===')
+    # gif_pino('data', PINO_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #          params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
+    # gif_pino('no_data', PINO_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #          params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
 
-    print('\n=== generating PINN gifs (with data + no data, median param) ===')
-    gif_pinn('data', PINN_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-             params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
-    gif_pinn('no_data', PINN_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-             params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
+    # print('\n=== generating PINN gifs (with data + no data, median param) ===')
+    # gif_pinn('data', PINN_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #          params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
+    # gif_pinn('no_data', PINN_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #          params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
 
-    # print('\n=== plotting soliton profile ===')
-    # plot_soliton_profile(outdir=IMG_DIR)
+    print('\n=== plotting soliton profile ===')
+    plot_soliton_profile(outdir=IMG_DIR)
 
     # print('\n=== plotting ntk eigenvector spectrogram ===')
     # plot_ntk_eigenvector_spectrogram(outdir=IMG_DIR)
@@ -153,71 +153,71 @@ def main():
     # print('\n=== training fno ===')
     # train_fno(**FNO_CONFIG)
 
-    # print('\n=== plotting fno ===')
-    # eval_fno(
-    #    model_metadata_file=FNO_METADATA_FILE,
-    #    output_dir=FNO_EVAL_DIR,
-    #    **EVAL_CONFIG,
-    # )
+    print('\n=== plotting fno ===')
+    eval_fno(
+        model_metadata_file=FNO_METADATA_FILE,
+        output_dir=FNO_EVAL_DIR,
+        **EVAL_CONFIG,
+    )
 
     # print('\n=== training pino with data ===')
     # train_pino('data', **PINO_CONFIG)
 
-    # print('\n=== plotting pino with data ===')
-    # eval_pino(
-    #    'data',
-    #    PINO_WITH_DATA_METADATA_FILE,
-    #    output_dir=PINO_WITH_DATA_EVAL_DIR,
-    #    **EVAL_CONFIG,
-    # )
+    print('\n=== plotting pino with data ===')
+    eval_pino(
+        'data',
+        PINO_WITH_DATA_METADATA_FILE,
+        output_dir=PINO_WITH_DATA_EVAL_DIR,
+        **EVAL_CONFIG,
+    )
 
     # print('\n=== training pino without data ===')
     # train_pino('no_data', **PINO_CONFIG)
 
-    # print('\n=== plotting pino without data ===')
-    # eval_pino(
-    #    'no_data',
-    #    PINO_NO_DATA_METADATA_FILE,
-    #    output_dir=PINO_NO_DATA_EVAL_DIR,
-    #    **EVAL_CONFIG,
-    # )
+    print('\n=== plotting pino without data ===')
+    eval_pino(
+        'no_data',
+        PINO_NO_DATA_METADATA_FILE,
+        output_dir=PINO_NO_DATA_EVAL_DIR,
+        **EVAL_CONFIG,
+    )
 
     # print('\n=== training pinn with data ===')
     # train_pinn('data', **PINN_CONFIG)
 
-    # print('\n=== plotting pinn with data ===')
-    # eval_pinn(
-    #     'data',
-    #     PINN_WITH_DATA_METADATA_FILE,
-    #     output_dir=PINN_WITH_DATA_EVAL_DIR,
-    #     **EVAL_CONFIG,
-    # )
+    print('\n=== plotting pinn with data ===')
+    eval_pinn(
+        'data',
+        PINN_WITH_DATA_METADATA_FILE,
+        output_dir=PINN_WITH_DATA_EVAL_DIR,
+        **EVAL_CONFIG,
+    )
 
     # print('\n=== training pinn without data ===')
     # train_pinn('no_data', **PINN_CONFIG)
 
-    # print('\n=== plotting pinn without data ===')
-    # eval_pinn(
-    #     'no_data',
-    #     PINN_NO_DATA_METADATA_FILE,
-    #     output_dir=PINN_NO_DATA_EVAL_DIR,
-    #     **EVAL_CONFIG,
-    # )
+    print('\n=== plotting pinn without data ===')
+    eval_pinn(
+        'no_data',
+        PINN_NO_DATA_METADATA_FILE,
+        output_dir=PINN_NO_DATA_EVAL_DIR,
+        **EVAL_CONFIG,
+    )
 
     # print('\n=== running NTK experiment ===')
     # run_ntk_experiment(**PINN_NTK_CONFIG)
 
-    # print('\n=== plotting spectral bias evolution ===')
-    # plot_spectral_bias_evolution(
-    #     ordered_metadata=[
-    #         ('PINN (no data)',   PINN_NO_DATA_METADATA_FILE),
-    #         ('PINN (with data)', PINN_WITH_DATA_METADATA_FILE),
-    #         ('PINO (no data)',   PINO_NO_DATA_METADATA_FILE),
-    #         ('PINO (with data)', PINO_WITH_DATA_METADATA_FILE),
-    #         ('FNO',              FNO_METADATA_FILE),
-    #     ],
-    #     outdir=IMG_DIR,
-    # )
+    print('\n=== plotting spectral bias evolution ===')
+    plot_spectral_bias_evolution(
+        ordered_metadata=[
+            ('PINN (no data)',   PINN_NO_DATA_METADATA_FILE),
+            ('PINN (with data)', PINN_WITH_DATA_METADATA_FILE),
+            ('PINO (no data)',   PINO_NO_DATA_METADATA_FILE),
+            ('PINO (with data)', PINO_WITH_DATA_METADATA_FILE),
+            ('FNO',              FNO_METADATA_FILE),
+        ],
+        outdir=IMG_DIR,
+    )
 
     print('\nall experiments completed successfully.')
 

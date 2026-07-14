@@ -19,8 +19,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 THESIS_TEXTWIDTH_IN = 6.30
 
 # target printed sizes, in points (body text is 12 pt); figure text sits a
-# little below the body, the usual ratio for a 12 pt document
-_THESIS_PT = dict(tick=8.5, axis=9.5, subplot=10.0, title=11.0, legend=9.0, annot=8.0)
+# little below the body, the usual ratio for a 12 pt document. Kept a touch
+# smaller than the body so the panels read as figures, not as running text.
+_THESIS_PT = dict(tick=7.5, axis=8.5, subplot=9.0, title=10.0, legend=8.0, annot=7.0)
 
 
 def _thesis_px(pt, fig_width_px, frac):
@@ -109,12 +110,11 @@ def plot_soliton_profile(outdir, filename='soliton_profile.png', A=1.0):
         showlegend=False,
     ))
     fig.update_layout(
-        title_text=f'Initial soliton profile η(x,0) = A·sech²(x), A={A}',
-        title_x=0.5,
         xaxis_title='x',
         yaxis_title='η(x,0)',
         template='plotly_white',
         width=1000, height=400,
+        margin=dict(t=15, b=45, l=55, r=25),
     )
     _style_thesis(fig, 1000, frac=1.0)
     try:
@@ -931,7 +931,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         vertical_spacing=0.08,
         horizontal_spacing=0.05,
     )
-    S = _style_thesis(fig, 1900, frac=0.9)
+    S = _style_thesis(fig, 1900, frac=1.0)
 
     scene_layout = {}
     for i, (alpha, eta_pred) in enumerate(zip(param_values, eta_pred_list)):
@@ -961,9 +961,8 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     fig.update_yaxes(title_text='Relative error', row=n_params + 1, col=1)
 
     fig.update_layout(
-        title_text=title, title_x=0.5,
-        width=1900, height=680 * n_params + 480,
-        margin=dict(t=120, b=60, l=55, r=60),
+        width=1900, height=680 * n_params + 360,
+        margin=dict(t=70, b=50, l=35, r=35),
         showlegend=False, **scene_layout,
     )
     # 3D scenes are small and qualitative: keep readable axis titles but hide the
@@ -1028,7 +1027,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         vertical_spacing=0.08,
         horizontal_spacing=0.05,
     )
-    S = _style_thesis(fig, 1900, frac=0.9)
+    S = _style_thesis(fig, 1900, frac=1.0)
 
     scene_layout = {}
     for i, (res, x_res, t_res, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_pred_list)):
@@ -1058,9 +1057,8 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     fig.update_yaxes(title_text='Relative error', row=n_res + 1, col=1)
 
     fig.update_layout(
-        title_text=title, title_x=0.5,
-        width=1900, height=680 * n_res + 480,
-        margin=dict(t=120, b=60, l=55, r=60),
+        width=1900, height=680 * n_res + 360,
+        margin=dict(t=70, b=50, l=35, r=35),
         showlegend=False, **scene_layout,
     )
     # 3D scenes are small and qualitative: keep readable axis titles but hide the
@@ -1178,9 +1176,8 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     fig.update_yaxes(title_text='Mean relative error', row=n_rows, col=1)
 
     fig.update_layout(
-        title_text=title, title_x=0.5,
-        width=1400, height=460 * n_snap + 380,
-        margin=dict(t=90, b=70, l=80, r=50),
+        width=1400, height=460 * n_snap + 300,
+        margin=dict(t=50, b=55, l=60, r=30),
         showlegend=True,
         legend=dict(x=0.01, y=0.99, xanchor='left', yanchor='top'),
     )
@@ -1307,8 +1304,8 @@ def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolut
     fig.update_yaxes(title_text='Rel. spectral error', row=n_rows, col=1)
 
     fig.update_layout(
-        title_text='Spectral error evolution by frequency band during training', title_x=0.5,
         width=1400, height=480 * n_rows,
+        margin=dict(t=50, b=45, l=60, r=30),
         template='plotly_white',
         showlegend=True,
         legend=dict(x=0.01, y=0.99, xanchor='left', yanchor='top'),
@@ -1479,13 +1476,13 @@ def plot_pinn_ntk_panel(theta_rel_histories, k_rel_histories, log_epochs,
     base = base or filename
     ext = ext or 'png'
 
-    W, H, FRAC = 860, 620, 0.48
+    W, H, FRAC = 860, 560, 0.48
 
     def _finish(fig, title, xlab, ylab, suffix, logx=False, logy=False):
         fig.update_layout(
-            title_text=title, title_x=0.5,
             xaxis_title=xlab, yaxis_title=ylab,
             width=W, height=H, showlegend=True,
+            margin=dict(t=30, b=45, l=60, r=20),
             legend=dict(x=0.02, y=0.98, xanchor='left', yanchor='top'),
         )
         if logx:
