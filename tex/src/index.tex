@@ -86,11 +86,13 @@ CURITIBA \\
   de referência. Como resultados, percebe-se que as PINNs tradicionais, especialmente quando treinadas sem o auxílio de dados, 
   sofrem de um fenômeno conhecido como viés espectral, apresentando tendência a aprender primeiramente as componentes de 
   baixa frequência da solução e grandes dificuldades em capturar detalhes essenciais de alta frequência à medida que a 
-  não linearidade aumenta. Em contrapartida, por aprenderem diretamente no espaço das frequências, os modelos de 
-  aprendizado de operadores, como o FNO e o PINO treinado com dados, não exibem esse tipo de limitação, a qual reaparece 
-  apenas quando o PINO é treinado de forma puramente física. Assim, concluímos que a inclusão de dados na função de perda 
-  de redes neurais puramente físicas constitui uma estratégia eficaz para mitigar o viés espectral comumente presente 
-  nessas arquiteturas.
+  não linearidade aumenta. Em contrapartida, por aprenderem diretamente no espaço das frequências, os modelos de
+  aprendizado de operadores, como o FNO e o PINO treinado com dados, atenuam substancialmente essa limitação nas baixas e
+  médias frequências, embora nenhum método a elimine por completo: um erro residual de alta frequência persiste em todas as
+  arquiteturas, e o viés reaparece de forma mais acentuada quando o PINO é treinado de maneira puramente física. Observa-se
+  ainda que a inclusão do resíduo físico confere estabilidade temporal, suprimindo o artefato de Gibbs que degrada o FNO no
+  instante final. Assim, concluímos que a inclusão de dados na função de perda constitui a estratégia mais eficaz para
+  mitigar --- ainda que não anular --- o viés espectral comumente presente nessas arquiteturas.
 
 \vspace{1cm}
 \noindent
@@ -114,10 +116,11 @@ regime at multiple parameters using only data without any differential operator 
 which consist of an FNO with the inclusion of the PDE differential operator in the architecture loss function. As efficiency metrics for these architectures, 
 we use the evolution of spectral error and relative error over space-time with respect to the reference solution. As results, it is observed that traditional PINNs, 
 especially when trained without the aid of data, suffer from a phenomenon known as spectral bias, showing a tendency to learn the low-frequency components of the solution 
-first and great difficulty capturing essential high-frequency details as nonlinearity increases. In contrast, by learning directly in the frequency space, operator learning 
-models such as FNO and PINO trained with data do not exhibit this type of limitation, which reappears only when PINO is trained in a purely physics-informed manner. Thus, 
-we conclude that including data in the loss function of purely physics-informed neural networks constitutes an effective strategy to mitigate the spectral bias commonly 
-present in these architectures.
+first and great difficulty capturing essential high-frequency details as nonlinearity increases. In contrast, by learning directly in the frequency space, operator learning
+models such as FNO and PINO trained with data attenuate this limitation substantially in the low and mid frequencies, although no method removes it entirely: a residual
+high-frequency error persists across all architectures, and the bias re-emerges more strongly when PINO is trained in a purely physics-informed manner. We further observe
+that the physics residual confers temporal stability, suppressing the Gibbs artifact that degrades the FNO at the final time. Thus, we conclude that including data in the
+loss function is the most effective strategy to mitigate --- though not to eliminate --- the spectral bias commonly present in these architectures.
 
 \vspace{1cm}
 \noindent
@@ -156,6 +159,103 @@ This work was supported by CNPq and developed with the collaboration of the LabF
 \@starttoc{lof}
 \makeatother
 
+
+\pagebreak
+
+% --- LIST OF ABBREVIATIONS ---
+\begin{center}
+\textbf{LIST OF ABBREVIATIONS}
+\end{center}
+\addcontentsline{toc}{chapter}{LIST OF ABBREVIATIONS}
+
+\vspace{0.5cm}
+\noindent
+\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+    SciML & Scientific Machine Learning \\[2pt]
+    ML    & Machine Learning \\[2pt]
+    PDE   & Partial Differential Equation \\[2pt]
+    PINN  & Physics-Informed Neural Network \\[2pt]
+    FNO   & Fourier Neural Operator \\[2pt]
+    PINO  & Physics-Informed Neural Operator \\[2pt]
+    MLP   & Multilayer Perceptron \\[2pt]
+    RK4   & Runge--Kutta 4th-order method \\[2pt]
+    DFT   & Discrete Fourier Transform \\[2pt]
+    FFT   & Fast Fourier Transform \\[2pt]
+    NTK   & Neural Tangent Kernel \\[2pt]
+    MSE   & Mean Squared Error \\[2pt]
+    SGD   & Stochastic Gradient Descent \\[2pt]
+    AD    & Automatic Differentiation \\
+\end{tabular}
+
+\pagebreak
+
+% --- LIST OF SYMBOLS ---
+\begin{center}
+\textbf{LIST OF SYMBOLS}
+\end{center}
+\addcontentsline{toc}{chapter}{LIST OF SYMBOLS}
+
+\vspace{0.4cm}
+\noindent\textit{Domain and general operators}\\[2pt]
+\noindent
+\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+    $x$              & spatial coordinate \\[2pt]
+    $t$              & temporal coordinate \\[2pt]
+    $u(x,t)$         & PDE solution (generic) \\[2pt]
+    $\mathcal{D}$    & differential operator of the PDE \\[2pt]
+    $\mathcal{L}$    & linear differential operator; also a loss functional \\[2pt]
+    $\nabla$         & gradient (nabla) operator \\[2pt]
+    $N_x$            & number of spatial grid points \\[2pt]
+    $N_t$            & number of time steps \\[2pt]
+    $\Delta x,\,\Delta t$ & spatial and temporal grid spacings \\
+\end{tabular}
+
+\vspace{0.5cm}
+\noindent\textit{Boussinesq system and spectral quantities}\\[2pt]
+\noindent
+\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+    $\eta(x,t)$      & surface elevation field \\[2pt]
+    $u(x,t)$         & depth-averaged horizontal velocity field \\[2pt]
+    $\alpha$         & nonlinearity parameter of the Boussinesq system \\[2pt]
+    $\beta$          & dispersion parameter of the Boussinesq system \\[2pt]
+    $A$              & initial wave amplitude \\[2pt]
+    $L$              & domain half-length, $\Omega = [-L, L]$ \\[2pt]
+    $k$              & wavenumber (integer mode index) \\[2pt]
+    $\xi_k$          & wavenumber $\pi k / L$ on the domain $[-L,L]$ \\[2pt]
+    $\omega(k)$      & angular frequency / dispersion relation \\[2pt]
+    $\hat{f}(k)$     & Fourier coefficient of $f$ at mode $k$ \\[2pt]
+    $\hat{f}(k,t)$   & time-evolving Fourier mode of $f$ at wavenumber $k$ \\
+\end{tabular}
+
+\vspace{0.5cm}
+\noindent\textit{Neural networks and Neural Tangent Kernel}\\[2pt]
+\noindent
+\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+    $\theta$         & trainable parameter vector of a neural network \\[2pt]
+    $u_{\theta}$     & neural network approximation of the PDE solution \\[2pt]
+    $h^{(l)}$        & hidden-layer activation vector at layer $l$ \\[2pt]
+    $\sigma$         & activation function \\[2pt]
+    $W^{(l)},\,b^{(l)}$ & weight matrix and bias vector at layer $l$ \\[2pt]
+    $N_{\mathrm{MLP}}$ & number of neurons in a hidden layer \\[2pt]
+    $L_{\mathrm{MLP}}$ & number of layers in the neural network \\[2pt]
+    $K(\theta)$      & empirical Neural Tangent Kernel, $K = J J^{\mathsf{T}}$ \\[2pt]
+    $\lambda_k$      & NTK eigenvalue associated with mode $k$ \\[2pt]
+    $\hat{e}(k,t)$   & Fourier coefficient of the training error at mode $k$ \\
+\end{tabular}
+
+\vspace{0.5cm}
+\noindent\textit{Neural operators}\\[2pt]
+\noindent
+\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+    $G^\dagger,\,G_\theta$ & target solution operator and its neural approximation \\[2pt]
+    $\mathcal{K}_{\ell}$   & integral operator of the $\ell$-th FNO spectral layer \\[2pt]
+    $\kappa_{\ell}$        & kernel function of the FNO integral operator \\[2pt]
+    $P$                    & lifting operator of the FNO \\[2pt]
+    $Q$                    & projection operator of the FNO \\[2pt]
+    $d_c$                  & channel (width) dimension of the FNO \\[2pt]
+    $R_{\ell,k}$           & FNO spectral weight (discretized kernel) at layer $\ell$, mode $k$ \\[2pt]
+    $k_{\max}$             & FNO mode-truncation threshold \\
+\end{tabular}
 
 \pagebreak
 
