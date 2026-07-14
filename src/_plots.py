@@ -6,6 +6,47 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
+# ---------------------------------------------------------------------------
+# Thesis figure styling
+# ---------------------------------------------------------------------------
+# The figures are \includegraphics'd into a 12 pt report whose text block is
+# ~160 mm ~ 6.30 in wide. A plotly figure of logical width W px, included at
+# frac*\textwidth, maps W px -> frac*6.30 in, so a font of f px prints at
+#     f * frac * 6.30 * 72 / W   points.
+# We invert that so in-figure text lands at a chosen *printed* point size, kept
+# just around the 12 pt body text for a consistent visual ratio across every
+# figure regardless of its pixel dimensions.
+THESIS_TEXTWIDTH_IN = 6.30
+
+# target printed sizes, in points (body text is 12 pt); figure text sits a
+# little below the body, the usual ratio for a 12 pt document
+_THESIS_PT = dict(tick=8.5, axis=9.5, subplot=10.0, title=11.0, legend=9.0, annot=8.0)
+
+
+def _thesis_px(pt, fig_width_px, frac):
+    # plotly font size (logical px) that prints at `pt` when a figure of logical
+    # width `fig_width_px` is \includegraphics'd at `frac`*\textwidth
+    return pt * fig_width_px / (frac * THESIS_TEXTWIDTH_IN * 72.0)
+
+
+def _style_thesis(fig, fig_width_px, frac=1.0):
+    # apply consistent, print-sized fonts to a plotly figure and return the
+    # resolved px sizes so callers can size their own annotations to match.
+    px = {k: _thesis_px(v, fig_width_px, frac) for k, v in _THESIS_PT.items()}
+    fig.update_layout(
+        template='plotly_white',
+        font=dict(size=px['tick']),
+        title_font_size=px['title'],
+        legend_font_size=px['legend'],
+    )
+    fig.update_xaxes(title_font_size=px['axis'], tickfont_size=px['tick'])
+    fig.update_yaxes(title_font_size=px['axis'], tickfont_size=px['tick'])
+    # subplot titles (and any annotations already present) come from make_subplots
+    # as layout annotations; size them to the subplot-title target
+    for ann in fig.layout.annotations:
+        ann.font.size = px['subplot']
+    return px
+
 
 def _ensure_outdir(outdir):
     # make sure output directory exists before saving files
@@ -75,6 +116,7 @@ def plot_soliton_profile(outdir, filename='soliton_profile.png', A=1.0):
         template='plotly_white',
         width=1000, height=400,
     )
+    _style_thesis(fig, 1000, frac=1.0)
     try:
         fig.write_image(outpath, scale=2.0)
         print(f'soliton profile saved to {outpath}')
@@ -878,8 +920,8 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
     specs = [[{'type': 'scene'}, {'type': 'xy'}]] * n_params + [[{'type': 'xy', 'colspan': 2}, None]]
     subplot_titles = []
     for alpha in param_values:
-        subplot_titles += [f'Predicted eta(x,t) - alpha=beta={alpha:.3f}', f'Relative error - alpha=beta={alpha:.3f}']
-    subplot_titles.append('Relative error distribution vs. alpha=beta')
+        subplot_titles += [f'Predicted η(x,t),  α=β={alpha:.2f}', f'Relative error,  α=β={alpha:.2f}']
+    subplot_titles.append('Relative error distribution vs. α=β')
 
     fig = make_subplots(
         rows=n_params + 1, cols=2,
@@ -889,6 +931,7 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         vertical_spacing=0.08,
         horizontal_spacing=0.05,
     )
+    S = _style_thesis(fig, 1900, frac=0.9)
 
     scene_layout = {}
     for i, (alpha, eta_pred) in enumerate(zip(param_values, eta_pred_list)):
@@ -909,23 +952,25 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
     for alpha, rel_norm in zip(param_values, time_rel_norms):
         fig.add_trace(go.Box(
-            y=rel_norm, name=f'alpha={alpha:.2f}',
+            y=rel_norm, name=f'α=β={alpha:.2f}',
             marker_color='#e6550d', fillcolor='#fdd0a2',
             line_color='#e6550d', showlegend=False,
             width=0.2,
         ), row=n_params + 1, col=1)
-    fig.update_xaxes(title_text='alpha=beta value', row=n_params + 1, col=1)
+    fig.update_xaxes(title_text='α=β value', row=n_params + 1, col=1)
     fig.update_yaxes(title_text='Relative error', row=n_params + 1, col=1)
 
-    suptitle = title
-    if res_label is not None:
-        suptitle = f'{suptitle} (eval res = {res_label})'
-    elif eval_resolution is not None:
-        suptitle = f'{suptitle} (eval res = {int(eval_resolution)})'
     fig.update_layout(
-        title_text=suptitle, title_x=0.5,
+        title_text=title, title_x=0.5,
         width=1900, height=680 * n_params + 480,
+        margin=dict(t=120, b=60, l=55, r=60),
         showlegend=False, **scene_layout,
+    )
+    # 3D scenes are small and qualitative: keep readable axis titles but hide the
+    # perspective tick labels, which otherwise pile up and bury the surface
+    fig.update_scenes(
+        xaxis_title_font_size=22, yaxis_title_font_size=22, zaxis_title_font_size=22,
+        xaxis_showticklabels=False, yaxis_showticklabels=False, zaxis_showticklabels=False,
     )
     try:
         fig.write_image(outpath, scale=2.0)
@@ -972,7 +1017,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     specs = [[{'type': 'scene'}, {'type': 'xy'}]] * n_res + [[{'type': 'xy', 'colspan': 2}, None]]
     subplot_titles = []
     for res in resolutions:
-        subplot_titles += [f'Predicted eta(x,t) - res={int(res)}', f'Relative error - res={int(res)}']
+        subplot_titles += [f'Predicted η(x,t),  res={int(res)}', f'Relative error,  res={int(res)}']
     subplot_titles.append('Relative error distribution vs. resolution')
 
     fig = make_subplots(
@@ -983,6 +1028,7 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         vertical_spacing=0.08,
         horizontal_spacing=0.05,
     )
+    S = _style_thesis(fig, 1900, frac=0.9)
 
     scene_layout = {}
     for i, (res, x_res, t_res, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_pred_list)):
@@ -1011,15 +1057,17 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
     fig.update_xaxes(title_text='Resolution', row=n_res + 1, col=1)
     fig.update_yaxes(title_text='Relative error', row=n_res + 1, col=1)
 
-    suptitle = title
-    if param_label is not None:
-        suptitle = f'{suptitle} (eval alpha=beta = {param_label})'
-    elif eval_alpha_beta is not None:
-        suptitle = f'{suptitle} (eval alpha=beta = {eval_alpha_beta:.3f})'
     fig.update_layout(
-        title_text=suptitle, title_x=0.5,
+        title_text=title, title_x=0.5,
         width=1900, height=680 * n_res + 480,
+        margin=dict(t=120, b=60, l=55, r=60),
         showlegend=False, **scene_layout,
+    )
+    # 3D scenes are small and qualitative: keep readable axis titles but hide the
+    # perspective tick labels, which otherwise pile up and bury the surface
+    fig.update_scenes(
+        xaxis_title_font_size=22, yaxis_title_font_size=22, zaxis_title_font_size=22,
+        xaxis_showticklabels=False, yaxis_showticklabels=False, zaxis_showticklabels=False,
     )
     try:
         fig.write_image(outpath, scale=2.0)
@@ -1080,9 +1128,10 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         rows=n_rows, cols=2,
         specs=specs,
         subplot_titles=subplot_titles,
-        vertical_spacing=0.07,
-        horizontal_spacing=0.1,
+        vertical_spacing=0.12,
+        horizontal_spacing=0.12,
     )
+    S = _style_thesis(fig, 1400, frac=1.0)
 
     for row, (idx, tt) in enumerate(zip(indices, target_times)):
         tl = _tl(tt)
@@ -1113,7 +1162,7 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
             text=f'Mean: {mean_rel:.2e}',
             xref=f'x{(row * 2 + 2) if row > 0 else "2"} domain', yref=f'y{(row * 2 + 2) if row > 0 else "2"} domain',
             x=0.97, y=0.97, xanchor='right', yanchor='top',
-            showarrow=False, font=dict(size=10),
+            showarrow=False, font=dict(size=S['annot']),
             bgcolor='white', bordercolor='#cccccc', borderwidth=1, borderpad=4,
         )
         fig.update_xaxes(title_text='Spectral index n', row=row + 1, col=2)
@@ -1128,17 +1177,10 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
     fig.update_xaxes(title_text='Time (t)', row=n_rows, col=1)
     fig.update_yaxes(title_text='Mean relative error', row=n_rows, col=1)
 
-    suptitle = title
-    if param_label is not None:
-        suptitle = f'{suptitle} (alpha=beta={param_label})'
-    if res_label is not None:
-        suptitle = f'{suptitle} (res={res_label})'
-    elif eval_resolution is not None:
-        suptitle = f'{suptitle} (res={int(eval_resolution)})'
-
     fig.update_layout(
-        title_text=suptitle, title_x=0.5,
-        width=1400, height=420 * n_snap + 350,
+        title_text=title, title_x=0.5,
+        width=1400, height=460 * n_snap + 380,
+        margin=dict(t=90, b=70, l=80, r=50),
         showlegend=True,
         legend=dict(x=0.01, y=0.99, xanchor='left', yanchor='top'),
     )
@@ -1233,6 +1275,7 @@ def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolut
         vertical_spacing=0.12,
         horizontal_spacing=0.1,
     )
+    _style_thesis(fig, 1400, frac=1.0)
 
     for i in range(n_top):
         row = i // 2 + 1
@@ -1425,77 +1468,74 @@ def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title_prefix, 
 
 def plot_pinn_ntk_panel(theta_rel_histories, k_rel_histories, log_epochs,
                          eigenvalues_init, eigenvalues_final, widths, outdir, filename):
+    # NTK diagnostic rendered as THREE standalone figures (parameter drift, kernel
+    # drift, eigenvalue spectrum) instead of one wide three-column panel, so each
+    # can be \includegraphics'd on its own with legible, print-sized fonts.
     import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
 
     _colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
     _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
+    base, _, ext = filename.rpartition('.')
+    base = base or filename
+    ext = ext or 'png'
 
-    fig = make_subplots(
-        rows=1, cols=3,
-        subplot_titles=[
-            'Relative parameter change',
-            'Relative NTK change',
-            'NTK eigenvalue spectrum',
-        ],
-        horizontal_spacing=0.1,
-    )
+    W, H, FRAC = 860, 620, 0.48
 
-    for i, (w, theta_hist, k_hist) in enumerate(zip(widths, theta_rel_histories, k_rel_histories)):
-        color = _colors[i % len(_colors)]
-        name = f'width={w}'
-        fig.add_trace(go.Scatter(
-            x=log_epochs, y=theta_hist,
-            mode='lines', name=name,
-            line=dict(color=color, width=2.0),
-            legendgroup=name, showlegend=True,
-        ), row=1, col=1)
-        fig.add_trace(go.Scatter(
-            x=log_epochs, y=k_hist,
-            mode='lines', name=name,
-            line=dict(color=color, width=2.0),
-            legendgroup=name, showlegend=False,
-        ), row=1, col=2)
+    def _finish(fig, title, xlab, ylab, suffix, logx=False, logy=False):
+        fig.update_layout(
+            title_text=title, title_x=0.5,
+            xaxis_title=xlab, yaxis_title=ylab,
+            width=W, height=H, showlegend=True,
+            legend=dict(x=0.02, y=0.98, xanchor='left', yanchor='top'),
+        )
+        if logx:
+            fig.update_xaxes(type='log')
+        if logy:
+            fig.update_yaxes(type='log')
+        _style_thesis(fig, W, frac=FRAC)
+        outpath = os.path.join(outdir, f'{base}_{suffix}.{ext}')
+        try:
+            fig.write_image(outpath, scale=2.0)
+            print(f'ntk {suffix} figure saved to {outpath}')
+        except Exception as e:
+            print('Erro ao salvar figura NTK como PNG. Instale kaleido: pip install kaleido')
+            raise e
 
+    # (a) relative parameter change
+    fig_a = go.Figure()
+    for i, (w, theta_hist) in enumerate(zip(widths, theta_rel_histories)):
+        fig_a.add_trace(go.Scatter(
+            x=log_epochs, y=theta_hist, mode='lines', name=f'width={w}',
+            line=dict(color=_colors[i % len(_colors)], width=2.6),
+        ))
+    _finish(fig_a, 'Relative parameter change', 'Iteration',
+            'Rel. parameter change', 'param')
+
+    # (b) relative NTK change
+    fig_b = go.Figure()
+    for i, (w, k_hist) in enumerate(zip(widths, k_rel_histories)):
+        fig_b.add_trace(go.Scatter(
+            x=log_epochs, y=k_hist, mode='lines', name=f'width={w}',
+            line=dict(color=_colors[i % len(_colors)], width=2.6),
+        ))
+    _finish(fig_b, 'Relative NTK change', 'Iteration',
+            'Rel. NTK change', 'kernel')
+
+    # (c) eigenvalue spectrum: solid = initialization, dashed = end of training
+    fig_c = go.Figure()
     for i, (w, ev_init, ev_final) in enumerate(zip(widths, eigenvalues_init, eigenvalues_final)):
         color = _colors[i % len(_colors)]
-        name = f'width={w}'
         idx = np.arange(1, len(ev_init) + 1).tolist()
-        fig.add_trace(go.Scatter(
-            x=idx, y=list(ev_init),
-            mode='lines+markers', name=f'{name} init',
-            line=dict(color=color, width=2.0, dash='solid'),
-            marker=dict(size=4, symbol='circle'),
-            legendgroup=name, showlegend=False,
-        ), row=1, col=3)
+        fig_c.add_trace(go.Scatter(
+            x=idx, y=list(ev_init), mode='lines+markers', name=f'width={w} (init)',
+            line=dict(color=color, width=2.4, dash='solid'),
+            marker=dict(size=5, symbol='circle'),
+        ))
         idx_f = np.arange(1, len(ev_final) + 1).tolist()
-        fig.add_trace(go.Scatter(
-            x=idx_f, y=list(ev_final),
-            mode='lines+markers', name=f'{name} final',
-            line=dict(color=color, width=2.0, dash='dash'),
-            marker=dict(size=4, symbol='diamond'),
-            legendgroup=name, showlegend=False,
-        ), row=1, col=3)
-
-    fig.update_xaxes(title_text='Iteration', row=1, col=1)
-    fig.update_yaxes(title_text='Relative parameter change', row=1, col=1)
-    fig.update_xaxes(title_text='Iteration', row=1, col=2)
-    fig.update_yaxes(title_text='Relative NTK change', row=1, col=2)
-    fig.update_xaxes(title_text='Eigenvalue index', type='log', row=1, col=3)
-    fig.update_yaxes(title_text='Eigenvalue', type='log', row=1, col=3)
-
-    fig.update_layout(
-        title_text='NTK Analysis (Wang et al. 2020)',
-        title_x=0.5,
-        template='plotly_white',
-        width=1800, height=600,
-        showlegend=True,
-        legend=dict(x=0.02, y=0.98, xanchor='left', yanchor='top'),
-    )
-    try:
-        fig.write_image(outpath, scale=2.0)
-        print(f'ntk panel saved to {outpath}')
-    except Exception as e:
-        print('Erro ao salvar ntk panel como PNG. Instale kaleido: pip install kaleido')
-        raise e
+        fig_c.add_trace(go.Scatter(
+            x=idx_f, y=list(ev_final), mode='lines+markers', name=f'width={w} (final)',
+            line=dict(color=color, width=2.4, dash='dash'),
+            marker=dict(size=5, symbol='diamond'),
+        ))
+    _finish(fig_c, 'NTK eigenvalue spectrum', 'Eigenvalue index', 'Eigenvalue',
+            'spectrum', logx=True, logy=True)
