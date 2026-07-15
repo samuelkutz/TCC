@@ -17,46 +17,43 @@ class SpectralConv2d(nn.Module):
         self.modes1 = modes1
         self.modes2 = modes2
 
+        # Two weight tensors, one per sign of the (full-FFT) first axis, matching
+        # the canonical FNO: low modes live at both ends of the frequency axis, so
+        # `modes1` positive AND `modes1` negative low modes are kept (|k| up to
+        # ~modes1). A single centered band would retain only half the bandwidth.
         self.scale = 1 / (in_channels * out_channels)
-        self.weight = nn.Parameter(
-            self.scale * torch.randn(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat)
+        self.weights1 = nn.Parameter(
+            self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat)
         )
-        self.bias = nn.Parameter(torch.zeros(out_channels, 1, 1))
+        self.weights2 = nn.Parameter(
+            self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat)
+        )
+
     def compl_mul2d(self, input, weights):
         # complex multiplication in fourier space.
         return torch.einsum("bixy,ioxy->boxy", input, weights)
 
     def forward(self, x):
-        # keep only low modes around dc after fftshift.
+        # keep the lowest `modes1` frequencies at each end of the space axis and
+        # the lowest `modes2` of the rfft (time) axis; this is resolution-invariant
+        # because the same modes are retained regardless of the grid size.
         batchsize = x.shape[0]
+        size1, size2 = x.size(-2), x.size(-1)
         x_ft = torch.fft.rfft2(x, norm='forward')
-        x_ft = torch.fft.fftshift(x_ft, dim=(-2,))
+
+        m1 = min(self.modes1, size1 // 2)
+        m2 = min(self.modes2, size2 // 2 + 1)
 
         out_ft = torch.zeros(
-            batchsize,
-            self.out_channels,
-            x_ft.size(-2),
-            x_ft.size(-1),
-            dtype=torch.cfloat,
-            device=x.device,
+            batchsize, self.out_channels, size1, size2 // 2 + 1,
+            dtype=torch.cfloat, device=x.device,
         )
+        out_ft[:, :, :m1, :m2] = self.compl_mul2d(
+            x_ft[:, :, :m1, :m2], self.weights1[:, :, :m1, :m2])
+        out_ft[:, :, -m1:, :m2] = self.compl_mul2d(
+            x_ft[:, :, -m1:, :m2], self.weights2[:, :, :m1, :m2])
 
-        modes1_actual = min(self.modes1, x_ft.size(-2) // 2)
-        modes2_actual = min(self.modes2, x_ft.size(-1))
-
-        center_x = x_ft.size(-2) // 2
-        start_x = center_x - modes1_actual // 2
-        end_x = start_x + modes1_actual
-
-        x_ft_modes = x_ft[:, :, start_x:end_x, :modes2_actual]
-        out_ft_modes = self.compl_mul2d(
-            x_ft_modes,
-            self.weight[:, :, :modes1_actual, :modes2_actual],
-        )
-        out_ft[:, :, start_x:end_x, :modes2_actual] = out_ft_modes
-
-        out_ft = torch.fft.ifftshift(out_ft, dim=(-2,))
-        return torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)), norm='forward') + self.bias
+        return torch.fft.irfft2(out_ft, s=(size1, size2), norm='forward')
 
 
 class FNO2d(nn.Module):
@@ -130,7 +127,7 @@ class FNO2d(nn.Module):
         x1 = self.conv3(x)
         x2 = self.w3(x)
         x = x1 + x2
-        x = F.gelu(x)
+        # no activation after the last Fourier layer (canonical FNO)
 
         # projection q produces the two target fields (eta, u).
         x = x.permute(0, 2, 3, 1)

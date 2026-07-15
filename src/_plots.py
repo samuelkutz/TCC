@@ -23,6 +23,10 @@ THESIS_TEXTWIDTH_IN = 6.30
 # smaller than the body so the panels read as figures, not as running text.
 _THESIS_PT = dict(tick=7.5, axis=8.5, subplot=9.0, title=10.0, legend=8.0, annot=7.0)
 
+# in-figure text is pure black to match the black LaTeX body text (plotly's
+# default is a dark slate blue, which reads lighter than the surrounding prose).
+_THESIS_FONT_COLOR = '#000000'
+
 
 def _thesis_px(pt, fig_width_px, frac):
     # plotly font size (logical px) that prints at `pt` when a figure of logical
@@ -30,18 +34,26 @@ def _thesis_px(pt, fig_width_px, frac):
     return pt * fig_width_px / (frac * THESIS_TEXTWIDTH_IN * 72.0)
 
 
+def _thesis_px_sizes(fig_width_px, frac=1.0):
+    # resolved in-figure font sizes (px) for a figure of logical width
+    # `fig_width_px` shown at `frac`*\textwidth, keyed by _THESIS_PT roles
+    return {k: _thesis_px(v, fig_width_px, frac) for k, v in _THESIS_PT.items()}
+
+
 def _style_thesis(fig, fig_width_px, frac=1.0):
     # apply consistent, print-sized fonts to a plotly figure and return the
     # resolved px sizes so callers can size their own annotations to match.
-    px = {k: _thesis_px(v, fig_width_px, frac) for k, v in _THESIS_PT.items()}
+    px = _thesis_px_sizes(fig_width_px, frac)
     fig.update_layout(
         template='plotly_white',
-        font=dict(size=px['tick']),
+        font=dict(size=px['tick'], color=_THESIS_FONT_COLOR),
         title_font_size=px['title'],
         legend_font_size=px['legend'],
     )
-    fig.update_xaxes(title_font_size=px['axis'], tickfont_size=px['tick'])
-    fig.update_yaxes(title_font_size=px['axis'], tickfont_size=px['tick'])
+    fig.update_xaxes(title_font_size=px['axis'], tickfont_size=px['tick'],
+                     title_font_color=_THESIS_FONT_COLOR, tickfont_color=_THESIS_FONT_COLOR)
+    fig.update_yaxes(title_font_size=px['axis'], tickfont_size=px['tick'],
+                     title_font_color=_THESIS_FONT_COLOR, tickfont_color=_THESIS_FONT_COLOR)
     # subplot titles (and any annotations already present) come from make_subplots
     # as layout annotations; size them to the subplot-title target
     for ann in fig.layout.annotations:
@@ -53,6 +65,67 @@ def _ensure_outdir(outdir):
     # make sure output directory exists before saving files
     os.makedirs(outdir, exist_ok=True)
     return outdir
+
+
+# ---------------------------------------------------------------------------
+# Split-panel helpers
+# ---------------------------------------------------------------------------
+# The multi-panel figures are broken into one standalone image per subplot so a
+# single sub-figure can be regenerated in isolation (e.g. after a reviewer note)
+# without rebuilding the whole panel. LaTeX reassembles them with `subfigure`.
+# Every emitted file keeps the panel's `filename` stem plus a descriptive
+# suffix, so callers keep their existing signatures.
+
+def _panel_stem(filename):
+    # 'fno_model2_spectral_panel.png' -> 'fno_model2_spectral_panel'
+    return os.path.splitext(os.path.basename(filename))[0]
+
+
+def _slugify(text):
+    # 'PINN (no data)' -> 'pinn_no_data'
+    import re
+    return re.sub(r'[^a-z0-9]+', '_', str(text).lower()).strip('_')
+
+
+def _save_thesis_fig(fig, outpath, width_px, height_px, frac, extra_layout=None, scale=2.0):
+    # style a standalone plotly figure at print size and write it as PNG. Font
+    # sizes print consistently across every emitted sub-figure because they are
+    # normalized to (width_px, frac); see _style_thesis. `extra_layout` is applied
+    # after styling, so annotations passed there keep the font sizes set on them.
+    _style_thesis(fig, width_px, frac=frac)
+    layout = dict(width=width_px, height=height_px)
+    if extra_layout:
+        layout.update(extra_layout)
+    fig.update_layout(**layout)
+    try:
+        fig.write_image(outpath, scale=scale)
+        print(f'  saved {outpath}')
+    except Exception as e:
+        print('Erro ao salvar figura como PNG. Instale kaleido: pip install kaleido')
+        raise e
+
+
+def _autocrop_white(path, pad=6):
+    # trim the uniform white margins plotly pads around a 3D scene. Only vertical
+    # slack is really removed here (the surface already spans the width), so the
+    # image stays width-dominated and width=\linewidth inclusion keeps its text at
+    # the intended print size. No-op if Pillow is unavailable.
+    try:
+        from PIL import Image, ImageChops
+    except ImportError:
+        print('  (autocrop skipped: Pillow not installed)')
+        return
+    img = Image.open(path).convert('RGB')
+    bg = Image.new('RGB', img.size, (255, 255, 255))
+    bbox = ImageChops.difference(img, bg).getbbox()
+    if bbox is None:
+        return
+    left, top, right, bottom = bbox
+    left = max(0, left - pad)
+    top = max(0, top - pad)
+    right = min(img.width, right + pad)
+    bottom = min(img.height, bottom + pad)
+    img.crop((left, top, right, bottom)).save(path)
 
 
 # plot training loss
@@ -886,47 +959,109 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
 
 
 # ---------------------------------------------------------------------------
-# Shared geometry for the stacked 3D-surface panels (alpha/beta and resolution)
+# Shared builder for the stacked 3D-surface panels (alpha/beta and resolution)
 # ---------------------------------------------------------------------------
-# The 3D scene is widened (aspectratio x, plus a scene domain spanning the whole
-# left cell) so the surface print fills its column like the 2D plot beside it,
-# instead of floating in the middle with white margins. Filling the cell pushes
-# plotly's own y/z axis titles out of the domain, so we drop them from the scene
-# and redraw 'η' and 'Space (x)' as paper-coord annotations; 'Time (t)' stays as
-# the scene x-axis title. Height is unchanged, so the figure still fits the page.
-_SURFACE_ASPECTRATIO = dict(x=3.6, y=1.85, z=0.62)
-_SURFACE_SCENE_DOMAIN_X = [0.015, 0.60]
-_SURFACE_AXIS_LABEL_PX = 22
+# Each item (a parameter value or a resolution) yields one standalone 3D-surface
+# image and one relative-error-vs-time image; a single box-plot image summarizes
+# the error distribution across items. All surfaces share one z-range and one
+# camera so they stay directly comparable when reassembled in LaTeX.
+_SURFACE_CAMERA = dict(eye=dict(x=-1.15, y=-1.40, z=0.95),
+                       center=dict(x=0, y=0, z=-0.05), up=dict(x=0, y=0, z=1))
+_SURFACE_ASPECTRATIO = dict(x=1.9, y=1.0, z=0.52)
+# Turbo reads the small dispersive ripples between the two waves better than a
+# dark-based map; matte directional lighting (low ambient, high diffuse, almost
+# no specular) casts clean shadows on the ripple facets so they stay well defined.
+_SURFACE_COLORSCALE = 'Turbo'
+_SURFACE_LIGHTING = dict(ambient=0.30, diffuse=0.95, specular=0.05, roughness=0.9, fresnel=0.1)
+_SURFACE_LIGHTPOSITION = dict(x=-1.6, y=-1.0, z=0.25)
+# fraction of the rendered canvas width that survives _autocrop_white (the 3D
+# box projection is fixed by camera+aspect, so this is deterministic and equal
+# for every surface). Used to size the scene axis titles so that, after cropping
+# and inclusion at \linewidth, they print at the same point size as the 2D tiles.
+_SURFACE_CROP_W_RATIO = 0.681
 
 
-def _surface_scene_annotations(n_scene_rows, vertical_spacing=0.08, font_size=_SURFACE_AXIS_LABEL_PX):
-    # 'η' (height) and 'Space (x)' (depth) labels for each widened scene, placed
-    # in paper coordinates at the left of its row. Rows are the n_scene_rows
-    # surface rows plus one box/distribution row at the bottom, all equal height.
-    n_rows = n_scene_rows + 1
-    h = (1.0 - vertical_spacing * (n_rows - 1)) / n_rows
-    # faint white pill so the labels stay legible whether they land on the white
-    # margin ('η') or over the dark flat part of the widened surface ('Space (x)')
-    bg = dict(bgcolor='rgba(255,255,255,0.65)', borderpad=1)
-    anns = []
-    for i in range(n_scene_rows):
-        bottom = 1.0 - i * (h + vertical_spacing) - h
-        anns.append(dict(text='η', x=0.005, y=bottom + h * 0.78,
-                         xref='paper', yref='paper', showarrow=False,
-                         xanchor='left', font=dict(size=font_size), **bg))
-        anns.append(dict(text='Space (x)', x=0.02, y=bottom + h * 0.12,
-                         xref='paper', yref='paper', showarrow=False,
-                         xanchor='left', font=dict(size=font_size), **bg))
-    return anns
+def _emit_surface_panel_figures(stem, outdir, x_list, t_list, eta_pred_list, time_rel_norms,
+                                box_names, box_fillcolor, box_xaxis_title):
+    import plotly.graph_objects as go
+
+    z_global_min = min(float(np.asarray(e).min()) for e in eta_pred_list)
+    z_global_max = max(float(np.asarray(e).max()) for e in eta_pred_list)
+    z_margin = (z_global_max - z_global_min) * 0.05
+    z_lim = [z_global_min - z_margin, z_global_max + z_margin]
+
+    SURF_W, SURF_H, SURF_FRAC = 1000, 500, 0.48
+    LINE_W, LINE_H, LINE_FRAC = 820, 470, 0.48
+    BOX_W, BOX_H, BOX_FRAC = 1200, 430, 0.68
+    # the surface is autocropped to ~SURF_W*_SURFACE_CROP_W_RATIO wide before it is
+    # shown at 0.48\textwidth, so size the axis titles against that effective width.
+    axis_px = _thesis_px_sizes(SURF_W * _SURFACE_CROP_W_RATIO, SURF_FRAC)['axis']
+
+    for i, (x_res, t_res, eta_pred, rel_norm) in enumerate(
+            zip(x_list, t_list, eta_pred_list, time_rel_norms), start=1):
+        # ---- predicted surface eta(x, t): x-axis is time, y-axis is space ----
+        fig = go.Figure(go.Surface(
+            x=np.asarray(t_res, dtype=float), y=np.asarray(x_res, dtype=float),
+            z=np.asarray(eta_pred, dtype=float),
+            colorscale=_SURFACE_COLORSCALE, cmin=z_global_min, cmax=z_global_max, showscale=False,
+            lighting=_SURFACE_LIGHTING, lightposition=_SURFACE_LIGHTPOSITION,
+        ))
+        # 3D scenes are qualitative here: perspective tick labels pile up and bury
+        # the surface, so they are hidden and only the axis titles are kept.
+        fig.update_layout(scene=dict(
+            xaxis=dict(title='Time (t)', title_font=dict(size=axis_px, color=_THESIS_FONT_COLOR), showticklabels=False),
+            yaxis=dict(title='Space (x)', title_font=dict(size=axis_px, color=_THESIS_FONT_COLOR), showticklabels=False),
+            zaxis=dict(title='η', title_font=dict(size=axis_px, color=_THESIS_FONT_COLOR), showticklabels=False, range=z_lim),
+            aspectmode='manual', aspectratio=_SURFACE_ASPECTRATIO, camera=_SURFACE_CAMERA,
+            domain=dict(x=[0.0, 1.0], y=[0.0, 1.0]),
+        ))
+        surface_path = os.path.join(outdir, f'{stem}_surface_{i}.png')
+        _save_thesis_fig(
+            fig, surface_path,
+            SURF_W, SURF_H, SURF_FRAC,
+            extra_layout=dict(margin=dict(t=8, b=16, l=16, r=14)),
+        )
+        _autocrop_white(surface_path)
+
+        # ---- relative error over time ----
+        fig = go.Figure(go.Scatter(
+            x=np.asarray(t_res, dtype=float).tolist(),
+            y=np.asarray(rel_norm, dtype=float).tolist(),
+            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
+        ))
+        fig.update_xaxes(title_text='Time (t)')
+        fig.update_yaxes(title_text='Relative error')
+        _save_thesis_fig(
+            fig, os.path.join(outdir, f'{stem}_relerr_{i}.png'),
+            LINE_W, LINE_H, LINE_FRAC,
+            extra_layout=dict(margin=dict(t=15, b=55, l=70, r=20)),
+        )
+
+    # ---- error distribution across items ----
+    fig = go.Figure()
+    for name, rel_norm in zip(box_names, time_rel_norms):
+        fig.add_trace(go.Box(
+            y=np.asarray(rel_norm, dtype=float).tolist(), name=str(name),
+            marker_color='#e6550d', fillcolor=box_fillcolor,
+            line_color='#e6550d', showlegend=False, width=0.2,
+        ))
+    fig.update_xaxes(title_text=box_xaxis_title)
+    fig.update_yaxes(title_text='Relative error')
+    _save_thesis_fig(
+        fig, os.path.join(outdir, f'{stem}_box.png'),
+        BOX_W, BOX_H, BOX_FRAC,
+        extra_layout=dict(margin=dict(t=15, b=55, l=70, r=25)),
+    )
+    print(f'surface panel figures saved to {outdir} ({stem}_*)')
 
 
 def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_values, outdir, filename, title,
                                  eval_resolution=None, res_label=None):
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-
+    # Emits, per parameter value, a {stem}_surface_{i}.png and {stem}_relerr_{i}.png,
+    # plus one {stem}_box.png for the error distribution across parameters. All
+    # items share the same spatial/temporal grid.
     _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
+    stem = _panel_stem(filename)
 
     x = np.asarray(x, dtype=float)
     t = np.asarray(t, dtype=float)
@@ -937,93 +1072,27 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
     time_rel_norms = []
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
+        eta_true = np.asarray(eta_true, dtype=float)
+        eta_pred = np.asarray(eta_pred, dtype=float)
         rel_norm = np.linalg.norm(eta_true - eta_pred, axis=0) / (np.linalg.norm(eta_true, axis=0) + 1e-12)
         time_rel_norms.append(rel_norm)
 
-    z_global_min = min(float(np.asarray(e).min()) for e in eta_pred_list)
-    z_global_max = max(float(np.asarray(e).max()) for e in eta_pred_list)
-    z_margin = (z_global_max - z_global_min) * 0.05
-    z_lim = [z_global_min - z_margin, z_global_max + z_margin]
-
-    camera = dict(eye=dict(x=-1.5, y=-1.8, z=0.8), center=dict(x=0, y=0, z=0), up=dict(x=0, y=0, z=1))
-    scene_kw = dict(
-        xaxis_title='Time (t)', yaxis_title='', zaxis_title='',
-        zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=_SURFACE_ASPECTRATIO,
-        domain=dict(x=_SURFACE_SCENE_DOMAIN_X),
+    _emit_surface_panel_figures(
+        stem, outdir,
+        x_list=[x] * n_params, t_list=[t] * n_params,
+        eta_pred_list=eta_pred_list, time_rel_norms=time_rel_norms,
+        box_names=[f'α=β={alpha:.2f}' for alpha in param_values],
+        box_fillcolor='#fdd0a2', box_xaxis_title='α=β value',
     )
-
-    # ---------- main panel ----------
-    specs = [[{'type': 'scene'}, {'type': 'xy'}]] * n_params + [[{'type': 'xy', 'colspan': 2}, None]]
-    subplot_titles = []
-    for alpha in param_values:
-        subplot_titles += [f'Predicted η(x,t),  α=β={alpha:.2f}', f'Relative error,  α=β={alpha:.2f}']
-    subplot_titles.append('Relative error distribution vs. α=β')
-
-    fig = make_subplots(
-        rows=n_params + 1, cols=2,
-        specs=specs,
-        subplot_titles=subplot_titles,
-        column_widths=[0.6, 0.4],
-        vertical_spacing=0.08,
-        horizontal_spacing=0.05,
-    )
-    S = _style_thesis(fig, 1900, frac=1.0)
-
-    scene_layout = {}
-    for i, (alpha, eta_pred) in enumerate(zip(param_values, eta_pred_list)):
-        eta_pred = np.asarray(eta_pred, dtype=float)
-        fig.add_trace(go.Surface(
-            x=t, y=x, z=eta_pred,
-            colorscale='Inferno', cmin=z_global_min, cmax=z_global_max,
-            showscale=False,
-        ), row=i + 1, col=1)
-        fig.add_trace(go.Scatter(
-            x=t, y=time_rel_norms[i],
-            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
-        ), row=i + 1, col=2)
-        fig.update_xaxes(title_text='Time (t)', row=i + 1, col=2)
-        fig.update_yaxes(title_text='Relative error', row=i + 1, col=2)
-        scene_key = 'scene' if i == 0 else f'scene{i + 1}'
-        scene_layout[scene_key] = dict(**scene_kw, camera=camera)
-
-    for alpha, rel_norm in zip(param_values, time_rel_norms):
-        fig.add_trace(go.Box(
-            y=rel_norm, name=f'α=β={alpha:.2f}',
-            marker_color='#e6550d', fillcolor='#fdd0a2',
-            line_color='#e6550d', showlegend=False,
-            width=0.2,
-        ), row=n_params + 1, col=1)
-    fig.update_xaxes(title_text='α=β value', row=n_params + 1, col=1)
-    fig.update_yaxes(title_text='Relative error', row=n_params + 1, col=1)
-
-    fig.update_layout(
-        width=1900, height=680 * n_params + 360,
-        margin=dict(t=70, b=50, l=35, r=35),
-        showlegend=False, **scene_layout,
-    )
-    # 3D scenes are small and qualitative: hide the perspective tick labels, which
-    # otherwise pile up and bury the surface. The y/z axis titles are supplied as
-    # paper-coord annotations (the widened scene clips the scene's own titles).
-    fig.update_scenes(
-        xaxis_title_font_size=_SURFACE_AXIS_LABEL_PX,
-        xaxis_showticklabels=False, yaxis_showticklabels=False, zaxis_showticklabels=False,
-    )
-    fig.update_layout(annotations=list(fig.layout.annotations) + _surface_scene_annotations(n_params))
-    try:
-        fig.write_image(outpath, scale=2.0)
-        print(f'alpha/beta panel saved to {outpath}')
-    except Exception as e:
-        print('Erro ao salvar panel como PNG. Instale kaleido: pip install kaleido')
-        raise e
 
 
 def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, resolutions, outdir, filename, title,
                                  eval_alpha_beta=None, param_label=None):
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-
+    # Emits, per resolution, a {stem}_surface_{i}.png and {stem}_relerr_{i}.png,
+    # plus one {stem}_box.png for the error distribution across resolutions. Each
+    # item carries its own spatial/temporal grid.
     _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
+    stem = _panel_stem(filename)
 
     x_list = [np.asarray(x, dtype=float) for x in x_list]
     t_list = [np.asarray(t, dtype=float) for t in t_list]
@@ -1036,93 +1105,30 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
     time_rel_norms = []
     for eta_true, eta_pred in zip(eta_true_list, eta_pred_list):
+        eta_true = np.asarray(eta_true, dtype=float)
+        eta_pred = np.asarray(eta_pred, dtype=float)
         rel_norm = np.linalg.norm(eta_true - eta_pred, axis=0) / (np.linalg.norm(eta_true, axis=0) + 1e-12)
         time_rel_norms.append(rel_norm)
 
-    z_global_min = min(float(np.asarray(e).min()) for e in eta_pred_list)
-    z_global_max = max(float(np.asarray(e).max()) for e in eta_pred_list)
-    z_margin = (z_global_max - z_global_min) * 0.05
-    z_lim = [z_global_min - z_margin, z_global_max + z_margin]
-
-    camera = dict(eye=dict(x=-1.5, y=-1.8, z=0.8), center=dict(x=0, y=0, z=0), up=dict(x=0, y=0, z=1))
-    scene_kw = dict(
-        xaxis_title='Time (t)', yaxis_title='', zaxis_title='',
-        zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=_SURFACE_ASPECTRATIO,
-        domain=dict(x=_SURFACE_SCENE_DOMAIN_X),
+    _emit_surface_panel_figures(
+        stem, outdir,
+        x_list=x_list, t_list=t_list,
+        eta_pred_list=eta_pred_list, time_rel_norms=time_rel_norms,
+        box_names=[str(int(res)) for res in resolutions],
+        box_fillcolor='#fdae6b', box_xaxis_title='Resolution',
     )
-
-    # ---------- main panel ----------
-    specs = [[{'type': 'scene'}, {'type': 'xy'}]] * n_res + [[{'type': 'xy', 'colspan': 2}, None]]
-    subplot_titles = []
-    for res in resolutions:
-        subplot_titles += [f'Predicted η(x,t),  res={int(res)}', f'Relative error,  res={int(res)}']
-    subplot_titles.append('Relative error distribution vs. resolution')
-
-    fig = make_subplots(
-        rows=n_res + 1, cols=2,
-        specs=specs,
-        subplot_titles=subplot_titles,
-        column_widths=[0.6, 0.4],
-        vertical_spacing=0.08,
-        horizontal_spacing=0.05,
-    )
-    S = _style_thesis(fig, 1900, frac=1.0)
-
-    scene_layout = {}
-    for i, (res, x_res, t_res, eta_pred) in enumerate(zip(resolutions, x_list, t_list, eta_pred_list)):
-        eta_pred = np.asarray(eta_pred, dtype=float)
-        fig.add_trace(go.Surface(
-            x=t_res, y=x_res, z=eta_pred,
-            colorscale='Inferno', cmin=z_global_min, cmax=z_global_max,
-            showscale=False,
-        ), row=i + 1, col=1)
-        fig.add_trace(go.Scatter(
-            x=t_res, y=time_rel_norms[i],
-            mode='lines', line=dict(color='crimson', width=1.8), showlegend=False,
-        ), row=i + 1, col=2)
-        fig.update_xaxes(title_text='Time (t)', row=i + 1, col=2)
-        fig.update_yaxes(title_text='Relative error', row=i + 1, col=2)
-        scene_key = 'scene' if i == 0 else f'scene{i + 1}'
-        scene_layout[scene_key] = dict(**scene_kw, camera=camera)
-
-    for res, rel_norm in zip(resolutions, time_rel_norms):
-        fig.add_trace(go.Box(
-            y=rel_norm, name=str(int(res)),
-            marker_color='#e6550d', fillcolor='#fdae6b',
-            line_color='#e6550d', showlegend=False,
-            width=0.2,
-        ), row=n_res + 1, col=1)
-    fig.update_xaxes(title_text='Resolution', row=n_res + 1, col=1)
-    fig.update_yaxes(title_text='Relative error', row=n_res + 1, col=1)
-
-    fig.update_layout(
-        width=1900, height=680 * n_res + 360,
-        margin=dict(t=70, b=50, l=35, r=35),
-        showlegend=False, **scene_layout,
-    )
-    # 3D scenes are small and qualitative: hide the perspective tick labels, which
-    # otherwise pile up and bury the surface. The y/z axis titles are supplied as
-    # paper-coord annotations (the widened scene clips the scene's own titles).
-    fig.update_scenes(
-        xaxis_title_font_size=_SURFACE_AXIS_LABEL_PX,
-        xaxis_showticklabels=False, yaxis_showticklabels=False, zaxis_showticklabels=False,
-    )
-    fig.update_layout(annotations=list(fig.layout.annotations) + _surface_scene_annotations(n_res))
-    try:
-        fig.write_image(outpath, scale=2.0)
-        print(f'resolution panel saved to {outpath}')
-    except Exception as e:
-        print('Erro ao salvar panel como PNG. Instale kaleido: pip install kaleido')
-        raise e
 
 
 def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title,
                                n_times=3, eval_resolution=None, res_label=None, param_label=None):
+    # Emits one standalone image per subplot (assembled in LaTeX via subfigure):
+    #   {stem}_spectrum_{i}.png : reference vs predicted spectrum at snapshot i
+    #   {stem}_relerr_{i}.png   : relative spectral error at snapshot i
+    #   {stem}_mean.png         : mean relative spectral error over time
     import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
 
     _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
+    stem = _panel_stem(filename)
 
     x = np.asarray(x, dtype=float)
     t = np.asarray(t, dtype=float)
@@ -1151,83 +1157,83 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         indices = list(indices)
         target_times = list(target_times)
 
-    def _tl(tt):
-        return f'{int(round(tt))}' if abs(tt - round(tt)) < 1e-6 else f'{tt:.2f}'
+    # display geometry: spectrum/error tiles go two-per-row at 0.48\textwidth,
+    # the mean-over-time plot spans a single wider centred slot at 0.68\textwidth.
+    PAIR_W, PAIR_H, PAIR_FRAC = 820, 470, 0.48
+    MEAN_W, MEAN_H, MEAN_FRAC = 1200, 430, 0.68
+    annot_px = _thesis_px_sizes(PAIR_W, PAIR_FRAC)['annot']
 
-    n_snap = len(indices)
-    n_rows = n_snap + 1
-    specs = [[{'type': 'xy'}, {'type': 'xy'}]] * n_snap + [[{'type': 'xy', 'colspan': 2}, None]]
-    subplot_titles = []
-    for idx, tt in zip(indices, target_times):
-        tl = _tl(tt)
-        subplot_titles += [f'Spectrum at t = {tl}', f'Relative spectral error at t = {tl}']
-    subplot_titles += ['Mean relative spectral error over time', '']
-
-    fig = make_subplots(
-        rows=n_rows, cols=2,
-        specs=specs,
-        subplot_titles=subplot_titles,
-        vertical_spacing=0.12,
-        horizontal_spacing=0.12,
-    )
-    S = _style_thesis(fig, 1400, frac=1.0)
-
-    for row, (idx, tt) in enumerate(zip(indices, target_times)):
-        tl = _tl(tt)
-        show_legend = (row == 0)
+    kxl = kx.tolist()
+    for i, idx in enumerate(indices, start=1):
+        # ---- reference vs predicted spectrum ----
+        fig = go.Figure()
         fig.add_trace(go.Scatter(
-            x=kx.tolist(), y=true_spec[:, idx].tolist(),
-            mode='lines+markers', name='True', showlegend=show_legend,
+            x=kxl, y=true_spec[:, idx].tolist(),
+            mode='lines+markers', name='True',
             line=dict(color='#222222', width=2.0),
             marker=dict(size=3, symbol='circle'),
-        ), row=row + 1, col=1)
+        ))
         fig.add_trace(go.Scatter(
-            x=kx.tolist(), y=pred_spec[:, idx].tolist(),
-            mode='lines+markers', name='Predicted', showlegend=show_legend,
+            x=kxl, y=pred_spec[:, idx].tolist(),
+            mode='lines+markers', name='Predicted',
             line=dict(color='#ff7f0e', width=1.8, dash='dash'),
             marker=dict(size=3, symbol='diamond'),
-        ), row=row + 1, col=1)
-        fig.update_xaxes(title_text='Spectral index n', row=row + 1, col=1)
-        fig.update_yaxes(title_text='Amplitude', row=row + 1, col=1)
+        ))
+        fig.update_xaxes(title_text='Spectral index n')
+        fig.update_yaxes(title_text='Amplitude')
+        _save_thesis_fig(
+            fig, os.path.join(outdir, f'{stem}_spectrum_{i}.png'),
+            PAIR_W, PAIR_H, PAIR_FRAC,
+            extra_layout=dict(
+                margin=dict(t=15, b=55, l=70, r=20),
+                showlegend=True,
+                legend=dict(x=0.98, y=0.98, xanchor='right', yanchor='top',
+                            bgcolor='rgba(255,255,255,0.7)'),
+            ),
+        )
 
+        # ---- relative spectral error, with time-mean annotation ----
         mean_rel = float(mean_rel_err_over_time[idx])
+        fig = go.Figure()
         fig.add_trace(go.Scatter(
-            x=kx.tolist(), y=rel_err[:, idx].tolist(),
+            x=kxl, y=rel_err[:, idx].tolist(),
             mode='lines+markers', showlegend=False,
             line=dict(color='crimson', width=1.8),
             marker=dict(size=3, symbol='circle'),
-        ), row=row + 1, col=2)
-        fig.add_annotation(
-            text=f'Mean: {mean_rel:.2e}',
-            xref=f'x{(row * 2 + 2) if row > 0 else "2"} domain', yref=f'y{(row * 2 + 2) if row > 0 else "2"} domain',
-            x=0.97, y=0.97, xanchor='right', yanchor='top',
-            showarrow=False, font=dict(size=S['annot']),
-            bgcolor='white', bordercolor='#cccccc', borderwidth=1, borderpad=4,
+        ))
+        fig.update_xaxes(title_text='Spectral index n')
+        fig.update_yaxes(title_text='Relative error')
+        _save_thesis_fig(
+            fig, os.path.join(outdir, f'{stem}_relerr_{i}.png'),
+            PAIR_W, PAIR_H, PAIR_FRAC,
+            extra_layout=dict(
+                margin=dict(t=15, b=55, l=70, r=20),
+                annotations=[dict(
+                    text=f'Mean: {mean_rel:.2e}',
+                    xref='paper', yref='paper', x=0.97, y=0.97,
+                    xanchor='right', yanchor='top', showarrow=False,
+                    font=dict(size=annot_px),
+                    bgcolor='white', bordercolor='#cccccc', borderwidth=1, borderpad=4,
+                )],
+            ),
         )
-        fig.update_xaxes(title_text='Spectral index n', row=row + 1, col=2)
-        fig.update_yaxes(title_text='Relative error', row=row + 1, col=2)
 
+    # ---- mean relative spectral error over time ----
+    fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=t.tolist(), y=mean_rel_err_over_time.tolist(),
         mode='lines+markers', showlegend=False,
         line=dict(color='#c28b00', width=2.0),
         marker=dict(size=5),
-    ), row=n_rows, col=1)
-    fig.update_xaxes(title_text='Time (t)', row=n_rows, col=1)
-    fig.update_yaxes(title_text='Mean relative error', row=n_rows, col=1)
-
-    fig.update_layout(
-        width=1400, height=460 * n_snap + 300,
-        margin=dict(t=50, b=55, l=60, r=30),
-        showlegend=True,
-        legend=dict(x=0.01, y=0.99, xanchor='left', yanchor='top'),
+    ))
+    fig.update_xaxes(title_text='Time (t)')
+    fig.update_yaxes(title_text='Mean relative error')
+    _save_thesis_fig(
+        fig, os.path.join(outdir, f'{stem}_mean.png'),
+        MEAN_W, MEAN_H, MEAN_FRAC,
+        extra_layout=dict(margin=dict(t=15, b=55, l=70, r=25)),
     )
-    try:
-        fig.write_image(outpath, scale=2.0)
-        print(f'spectral panel saved to {outpath}')
-    except Exception as e:
-        print('Erro ao salvar spectral panel como PNG. Instale kaleido: pip install kaleido')
-        raise e
+    print(f'spectral figures saved to {outdir} ({stem}_*)')
 
 
 def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):
@@ -1278,85 +1284,41 @@ def plot_spectral_bias_evolution(ordered_metadata, outdir, filename='spectral_bi
 
 
 def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolution.png'):
+    # Emits one standalone image per model (assembled in LaTeX via subfigure):
+    #   {stem}_{model-slug}.png : low/mid/high band relative error vs epoch (log y)
     import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
 
     _ensure_outdir(outdir)
-    outpath = os.path.join(outdir, filename)
+    stem = _panel_stem(filename)
 
     band_colors = ['#1f77b4', '#9467bd', '#d62728']
     band_labels = ['Low freq (k < Nx/4)', 'Mid freq (Nx/4 <= k < Nx/2)', 'High freq (k >= Nx/2)']
     band_keys = ['low_band', 'mid_band', 'high_band']
 
-    n = len(models_data)
-    n_top = n - 1
-    n_pair_rows = (n_top + 1) // 2 if n_top > 0 else 0
-    n_rows = n_pair_rows + 1
+    W, H, FRAC = 820, 520, 0.48
 
-    specs = []
-    for r in range(n_pair_rows):
-        has_right = (r * 2 + 1) < n_top
-        specs.append([{'type': 'xy'}, {'type': 'xy'} if has_right else None])
-    specs.append([{'type': 'xy', 'colspan': 2}, None])
-
-    subplot_titles = []
-    for r in range(n_pair_rows):
-        li, ri = r * 2, r * 2 + 1
-        subplot_titles.append(models_data[li][0] if li < n_top else '')
-        subplot_titles.append(models_data[ri][0] if ri < n_top else '')
-    subplot_titles += [models_data[-1][0], '']
-
-    fig = make_subplots(
-        rows=n_rows, cols=2,
-        specs=specs,
-        subplot_titles=subplot_titles,
-        vertical_spacing=0.12,
-        horizontal_spacing=0.1,
-    )
-    _style_thesis(fig, 1400, frac=1.0)
-
-    for i in range(n_top):
-        row = i // 2 + 1
-        col = i % 2 + 1
-        label, sh = models_data[i]
+    for label, sh in models_data:
         epochs = np.asarray(sh['epochs']).tolist()
+        fig = go.Figure()
         for color, blab, key in zip(band_colors, band_labels, band_keys):
             vals = np.asarray(sh[key]).tolist()
             fig.add_trace(go.Scatter(
                 x=epochs, y=vals, mode='lines', name=blab,
                 line=dict(color=color, width=2.0), opacity=0.9,
-                showlegend=(i == 0),
-            ), row=row, col=col)
-        fig.update_yaxes(type='log', row=row, col=col)
-        fig.update_xaxes(title_text='Epoch', row=row, col=col)
-        fig.update_yaxes(title_text='Rel. spectral error', row=row, col=col)
-
-    last_label, last_sh = models_data[-1]
-    epochs = np.asarray(last_sh['epochs']).tolist()
-    for color, blab, key in zip(band_colors, band_labels, band_keys):
-        vals = np.asarray(last_sh[key]).tolist()
-        fig.add_trace(go.Scatter(
-            x=epochs, y=vals, mode='lines', name=blab,
-            line=dict(color=color, width=2.0), opacity=0.9,
-            showlegend=False,
-        ), row=n_rows, col=1)
-    fig.update_yaxes(type='log', row=n_rows, col=1)
-    fig.update_xaxes(title_text='Epoch', row=n_rows, col=1)
-    fig.update_yaxes(title_text='Rel. spectral error', row=n_rows, col=1)
-
-    fig.update_layout(
-        width=1400, height=480 * n_rows,
-        margin=dict(t=50, b=45, l=60, r=30),
-        template='plotly_white',
-        showlegend=True,
-        legend=dict(x=0.01, y=0.99, xanchor='left', yanchor='top'),
-    )
-    try:
-        fig.write_image(outpath, scale=2.0)
-        print(f'spectral bias panel saved to {outpath}')
-    except Exception as e:
-        print('Erro ao salvar spectral bias panel como PNG. Instale kaleido: pip install kaleido')
-        raise e
+            ))
+        fig.update_xaxes(title_text='Epoch')
+        fig.update_yaxes(title_text='Rel. spectral error', type='log')
+        _save_thesis_fig(
+            fig, os.path.join(outdir, f'{stem}_{_slugify(label)}.png'),
+            W, H, FRAC,
+            extra_layout=dict(
+                margin=dict(t=15, b=55, l=70, r=20),
+                showlegend=True,
+                legend=dict(x=0.98, y=0.02, xanchor='right', yanchor='bottom',
+                            bgcolor='rgba(255,255,255,0.7)'),
+            ),
+        )
+    print(f'spectral bias figures saved to {outdir} ({stem}_*)')
 
 
 def save_solution_surface_3d_html(x, t, eta_true, eta_pred, outdir, filename, title):

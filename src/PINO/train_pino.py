@@ -10,7 +10,7 @@ from tools import (
 from PINO.PINO import PINO2d, pino_loss
 
 
-def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir):
+def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir, phys_nx=None, phys_nt=None, dealias=False):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pino' if mode == 'data' else 'pino_no_data'
 
@@ -81,6 +81,11 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
                 phys_weight=phys_weight,
                 ic_weight=ic_weight,
                 data_weight=data_weight,
+                x_limit=x_limit,
+                t_limit=t_limit,
+                phys_nx=phys_nx,
+                phys_nt=phys_nt,
+                dealias=dealias,
             )
             loss.backward()
             optimizer.step()
@@ -141,6 +146,9 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
             'phys_weight': phys_weight,
             'ic_weight': ic_weight,
             'data_weight': data_weight,
+            'phys_nx': phys_nx,
+            'phys_nt': phys_nt,
+            'dealias': dealias,
             'modes1': modes1,
             'modes2': modes2,
             'width': width,

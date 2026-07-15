@@ -75,7 +75,37 @@ Figure~\ref{fig:spectral_bias} tracks the relative spectral error in the low, mi
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{spectral_bias_evolution.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{spectral_bias_evolution_pinn_no_data.png}
+        \caption{PINN (no data), at $\alpha = \beta = 3.21$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{spectral_bias_evolution_pinn_with_data.png}
+        \caption{PINN (with data), at $\alpha = \beta = 3.21$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{spectral_bias_evolution_pino_no_data.png}
+        \caption{PINO (no data), at $\alpha = \beta = 0.1$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{spectral_bias_evolution_pino_with_data.png}
+        \caption{PINO (with data), at $\alpha = \beta = 0.1$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{spectral_bias_evolution_fno.png}
+        \caption{FNO, at $\alpha = \beta = 0.1$.}
+    \end{subfigure}
     \caption{Relative spectral error by frequency band during training. In every panel the low band (blue) is learned first and to the lowest error, the mid band (purple) trails it, and the high band (red) is learned last and least --- the signature of spectral bias. Note the mixed reference samples: operators are tracked at $\alpha = \beta = 0.1$, PINNs at $\alpha = \beta = 3.21$.}
     \label{fig:spectral_bias}
     \autoriapropria
@@ -95,7 +125,50 @@ To compare the families fairly, we now fix the parameter at the intermediate val
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{pinn/no_data/pinn_no_data_model2_spectral_panel.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_spectrum_1.png}
+        \caption{Spectrum, $t = 0$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_1.png}
+        \caption{Relative error, $t = 0$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_spectrum_2.png}
+        \caption{Spectrum, $t = 15$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_2.png}
+        \caption{Relative error, $t = 15$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_spectrum_3.png}
+        \caption{Spectrum, $t = 30$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_3.png}
+        \caption{Relative error, $t = 30$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.68\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_mean.png}
+        \caption{Mean relative spectral error over time.}
+    \end{subfigure}
     \caption{PINN (no data) spatial spectrum at $\alpha = \beta = 3.21$. Already at $t = 0$ the predicted spectrum undershoots the reference tail, and the relative error rises monotonically with wavenumber; the mean spectral error grows from $0.17$ at $t=0$ to $0.70$ at $t=30$.}
     \label{fig:spec_pinn_nodata}
     \autoriapropria
@@ -103,7 +176,50 @@ To compare the families fairly, we now fix the parameter at the intermediate val
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{pinn/with_data/pinn_model2_spectral_panel.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_spectrum_1.png}
+        \caption{Spectrum, $t = 0$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_relerr_1.png}
+        \caption{Relative error, $t = 0$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_spectrum_2.png}
+        \caption{Spectrum, $t = 15$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_relerr_2.png}
+        \caption{Relative error, $t = 15$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_spectrum_3.png}
+        \caption{Spectrum, $t = 30$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_relerr_3.png}
+        \caption{Relative error, $t = 30$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.68\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_mean.png}
+        \caption{Mean relative spectral error over time.}
+    \end{subfigure}
     \caption{PINN (with data) spatial spectrum at $\alpha = \beta = 3.21$. The low-wavenumber crests are tracked more closely than in Figure~\ref{fig:spec_pinn_nodata}, but the high-wavenumber undershoot and the growth of the mean error in time ($0.17 \to 0.58 \to 0.68$) persist.}
     \label{fig:spec_pinn_data}
     \autoriapropria
@@ -113,7 +229,50 @@ The two PINN panels expose the pathology in its clearest form. In the no-data ca
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{fno/fno_model2_spectral_panel.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_spectrum_1.png}
+        \caption{Spectrum, $t = 0$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_relerr_1.png}
+        \caption{Relative error, $t = 0$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_spectrum_2.png}
+        \caption{Spectrum, $t = 15$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_relerr_2.png}
+        \caption{Relative error, $t = 15$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_spectrum_3.png}
+        \caption{Spectrum, $t = 30$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_relerr_3.png}
+        \caption{Relative error, $t = 30$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.68\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_mean.png}
+        \caption{Mean relative spectral error over time.}
+    \end{subfigure}
     \caption{FNO spatial spectrum at $\alpha = \beta = 3.21$. Low and mid wavenumbers are tracked almost exactly (mean error $0.013$ at $t=0$), but the error migrates to the high modes and grows steadily in time, reaching a mean of $0.40$ at $t=30$.}
     \label{fig:spec_fno}
     \autoriapropria
@@ -121,7 +280,50 @@ The two PINN panels expose the pathology in its clearest form. In the no-data ca
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{pino/with_data/pino_model2_spectral_panel.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_spectrum_1.png}
+        \caption{Spectrum, $t = 0$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_relerr_1.png}
+        \caption{Relative error, $t = 0$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_spectrum_2.png}
+        \caption{Spectrum, $t = 15$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_relerr_2.png}
+        \caption{Relative error, $t = 15$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_spectrum_3.png}
+        \caption{Spectrum, $t = 30$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_relerr_3.png}
+        \caption{Relative error, $t = 30$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.68\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_mean.png}
+        \caption{Mean relative spectral error over time.}
+    \end{subfigure}
     \caption{PINO (with data) spatial spectrum at $\alpha = \beta = 3.21$. The prediction tracks the reference across the band and, unlike the FNO, the mean error remains bounded in time ($0.077 \to 0.13 \to 0.20$): the physics residual stabilizes the temporal evolution.}
     \label{fig:spec_pino_data}
     \autoriapropria
@@ -129,7 +331,50 @@ The two PINN panels expose the pathology in its clearest form. In the no-data ca
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{pino/no_data/pino_no_data_model2_spectral_panel.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_spectrum_1.png}
+        \caption{Spectrum, $t = 0$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_relerr_1.png}
+        \caption{Relative error, $t = 0$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_spectrum_2.png}
+        \caption{Spectrum, $t = 15$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_relerr_2.png}
+        \caption{Relative error, $t = 15$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_spectrum_3.png}
+        \caption{Spectrum, $t = 30$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_relerr_3.png}
+        \caption{Relative error, $t = 30$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.68\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_mean.png}
+        \caption{Mean relative spectral error over time.}
+    \end{subfigure}
     \caption{PINO (no data) spatial spectrum at $\alpha = \beta = 3.21$. Without the supervised term the low- and mid-band undershoot returns (mean error $0.11 \to 0.39 \to 0.33$), confirming that the physics residual alone does not overcome spectral bias.}
     \label{fig:spec_pino_nodata}
     \autoriapropria
@@ -145,7 +390,50 @@ The temporal growth of the FNO error observed in Figure~\ref{fig:spec_fno} has a
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{fno/fno_model2_alpha_beta_panel.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_surface_1.png}
+        \caption{Predicted $\eta(x,t)$, $\alpha=\beta=0.1$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_relerr_1.png}
+        \caption{Relative error, $\alpha=\beta=0.1$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_surface_2.png}
+        \caption{Predicted $\eta(x,t)$, $\alpha=\beta=3.21$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_relerr_2.png}
+        \caption{Relative error, $\alpha=\beta=3.21$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_surface_3.png}
+        \caption{Predicted $\eta(x,t)$, $\alpha=\beta=4.2$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_relerr_3.png}
+        \caption{Relative error, $\alpha=\beta=4.2$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.68\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_box.png}
+        \caption{Relative error distribution vs.\ $\alpha=\beta$.}
+    \end{subfigure}
     \caption{FNO across the nonlinearity axis ($\alpha=\beta \in \{0.1, 3.21, 4.2\}$), evaluated at resolution $256$. The predicted surfaces (left) capture the two counter-propagating pulses, but the time-resolved relative error (right) exhibits a pronounced spike at the final time $t = 30$: the temporal Gibbs artifact from treating time as a periodic axis.}
     \label{fig:ab_fno}
     \autoriapropria
@@ -153,7 +441,50 @@ The temporal growth of the FNO error observed in Figure~\ref{fig:spec_fno} has a
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{pino/with_data/pino_model2_alpha_beta_panel.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_surface_1.png}
+        \caption{Predicted $\eta(x,t)$, $\alpha=\beta=0.1$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_relerr_1.png}
+        \caption{Relative error, $\alpha=\beta=0.1$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_surface_2.png}
+        \caption{Predicted $\eta(x,t)$, $\alpha=\beta=3.21$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_relerr_2.png}
+        \caption{Relative error, $\alpha=\beta=3.21$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_surface_3.png}
+        \caption{Predicted $\eta(x,t)$, $\alpha=\beta=4.2$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_relerr_3.png}
+        \caption{Relative error, $\alpha=\beta=4.2$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.68\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_box.png}
+        \caption{Relative error distribution vs.\ $\alpha=\beta$.}
+    \end{subfigure}
     \caption{PINO (with data) across the same nonlinearity axis and resolution. The predicted surfaces are visually indistinguishable from the FNO, but the terminal-time spike of Figure~\ref{fig:ab_fno} is absent: the error rises only gently toward $t = 30$. The physics residual and initial-condition term act as a temporal regularizer.}
     \label{fig:ab_pino}
     \autoriapropria
@@ -177,7 +508,50 @@ A central promise of neural operators is discretization-invariance: an operator 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{pino/with_data/pino_model2_resolution_panel.png}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_surface_1.png}
+        \caption{Predicted $\eta(x,t)$, res.\ $128$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_relerr_1.png}
+        \caption{Relative error, res.\ $128$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_surface_2.png}
+        \caption{Predicted $\eta(x,t)$, res.\ $256$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_relerr_2.png}
+        \caption{Relative error, res.\ $256$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_surface_3.png}
+        \caption{Predicted $\eta(x,t)$, res.\ $512$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_relerr_3.png}
+        \caption{Relative error, res.\ $512$.}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    \begin{subfigure}[t]{0.68\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_box.png}
+        \caption{Relative error distribution vs.\ resolution.}
+    \end{subfigure}
     \caption{PINO (with data) queried zero-shot at resolutions $128$, $256$ and $512$ at $\alpha = \beta = 3.21$. The operator produces a coherent field at every resolution, but the relative error against the pseudospectral reference \emph{grows} with resolution (median error rising from about $0.07$ at $128$ to about $0.16$ at $512$): discretization-invariance of form is not accuracy-invariance.}
     \label{fig:res_pino}
     \autoriapropria
