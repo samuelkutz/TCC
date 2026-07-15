@@ -108,37 +108,37 @@ def main():
     os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
     os.makedirs(GIF_DIR, exist_ok=True)
 
-    # --- solution gifs (unchanged by the styling pass): disabled for a plots-only run ---
-    # print('\n=== generating FNO gifs (median + last param) ===')
-    # gif_fno(FNO_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #  --- solution gifs (unchanged by the styling pass): disabled for a plots-only run ---
+    #print('\n=== generating FNO gifs (median + last param) ===')
+    #gif_fno(FNO_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
     #         params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
 
-    # print('\n=== generating PINO gifs (with data + no data, median + last param) ===')
-    # gif_pino('data', PINO_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #print('\n=== generating PINO gifs (with data + no data, median + last param) ===')
+    #gif_pino('data', PINO_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
     #          params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
-    # gif_pino('no_data', PINO_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #gif_pino('no_data', PINO_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
     #          params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
 
-    # print('\n=== generating PINN gifs (with data + no data, median param) ===')
-    # gif_pinn('data', PINN_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #print('\n=== generating PINN gifs (with data + no data, median param) ===')
+    #gif_pinn('data', PINN_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
     #          params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
-    # gif_pinn('no_data', PINN_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
+    #gif_pinn('no_data', PINN_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
     #          params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
 
-    print('\n=== plotting soliton profile ===')
-    plot_soliton_profile(outdir=IMG_DIR)
+    #print('\n=== plotting soliton profile ===')
+    #plot_soliton_profile(outdir=IMG_DIR)
 
-    # print('\n=== plotting ntk eigenvector spectrogram ===')
-    # plot_ntk_eigenvector_spectrogram(outdir=IMG_DIR)
+    #print('\n=== plotting ntk eigenvector spectrogram ===')
+    #plot_ntk_eigenvector_spectrogram(outdir=IMG_DIR)
 
-    # print('\n=== plotting ntk spectral prediction vs gradient descent ===')
-    # plot_ntk_spectral_prediction(outdir=IMG_DIR)
+    #print('\n=== plotting ntk spectral prediction vs gradient descent ===')
+    #plot_ntk_spectral_prediction(outdir=IMG_DIR)
 
-    # print('\n=== plotting ntk iteration estimator test ===')
-    # plot_ntk_iteration_estimator(outdir=IMG_DIR)
+    #print('\n=== plotting ntk iteration estimator test ===')
+    #plot_ntk_iteration_estimator(outdir=IMG_DIR)
 
-    # print('\n=== plotting ntk spectral estimate test ===')
-    # plot_ntk_spectral_estimate(outdir=IMG_DIR)
+    #print('\n=== plotting ntk spectral estimate test ===')
+    #plot_ntk_spectral_estimate(outdir=IMG_DIR)
 
     print('\n=== generating shared dataset ===')
     run_dataset(
@@ -182,8 +182,8 @@ def main():
         **EVAL_CONFIG,
     )
 
-    # print('\n=== training pinn with data ===')
-    # train_pinn('data', **PINN_CONFIG)
+    print('\n=== training pinn with data ===')
+    train_pinn('data', **PINN_CONFIG)
 
     print('\n=== plotting pinn with data ===')
     eval_pinn(
@@ -193,8 +193,8 @@ def main():
         **EVAL_CONFIG,
     )
 
-    # print('\n=== training pinn without data ===')
-    # train_pinn('no_data', **PINN_CONFIG)
+    print('\n=== training pinn without data ===')
+    train_pinn('no_data', **PINN_CONFIG)
 
     print('\n=== plotting pinn without data ===')
     eval_pinn(
@@ -204,8 +204,8 @@ def main():
         **EVAL_CONFIG,
     )
 
-    # print('\n=== running NTK experiment ===')
-    # run_ntk_experiment(**PINN_NTK_CONFIG)
+    print('\n=== running NTK experiment ===')
+    run_ntk_experiment(**PINN_NTK_CONFIG)
 
     print('\n=== plotting spectral bias evolution ===')
     plot_spectral_bias_evolution(
