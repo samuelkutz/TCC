@@ -885,6 +885,41 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
     plt.close()
 
 
+# ---------------------------------------------------------------------------
+# Shared geometry for the stacked 3D-surface panels (alpha/beta and resolution)
+# ---------------------------------------------------------------------------
+# The 3D scene is widened (aspectratio x, plus a scene domain spanning the whole
+# left cell) so the surface print fills its column like the 2D plot beside it,
+# instead of floating in the middle with white margins. Filling the cell pushes
+# plotly's own y/z axis titles out of the domain, so we drop them from the scene
+# and redraw 'η' and 'Space (x)' as paper-coord annotations; 'Time (t)' stays as
+# the scene x-axis title. Height is unchanged, so the figure still fits the page.
+_SURFACE_ASPECTRATIO = dict(x=3.6, y=1.85, z=0.62)
+_SURFACE_SCENE_DOMAIN_X = [0.015, 0.60]
+_SURFACE_AXIS_LABEL_PX = 22
+
+
+def _surface_scene_annotations(n_scene_rows, vertical_spacing=0.08, font_size=_SURFACE_AXIS_LABEL_PX):
+    # 'η' (height) and 'Space (x)' (depth) labels for each widened scene, placed
+    # in paper coordinates at the left of its row. Rows are the n_scene_rows
+    # surface rows plus one box/distribution row at the bottom, all equal height.
+    n_rows = n_scene_rows + 1
+    h = (1.0 - vertical_spacing * (n_rows - 1)) / n_rows
+    # faint white pill so the labels stay legible whether they land on the white
+    # margin ('η') or over the dark flat part of the widened surface ('Space (x)')
+    bg = dict(bgcolor='rgba(255,255,255,0.65)', borderpad=1)
+    anns = []
+    for i in range(n_scene_rows):
+        bottom = 1.0 - i * (h + vertical_spacing) - h
+        anns.append(dict(text='η', x=0.005, y=bottom + h * 0.78,
+                         xref='paper', yref='paper', showarrow=False,
+                         xanchor='left', font=dict(size=font_size), **bg))
+        anns.append(dict(text='Space (x)', x=0.02, y=bottom + h * 0.12,
+                         xref='paper', yref='paper', showarrow=False,
+                         xanchor='left', font=dict(size=font_size), **bg))
+    return anns
+
+
 def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_values, outdir, filename, title,
                                  eval_resolution=None, res_label=None):
     import plotly.graph_objects as go
@@ -912,8 +947,9 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
 
     camera = dict(eye=dict(x=-1.5, y=-1.8, z=0.8), center=dict(x=0, y=0, z=0), up=dict(x=0, y=0, z=1))
     scene_kw = dict(
-        xaxis_title='Time (t)', yaxis_title='Space (x)', zaxis_title='eta',
-        zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=dict(x=2.8, y=1.8, z=0.6),
+        xaxis_title='Time (t)', yaxis_title='', zaxis_title='',
+        zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=_SURFACE_ASPECTRATIO,
+        domain=dict(x=_SURFACE_SCENE_DOMAIN_X),
     )
 
     # ---------- main panel ----------
@@ -965,12 +1001,14 @@ def plot_model2_alpha_beta_panel(x, t, eta_true_list, eta_pred_list, param_value
         margin=dict(t=70, b=50, l=35, r=35),
         showlegend=False, **scene_layout,
     )
-    # 3D scenes are small and qualitative: keep readable axis titles but hide the
-    # perspective tick labels, which otherwise pile up and bury the surface
+    # 3D scenes are small and qualitative: hide the perspective tick labels, which
+    # otherwise pile up and bury the surface. The y/z axis titles are supplied as
+    # paper-coord annotations (the widened scene clips the scene's own titles).
     fig.update_scenes(
-        xaxis_title_font_size=22, yaxis_title_font_size=22, zaxis_title_font_size=22,
+        xaxis_title_font_size=_SURFACE_AXIS_LABEL_PX,
         xaxis_showticklabels=False, yaxis_showticklabels=False, zaxis_showticklabels=False,
     )
+    fig.update_layout(annotations=list(fig.layout.annotations) + _surface_scene_annotations(n_params))
     try:
         fig.write_image(outpath, scale=2.0)
         print(f'alpha/beta panel saved to {outpath}')
@@ -1008,8 +1046,9 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
 
     camera = dict(eye=dict(x=-1.5, y=-1.8, z=0.8), center=dict(x=0, y=0, z=0), up=dict(x=0, y=0, z=1))
     scene_kw = dict(
-        xaxis_title='Time (t)', yaxis_title='Space (x)', zaxis_title='eta',
-        zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=dict(x=2.8, y=1.8, z=0.6),
+        xaxis_title='Time (t)', yaxis_title='', zaxis_title='',
+        zaxis=dict(range=z_lim), aspectmode='manual', aspectratio=_SURFACE_ASPECTRATIO,
+        domain=dict(x=_SURFACE_SCENE_DOMAIN_X),
     )
 
     # ---------- main panel ----------
@@ -1061,12 +1100,14 @@ def plot_model2_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, r
         margin=dict(t=70, b=50, l=35, r=35),
         showlegend=False, **scene_layout,
     )
-    # 3D scenes are small and qualitative: keep readable axis titles but hide the
-    # perspective tick labels, which otherwise pile up and bury the surface
+    # 3D scenes are small and qualitative: hide the perspective tick labels, which
+    # otherwise pile up and bury the surface. The y/z axis titles are supplied as
+    # paper-coord annotations (the widened scene clips the scene's own titles).
     fig.update_scenes(
-        xaxis_title_font_size=22, yaxis_title_font_size=22, zaxis_title_font_size=22,
+        xaxis_title_font_size=_SURFACE_AXIS_LABEL_PX,
         xaxis_showticklabels=False, yaxis_showticklabels=False, zaxis_showticklabels=False,
     )
+    fig.update_layout(annotations=list(fig.layout.annotations) + _surface_scene_annotations(n_res))
     try:
         fig.write_image(outpath, scale=2.0)
         print(f'resolution panel saved to {outpath}')
