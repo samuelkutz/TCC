@@ -1,7 +1,21 @@
 import os
 import json
+import random
 import numpy as np
 import torch
+
+
+def set_seed(seed):
+    # seed every random source and put the cuDNN backend in deterministic mode, so
+    # that a stage re-run in isolation reproduces its results regardless of how much
+    # randomness earlier pipeline stages consumed. Call this at the entry of any
+    # training or diagnostic routine that must be reproducible on its own.
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def save_model(model, filepath):

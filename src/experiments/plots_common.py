@@ -1,4 +1,5 @@
 import os
+import json
 
 import numpy as np
 import torch
@@ -26,6 +27,16 @@ _THESIS_PT = dict(tick=7.5, axis=8.5, subplot=9.0, title=10.0, legend=8.0, annot
 # in-figure text is pure black to match the black LaTeX body text (plotly's
 # default is a dark slate blue, which reads lighter than the surrounding prose).
 _THESIS_FONT_COLOR = '#000000'
+
+# Shared colourblind-safe qualitative palette (Okabe--Ito), used everywhere a set
+# of categorical series needs distinct colours, replacing the Matplotlib/Plotly
+# tab10 defaults that are not safe under deuteranopia/protanopia. Assign in this
+# fixed order; do not cycle a longer set of series through it.
+THESIS_PALETTE = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9', '#F0E442', '#000000']
+
+# Three-class band palette for the low/mid/high spectral bands, drawn from the
+# same Okabe--Ito set so the band figures match the rest of the document.
+THESIS_BAND_COLORS = ['#0072B2', '#E69F00', '#D55E00']  # low, mid, high
 
 
 def _thesis_px(pt, fig_width_px, frac):
@@ -203,7 +214,7 @@ def plot_training_statistics(histories, labels, outdir, filename, log_scale=True
     _ensure_outdir(outdir)
     outpath = os.path.join(outdir, filename)
 
-    _colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+    _colors = THESIS_PALETTE
     fig = go.Figure()
     for i, (history, label) in enumerate(zip(histories, labels)):
         epochs = list(range(1, len(history) + 1))
@@ -474,10 +485,11 @@ def plot_solution_snapshots(x, t, eta_true, eta_pred, times, outdir, filename, t
 _SURFACE_CAMERA = dict(eye=dict(x=-1.15, y=-1.40, z=0.95),
                        center=dict(x=0, y=0, z=-0.05), up=dict(x=0, y=0, z=1))
 _SURFACE_ASPECTRATIO = dict(x=1.9, y=1.0, z=0.52)
-# Turbo reads the small dispersive ripples between the two waves better than a
-# dark-based map; matte directional lighting (low ambient, high diffuse, almost
-# no specular) casts clean shadows on the ripple facets so they stay well defined.
-_SURFACE_COLORSCALE = 'Turbo'
+# Viridis is perceptually uniform and colourblind-safe, unlike the rainbow-family
+# Turbo, so it renders the smooth elevation field honestly without false banding;
+# matte directional lighting (low ambient, high diffuse, almost no specular) casts
+# clean shadows on the ripple facets so they stay well defined.
+_SURFACE_COLORSCALE = 'Viridis'
 _SURFACE_LIGHTING = dict(ambient=0.30, diffuse=0.95, specular=0.05, roughness=0.9, fresnel=0.1)
 _SURFACE_LIGHTPOSITION = dict(x=-1.6, y=-1.0, z=0.25)
 # fraction of the rendered canvas width that survives _autocrop_white (the 3D
@@ -558,6 +570,26 @@ def _emit_surface_panel_figures(stem, outdir, x_list, t_list, eta_pred_list, tim
         BOX_W, BOX_H, BOX_FRAC,
         extra_layout=dict(margin=dict(t=15, b=55, l=70, r=25)),
     )
+
+    # persist the per-item time-resolved relative-error distribution so the numbers
+    # quoted in the text come from data rather than being read back off the PNG box plot
+    metrics = {
+        'xaxis': box_xaxis_title,
+        'items': [
+            {
+                'name': str(name),
+                'median': float(np.median(rel_norm)),
+                'mean': float(np.mean(rel_norm)),
+                'q1': float(np.percentile(rel_norm, 25)),
+                'q3': float(np.percentile(rel_norm, 75)),
+                'min': float(np.min(rel_norm)),
+                'max': float(np.max(rel_norm)),
+            }
+            for name, rel_norm in zip(box_names, time_rel_norms)
+        ],
+    }
+    with open(os.path.join(outdir, f'{stem}_metrics.json'), 'w') as fh:
+        json.dump(metrics, fh, indent=2)
     print(f'surface panel figures saved to {outdir} ({stem}_*)')
 
 
@@ -663,6 +695,19 @@ def plot_model2_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, title
         indices = list(indices)
         target_times = list(target_times)
 
+    # persist the mean relative spectral error over time (and its value at each
+    # displayed snapshot) so the text quotes measured numbers, not pixel reads
+    metrics = {
+        'time': t.tolist(),
+        'mean_rel_spectral_error_over_time': mean_rel_err_over_time.tolist(),
+        'snapshots': [
+            {'t': float(t[idx]), 'mean_rel_spectral_error': float(mean_rel_err_over_time[idx])}
+            for idx in indices
+        ],
+    }
+    with open(os.path.join(outdir, f'{stem}_metrics.json'), 'w') as fh:
+        json.dump(metrics, fh, indent=2)
+
     # display geometry: spectrum/error tiles go two-per-row at 0.48\textwidth,
     # the mean-over-time plot spans a single wider centred slot at 0.68\textwidth.
     PAIR_W, PAIR_H, PAIR_FRAC = 820, 470, 0.48
@@ -764,7 +809,7 @@ def plot_error_heatmap(x, t, eta_true, eta_pred, outdir, filename, title):
     ax.set_ylabel('Time (t)')
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im, cax=cax, label='Relative Error')
+    plt.colorbar(im, cax=cax, label='Relative Error (clipped at 1.0)')
     fig.subplots_adjust(right=0.88)
     plt.savefig(outpath, dpi=150)
     print(f'error heatmap saved to {outpath}')
@@ -847,7 +892,7 @@ def save_solution_plotly_html(x, t, eta_true, eta_pred, outdir, filename, title)
     fig.add_trace(go.Heatmap(
         z=rel_error.T.tolist(), x=x.tolist(), y=t.tolist(),
         colorscale='Magma', zmin=0.0, zmax=1.0,
-        colorbar=dict(title='Rel. err', x=1.02, len=0.45, y=0.22),
+        colorbar=dict(title='Rel. err (clip 1.0)', x=1.02, len=0.45, y=0.22),
     ), row=2, col=1)
     fig.add_trace(go.Scatter(
         x=t.tolist(), y=time_rel_norm.tolist(),
@@ -888,8 +933,8 @@ def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title_prefix, 
     y_min, y_max = y_min - pad, y_max + pad
 
     fig, ax = plt.subplots(figsize=(7.0, 4.0))
-    line_true, = ax.plot([], [], color='0.55', lw=2.0, label='Referência (pseudoespectral)')
-    line_pred, = ax.plot([], [], color='#E66C11', lw=2.4, label='Predição')
+    line_true, = ax.plot([], [], color='0.55', lw=2.0, label='Reference (pseudospectral)')
+    line_pred, = ax.plot([], [], color='#E66C11', lw=2.4, label='Prediction')
     ax.set_xlim(float(x.min()), float(x.max()))
     ax.set_ylim(y_min, y_max)
     ax.set_xlabel('x')

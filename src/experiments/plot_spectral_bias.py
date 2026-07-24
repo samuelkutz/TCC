@@ -3,7 +3,7 @@ import os
 import numpy as np
 import torch
 
-from experiments.plots_common import _ensure_outdir, _panel_stem, _slugify, _save_thesis_fig
+from experiments.plots_common import _ensure_outdir, _panel_stem, _slugify, _save_thesis_fig, THESIS_BAND_COLORS
 
 
 def plot_spectral_bias_evolution(ordered_metadata, outdir, filename='spectral_bias_evolution.png'):
@@ -32,7 +32,7 @@ def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolut
     _ensure_outdir(outdir)
     stem = _panel_stem(filename)
 
-    band_colors = ['#1f77b4', '#9467bd', '#d62728']
+    band_colors = THESIS_BAND_COLORS
     band_labels = ['Low (k < Nx/4)', 'Mid (Nx/4 &#8804; k < Nx/2)', 'High (k &#8805; Nx/2)']
     band_keys = ['low_band', 'mid_band', 'high_band']
 

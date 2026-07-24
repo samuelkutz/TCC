@@ -5,14 +5,18 @@ from torch.optim import Adam
 
 from tools import (
     compute_norm_stats, load_dataset, normalize_dataset, save_model,
-    normalize_tensor, unnormalize_tensor, compute_spectral_band_errors, save_metadata_json,
+    normalize_tensor, unnormalize_tensor, compute_spectral_band_errors, save_metadata_json, set_seed,
 )
 from methods.pino import PINO2d, pino_loss
 
 
-def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir, phys_nx=None, phys_nt=None, dealias=False):
+def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phys_weight, ic_weight, data_weight, modes1, modes2, width, print_interval, results_dir, phys_nx=None, phys_nt=None, dealias=False, seed=None):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pino' if mode == 'data' else 'pino_no_data'
+
+    # optional per-stage reseed for a reproducible standalone run; see train_mlp
+    if seed is not None:
+        set_seed(seed)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(results_dir, exist_ok=True)

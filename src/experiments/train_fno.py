@@ -5,12 +5,15 @@ from torch.optim import Adam
 
 from tools import (
     compute_norm_stats, load_dataset, normalize_dataset, save_model,
-    compute_spectral_band_errors, save_metadata_json,
+    compute_spectral_band_errors, save_metadata_json, set_seed,
 )
 from methods.fno import FNO2d
 
 
-def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print_interval, results_dir):
+def train_fno(dataset_file, epochs, batch_size, lr, modes1, modes2, width, print_interval, results_dir, seed=None):
+    # optional per-stage reseed for a reproducible standalone run; see train_mlp
+    if seed is not None:
+        set_seed(seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(results_dir, exist_ok=True)
     weights_dir = os.path.join(results_dir, 'models', 'weights', 'fno')

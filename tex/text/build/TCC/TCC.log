@@ -1117,15 +1117,7 @@ Package biblatex Info: Automatic encoding selection.
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'TCC.bbl' found.
 
-(TCC.bbl
-
-Package biblatex Warning: The following entry could not be found
-(biblatex)                in the database:
-(biblatex)                trefethen2000spectral
-(biblatex)                Please verify the spelling and rerun
-(biblatex)                LaTeX afterwards.
-
-)
+(TCC.bbl)
 Package biblatex Info: Reference section=0 on input line 1.
 Package biblatex Info: Reference segment=0 on input line 1.
 
@@ -1215,12 +1207,7 @@ Overfull \hbox (8.01456pt too wide) in paragraph at lines 13--13
 [13
 
 
-] [14] [15] [16]
-
-LaTeX Warning: Citation 'trefethen2000spectral' on page 17 undefined on input l
-ine 37.
-
-[17] [18]) [19]
+] [14] [15] [16] [17] [18]) [19]
 \openout2 = `chapters/02-mathematical-background.aux'.
 
  (chapters/02-mathematical-background.tex
@@ -1266,15 +1253,14 @@ Chapter 4.
 
 
 ]
-File: ../../../results/imgs//theory/ntk_error_decay.png Graphic file (type bmp)
+File: ../../../results/imgs//mlp/ntk_error_decay.png Graphic file (type bmp)
+<../../../results/imgs//mlp/ntk_error_decay.png>
+File: ../../../results/imgs//mlp/ntk_spectral_decay.png Graphic file (type bmp)
 
-<../../../results/imgs//theory/ntk_error_decay.png>
-File: ../../../results/imgs//theory/ntk_spectral_decay.png Graphic file (type b
-mp)
-<../../../results/imgs//theory/ntk_spectral_decay.png>
-File: ../../../results/imgs//theory/ntk_iteration_count.png Graphic file (type 
-bmp)
-<../../../results/imgs//theory/ntk_iteration_count.png>
+<../../../results/imgs//mlp/ntk_spectral_decay.png>
+File: ../../../results/imgs//mlp/ntk_iteration_count.png Graphic file (type bmp
+)
+<../../../results/imgs//mlp/ntk_iteration_count.png>
  [54] [55]
 File: ../../../results/imgs//pinn/ntk/pinn_ntk_panel_param.png Graphic file (ty
 pe bmp)
@@ -1433,6 +1419,9 @@ File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_relerr_3
 File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_mean.png
  Graphic file (type bmp)
 <../../../results/imgs//pino/with_data/pino_model2_spectral_panel_mean.png>
+
+LaTeX Warning: Float too large for page by 0.88867pt on input line 427.
+
 File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_sp
 ectrum_1.png Graphic file (type bmp)
 <../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_spectru
@@ -1518,11 +1507,6 @@ g Graphic file (type bmp)
 LaTeX Warning: Float too large for page by 15.74928pt on input line 588.
 
 [66] [67] [68]
-Overfull \hbox (27.79933pt too wide) in paragraph at lines 600--601
-[]\T1/lmr/m/n/12 The sec-ond test queries the op-er-a-tor off its train-ing res
--o-lu-tion, prob-ing the discretization-
- []
-
 File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surfac
 e_1.png Graphic file (type bmp)
 <../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surface_1.p
@@ -1551,7 +1535,8 @@ File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_box.pn
 g Graphic file (type bmp)
 <../../../results/imgs//pino/with_data/pino_model2_resolution_panel_box.png>
 
-LaTeX Warning: Float too large for page by 29.64189pt on input line 651.
+
+LaTeX Warning: Float too large for page by 43.2419pt on input line 651.
 
 [69] [70]) [71] [72]
 \openout2 = `chapters/05-conclusions.aux'.
@@ -1572,9 +1557,9 @@ Chapter 5.
 (chapters/03-metodology.aux) (chapters/04-numerical-results.aux)
 (chapters/05-conclusions.aux))
 Package rerunfilecheck Info: File `TCC.out' has not changed.
-(rerunfilecheck)             Checksum: DA7DA4AA64633B34849DC6E0E6CF2292;10088.
+(rerunfilecheck)             Checksum: 963CAF455FD0B3BEEFF035E7578AA10A;10114.
 Package logreq Info: Writing requests to 'TCC.run.xml'.
 \openout1 = `TCC.run.xml'.
 
  ) )
-Output written on TCC.xdv (84 pages, 424536 bytes).
+Output written on TCC.xdv (84 pages, 424944 bytes).

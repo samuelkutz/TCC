@@ -43,11 +43,11 @@ import os
 import numpy as np
 import torch
 
-from experiments.plots_common import _ensure_outdir, _save_thesis_fig
+from experiments.plots_common import _ensure_outdir, _save_thesis_fig, THESIS_PALETTE
 
 
-# house palette, shared with the rest of the figures
-_PALETTE = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+# colourblind-safe Okabe--Ito palette, shared with the rest of the figures
+_PALETTE = THESIS_PALETTE
 
 # figure geometry: these panels are \includegraphics'd at width=\linewidth inside
 # 0.48\textwidth subfigures, but the assumed frac is raised the same way as the

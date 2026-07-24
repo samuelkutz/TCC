@@ -6,7 +6,7 @@ from timeit import default_timer
 
 from methods.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from methods.mlp import MLP
-from tools import save_model, compute_spectral_band_errors, save_metadata_json
+from tools import save_model, compute_spectral_band_errors, save_metadata_json, set_seed
 
 
 def _to_unit(x_np, t_np, x_limit, t_limit):
@@ -35,8 +35,13 @@ def predict_eta_grid_mlp(model, x_np, t_np, x_limit, t_limit):
 
 def train_mlp(x_limit, t_limit, train_resolution, param_value, epochs, neurons,
               hidden_layers, activation, optimizer_name, lr, batch_size, print_interval,
-              results_dir):
+              results_dir, seed=None):
     label = 'mlp'
+
+    # optional per-stage reseed for a reproducible standalone run; the full pipeline
+    # seeds once globally in main.py, so leave seed=None there to keep that behaviour
+    if seed is not None:
+        set_seed(seed)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(results_dir, exist_ok=True)
@@ -45,7 +50,13 @@ def train_mlp(x_limit, t_limit, train_resolution, param_value, epochs, neurons,
     os.makedirs(weights_dir, exist_ok=True)
     os.makedirs(metadata_dir, exist_ok=True)
 
-    # reference solution at alpha=beta=param_value on the train_resolution grid
+    # reference solution at alpha=beta=param_value on the train_resolution grid.
+    # NOTE: PseudoSpectralBoussinesq takes Nt as the number of RK4 *steps* and returns
+    # Nt+1 time levels. Passing Nt=train_resolution here yields train_resolution+1
+    # levels, one more than the FNO/PINO dataset (which passes Nt=res-1). This is the
+    # single-solve reference the pointwise models fit; the committed weights were
+    # trained on it. To align the pointwise grid with the dataset's 127-step / 128-level
+    # convention (Table 3.1), pass Nt=train_resolution-1 and retrain.
     bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, param_value, param_value, 1)
     solver = PseudoSpectralBoussinesq(bsq, Nx=train_resolution, Nt=train_resolution, device=device)
     x_sol, t_sol, eta_sol, u_sol = solver.solve()

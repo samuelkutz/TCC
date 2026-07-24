@@ -5,12 +5,16 @@ from timeit import default_timer
 
 from methods.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from methods.pinn import PINN
-from tools import save_model, compute_spectral_band_errors, save_metadata_json
+from tools import save_model, compute_spectral_band_errors, save_metadata_json, set_seed
 
 
-def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval, results_dir):
+def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, neurons, hidden_layers, domain_points, ic_points, optimizer_name, lr, data_weight, print_interval, results_dir, seed=None):
     data_weight = data_weight if mode == 'data' else 0.0
     label = 'pinn' if mode == 'data' else 'pinn_no_data'
+
+    # optional per-stage reseed for a reproducible standalone run; see train_mlp
+    if seed is not None:
+        set_seed(seed)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     os.makedirs(results_dir, exist_ok=True)

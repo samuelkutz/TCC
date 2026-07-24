@@ -82,11 +82,14 @@ PINN_NTK_CONFIG = {
     'x_limit': X_LIMIT,
     't_limit': T_LIMIT,
     'outdir':  os.path.join(IMG_DIR, 'pinn', 'ntk'),
+    'seed':    SEED,
     **settings['pinn_ntk'],
 }
 
+# the spectral-bias theory (toy Fourier-feature model) is the theoretical companion
+# to the MLP's empirical spectral bias, so its figures live alongside the MLP figures
 SPECTRAL_BIAS_THEORY_CONFIG = {
-    'outdir': os.path.join(IMG_DIR, 'theory'),
+    'outdir': os.path.join(IMG_DIR, 'mlp'),
     **settings['spectral_bias_theory'],
 }
 

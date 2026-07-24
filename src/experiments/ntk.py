@@ -5,7 +5,8 @@ import torch
 
 from methods.boussinesq import Boussinesq
 from methods.pinn import PINN
-from experiments.plots_common import _style_thesis, _ensure_outdir
+from tools import set_seed
+from experiments.plots_common import _style_thesis, _ensure_outdir, THESIS_PALETTE
 
 
 def plot_pinn_ntk_panel(theta_rel_histories, k_rel_histories, log_epochs,
@@ -15,7 +16,7 @@ def plot_pinn_ntk_panel(theta_rel_histories, k_rel_histories, log_epochs,
     # can be \includegraphics'd on its own with legible, print-sized fonts.
     import plotly.graph_objects as go
 
-    _colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+    _colors = THESIS_PALETTE
     _ensure_outdir(outdir)
     base, _, ext = filename.rpartition('.')
     base = base or filename
@@ -90,8 +91,13 @@ def plot_pinn_ntk_panel(theta_rel_histories, k_rel_histories, log_epochs,
 
 def run_ntk_experiment(param_value, x_limit, t_limit, widths=None, hidden_layers=4,
                         epochs=15000, lr=1e-5, optimizer_name='sgd', n_ntk=40,
-                        log_interval=500, outdir=None, filename='pinn_ntk_panel.png'):
+                        log_interval=500, outdir=None, filename='pinn_ntk_panel.png',
+                        seed=37):
     # train pinns of varying width, track relative parameter/ntk change and eigenvalue spectra
+    # reseed locally so the diagnostic reproduces regardless of pipeline order: this
+    # experiment retrains its probe networks and would otherwise inherit whatever RNG
+    # state the earlier training stages left behind.
+    set_seed(seed)
     if widths is None:
         widths = [8, 128, 512]
 

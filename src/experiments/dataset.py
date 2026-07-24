@@ -5,14 +5,16 @@ import torch
 from methods.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from tools import compute_norm_stats, save_dataset
 
-# hyperparameters and pde setup for dataset generation.
-# change these values directly before running the dataset generator.
+# Standalone defaults for running this module directly. The authoritative pipeline
+# (src/main.py) overrides every one of these from settings.json, so these values do
+# NOT define the thesis dataset; they are aligned to settings.json only to avoid a
+# standalone run silently producing a different dataset than the one described.
 DEFAULT_DATASET_FILE = os.path.join('results', 'models', 'boussinesq_dataset.pth')
 DEFAULT_DEVICE = 'cpu'
-DEFAULT_PARAM_VALUES = list(np.arange(0.1, 3.01, 0.5))
+DEFAULT_PARAM_VALUES = list(np.linspace(0.1, 4.0, 20))
 DEFAULT_X_LIMIT = 60.0
-DEFAULT_T_LIMIT = 15.0
-DEFAULT_DATASET_RES = 64
+DEFAULT_T_LIMIT = 30.0
+DEFAULT_DATASET_RES = 128
 
 
 def generate_dataset(param_values, nx, nt, x_limit, t_limit, device):
