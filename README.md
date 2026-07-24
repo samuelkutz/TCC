@@ -1,207 +1,164 @@
-# FNO-BOUSSINESQ
+# Scientific Machine Learning Methods for the Nonlinear Boussinesq System of Equations
 
-A Scientific Machine Learning project that compares Fourier Neural Operators (FNO), Physics-Informed Neural Operators (PINO), and Physics-Informed Neural Networks (PINN) on the nonlinear Boussinesq system.
+> Undergraduate thesis (*Trabalho de Conclusão de Curso*) submitted in partial fulfillment of the requirements for the degree of **Bacharel em Matemática Industrial**, Departamento de Matemática, **Universidade Federal do Paraná (UFPR)**.
 
-## Project overview
+| | |
+|---|---|
+| **Author** | Samuel Kutz Paranhos |
+| **Advisor** | Prof. Roberto Ribeiro |
+| **Institution** | Departamento de Matemática, UFPR — Curitiba, Brazil |
+| **Year** | 2026 |
+| **Area** | Matemática Industrial / Scientific Machine Learning |
+| **License** | [MIT](LICENSE) |
 
-This repository implements and evaluates three SciML approaches for the two-dimensional Boussinesq PDE system:
+---
 
-- **FNO**: a supervised spectral operator learning model.
-- **PINO**: a hybrid model that learns an operator while enforcing the PDE residual.
-- **PINN**: a classical physics-informed neural network that minimizes the PDE residual directly.
+## Abstract
 
-The reference solutions are produced by a pseudo-spectral solver using Fourier transforms and RK4 time integration. The goal is to compare how each method captures the wave dynamics, parameter dependence, and spectral content of the solution.
+This work investigates the effectiveness of Scientific Machine Learning (SciML) methods in solving and approximating the nonlinear Boussinesq system, a system of Partial Differential Equations (PDEs) used to model water-wave dynamics. The Boussinesq system is treated as a PDE dependent on two parameters — the nonlinearity coefficient and the dispersion coefficient. A pseudospectral solver generates a dataset of reference solutions across parameters, which then serves as the training basis for three SciML architectures:
 
-## Mathematical problem
+- **Physics-Informed Neural Networks (PINNs)** — trained at a single parameter, both with data constraints and in a purely physics-informed regime;
+- **Fourier Neural Operators (FNOs)** — a purely supervised, multi-parameter regime using only data, with no differential-operator information;
+- **Physics-Informed Neural Operators (PINOs)** — an FNO that adds the PDE differential operator to the loss function.
 
-The Boussinesq system models shallow-water waves with two fields:
+Fidelity is measured through the evolution of the **spectral error** and the **relative error** over space-time against the reference solution. The central finding is that traditional PINNs — especially without data — suffer from **spectral bias**, learning low-frequency components first and struggling with high-frequency detail as nonlinearity grows. Operator-learning models (FNO and PINO with data), learning directly in frequency space, substantially attenuate this in the low and mid bands, though **no method removes it entirely**: a residual high-frequency error persists across all architectures. Adding the physics residual further confers **temporal stability**, suppressing the Gibbs artifact that degrades the FNO at the final time. The conclusion is that including data in the loss is the most effective strategy to *mitigate — though not eliminate —* the spectral bias common to these architectures.
 
-- `η(x,t)`: free-surface displacement
-- `u(x,t)`: horizontal velocity
+**Keywords:** Scientific Machine Learning; Partial Differential Equations; Boussinesq System; Physics-Informed Neural Networks.
 
-The code uses the version:
+---
 
-- `η_t + u_x + α (η u)_x = 0`
-- `u_t - (β / 3) u_{xxt} + η_x + α u u_x = 0`
+## Table of contents
 
-where `α` and `β` are PDE parameters. The initial condition is a localized wave:
+- [The mathematical problem](#the-mathematical-problem)
+- [Methods](#methods)
+- [Repository structure](#repository-structure)
+- [Requirements and environment](#requirements-and-environment)
+- [Reproducing the results](#reproducing-the-results)
+- [Outputs](#outputs)
+- [The thesis document](#the-thesis-document)
+- [Citation](#citation)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
 
-- `η(x,0) = A sech^2(x)`
-- `u(x,0) = 0`
+---
 
-This system is solved with a pseudo-spectral reference solver and then approximated by SciML models.
+## The mathematical problem
 
-## Models implemented
+The one-dimensional Boussinesq system models shallow-water waves through two coupled fields — the free-surface displacement `η(x,t)` and the horizontal velocity `u(x,t)`:
 
-### FNO (Fourier Neural Operator)
+```
+η_t + u_x + α (η u)_x = 0
+u_t − (β/3) u_{xxt} + η_x + α u u_x = 0
+```
 
-Implemented in `src/FNO/FNO.py`, the FNO model:
+The coefficients `α` (nonlinearity) and `β` (dispersion) define the family of problems. Throughout the experiments they are held equal, `α = β`, sweeping a single difficulty axis from the near-linear regime (small `α = β`, energy in a few low-frequency modes) to the strongly nonlinear one (large `α = β`, sharp crests spread over a broad band of wavenumbers). The initial condition is a fixed localized wave:
 
-- lifts the input to a latent channel space with `Linear` layers,
-- applies a stack of spectral convolution layers (`SpectralConv2d`) in Fourier space,
-- uses low-frequency modes only, which improves efficiency and stability,
-- returns a 2-channel output `(η, u)`.
+```
+η(x,0) = A · sech²(x),   u(x,0) = 0.
+```
 
-Input channels are:
+Reference solutions are produced by a **pseudospectral solver** (Fourier transforms for the spatial derivatives, RK4 in time), whose spectral spatial accuracy makes it the natural high-fidelity baseline for a dispersive wave problem and the accuracy ceiling against which every SciML method is measured.
 
-1. initial surface `η_0`
-2. initial velocity `u_0`
-3. PDE parameter `α`
-4. PDE parameter `β`
-5. grid coordinate `x`
-6. grid coordinate `t`
+## Methods
 
-The FNO architecture combines global spectral convolutions and point-wise linear skips, enabling it to learn maps from PDE parameters and initial conditions to full spatio-temporal solutions.
+| Method | File | Regime | What it learns |
+|---|---|---|---|
+| **FNO** | [`src/FNO/FNO.py`](src/FNO/FNO.py) | supervised | Spectral operator mapping parameters + initial data → full space-time solution. |
+| **PINO** | [`src/PINO/PINO.py`](src/PINO/PINO.py) | with / without data | Same operator backbone as the FNO, plus the Boussinesq residual in the loss. |
+| **PINN** | [`src/PINN/PINN.py`](src/PINN/PINN.py) | with / without data | Continuous map `(x,t) → (η,u)` trained on the PDE residual via automatic differentiation. |
 
-### PINO (Physics-Informed Neural Operator)
+The FNO and PINO share the same spectral backbone, so any difference in behaviour isolates the effect of the physics term. The PINN is a single-parameter model, whereas the operators cover the whole parameter family from one training. A **Neural Tangent Kernel (NTK)** diagnostic probes the spectral-bias mechanism directly on the PINN residual.
 
-Implemented in `src/PINO/PINO.py`, PINO uses the same spectral operator backbone as FNO, but adds PDE constraints to the loss.
+## Repository structure
 
-The training objective contains three terms:
+```
+.
+├── src/
+│   ├── main.py                  # single entry point: dataset → train → evaluate
+│   ├── tools.py                 # normalization, save/load, L2 / relative-L2 losses, metrics
+│   ├── _plots.py                # shared evaluation-figure utilities
+│   ├── settings.json            # all experiment hyperparameters and evaluation config
+│   ├── BOUSSINESQ/              # PDE definition, pseudospectral solver, dataset generation
+│   ├── FNO/                     # Fourier Neural Operator + training + plots
+│   ├── PINO/                    # Physics-Informed Neural Operator + training + plots
+│   └── PINN/                    # Physics-Informed Neural Network + training + plots
+├── tex/                         # LaTeX sources of the thesis (see "The thesis document")
+├── results/                     # generated dataset, model weights, metadata, figures
+├── beamers/                     # presentation slides
+├── requirements.txt
+└── LICENSE
+```
 
-- PDE residual loss: enforces the Boussinesq equations using spectral derivatives and finite-difference time derivatives,
-- initial condition loss: enforces `(η, u)` at `t = 0`,
-- data loss: optionally enforces supervised fit to reference solution samples.
+## Requirements and environment
 
-This repository supports two PINO variants:
+The experiments were implemented from scratch — the pseudospectral solver, the three architectures and every training loop — with no pre-trained weights, external datasets or high-level operator-learning libraries.
 
-- `with_data`: uses both PDE and data losses,
-- `no_data`: uses only PDE residual and initial condition loss.
+- **Python** 3.11
+- **PyTorch** 2.12 with CUDA 13.0 (`torch==2.12.0+cu130`)
+- NumPy, Matplotlib, Plotly (full pinned list in [`requirements.txt`](requirements.txt))
 
-The physics loss is computed in physical units by un-normalizing the model output before evaluating the residual.
+```bash
+pip install -r requirements.txt
+# PyTorch with CUDA 13.0 (as pinned in requirements.txt):
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130
+```
 
-### PINN (Physics-Informed Neural Network)
+Reference hardware: a single **NVIDIA GeForce GTX 1660 SUPER** (6 GB). A CPU-only install runs but is considerably slower.
 
-Implemented in `src/PINN/PINN.py`, the PINN is a fully connected network that directly maps `(x,t)` to `(η, u)`.
+## Reproducing the results
 
-Key features:
-
-- uses automatic differentiation to compute derivatives `η_t`, `η_x`, `u_t`, `u_x`, `u_{xx}`, and `u_{xxt}`,
-- trains on PDE residuals and initial condition loss,
-- supports supervised data via a data loss term when model `data_weight > 0`.
-
-This repository also evaluates PINN in two modes:
-
-- `with_data`: supervised data plus PDE and IC losses,
-- `no_data`: purely physics-informed training using only PDE and IC losses.
-
-## Reference solver and dataset
-
-The Boussinesq model and reference solver live in `src/BOUSSINESQ/boussinesq.py`:
-
-- `Boussinesq`: defines domain, parameters, initial condition, and PDE residual,
-- `PseudoSpectralBoussinesq`: solves the system in Fourier space with RK4 and returns `(x, t, η, u)`.
-
-Dataset generation is handled by `src/BOUSSINESQ/run_dataset.py` and stores normalized solutions into `results/models/boussinesq_dataset.pth`.
-
-The data pipeline uses `src/tools.py` for:
-
-- normalization/un-normalization,
-- dataset save/load,
-- model save/load,
-- L2 and relative L2 losses.
-
-## Experiments
-
-The main controlled experiments are:
-
-1. **FNO supervised training** on the generated dataset,
-2. **PINO with PDE + data** and **PINO without data**,
-3. **PINN with data** and **PINN without data**.
-
-The evaluations compare:
-
-- training loss history,
-- relative error across space-time,
-- spectral error and frequency content,
-- performance across multiple resolution settings,
-- behavior under varying PDE parameters `α` and `β`.
-
-A main research question is whether PINNs suffer spectral bias while FNO/PINO better capture high-frequency components.
-
-## How to run
-
-The most convenient entry point is:
+Every experiment is driven by [`src/settings.json`](src/settings.json) and a single fixed global seed (`37`), with cuDNN set to deterministic mode. The full pipeline — generate the shared dataset, train all five models (FNO; PINO with/without data; PINN with/without data), run the NTK diagnostic, and render every evaluation figure — is reproduced by one command:
 
 ```bash
 python src/main.py
 ```
 
-This script runs the full pipeline:
+> **Note.** `src/main.py` is the authoritative entry point: it reads `settings.json` and generates the exact dataset used in the thesis (domain `T = 30`, resolution `128`, 20 parameter values on `linspace(0.1, 4.0, 20)`). The helper `src/BOUSSINESQ/run_dataset.py` exists for internal use and carries different standalone defaults — do not rely on it to reproduce the thesis dataset.
 
-- generate the shared dataset,
-- train FNO,
-- train PINO with and without data,
-- train PINN with and without data,
-- generate evaluation plots for both evaluation panels.
+Key configuration (all in `settings.json`): spatial half-length `L = 60`, final time `T = 30`, dataset resolution `128`, training grid `α = β ∈ linspace(0.1, 4.0, 20)`, evaluation parameters `{0.1, 3.21, 4.2}`, evaluation resolutions `{128, 256, 512}`.
 
-If you want to run only dataset generation:
+## Outputs
 
-```bash
-python src/BOUSSINESQ/run_dataset.py
-```
+Results are written to a standardized `results/` hierarchy:
 
-The model training functions are exposed in:
+- `results/models/boussinesq_dataset.pth` — shared reference dataset;
+- `results/models/weights/{fno,pino,pinn}/…` — trained weights per model and regime;
+- `results/models/metadata/` — training metadata for every experiment;
+- `results/imgs/{fno,pino,pinn}/…` — evaluation figures (spectral fidelity, error panels, resolution and nonlinearity sweeps);
+- `results/imgs/gifs/` — animations of the wave dynamics.
 
-- `src/FNO/train_fno.py`
-- `src/PINO/train_pino.py`
-- `src/PINN/train_pinn.py`
+## The thesis document
 
-Those scripts can be imported or called from custom wrappers.
-
-## Output structure
-
-The repository saves outputs in a standardized `results/` hierarchy:
-
-- `results/models/boussinesq_dataset.pth` — shared dataset file,
-- `results/models/weights/fno/` — FNO weights,
-- `results/models/weights/pino/with_data/` — PINO with-data weights,
-- `results/models/weights/pino/no_data/` — PINO no-data weights,
-- `results/models/weights/pinn/with_data/` — PINN with-data weights,
-- `results/models/weights/pinn/no_data/` — PINN no-data weights,
-- `results/models/metadata/` — saved training metadata for all experiments,
-- `results/imgs/eval1/` — first set of evaluation plots,
-- `results/imgs/eval2/` — second set of evaluation plots.
-
-## Code structure
-
-- `src/main.py`: orchestrates the full dataset/train/evaluate workflow,
-- `src/BOUSSINESQ/`: PDE solving, dataset generation,
-- `src/FNO/`: spectral operator model plus FNO training,
-- `src/PINO/`: physics-informed operator model plus PINO training,
-- `src/PINN/`: classical physics-informed neural network training,
-- `src/tools.py`: utilities for normalization, saving/loading, and losses,
-- `src/_plots.py`: shared plotting utilities for evaluation figures.
-
-## Requirements
+The written thesis lives under [`tex/`](tex/) and is built with [Tectonic](https://tectonic-typesetting.github.io/):
 
 ```bash
-pip install torch numpy matplotlib
+cd tex
+tectonic -X build          # configuration in tex/Tectonic.toml
 ```
 
-Optional but recommended:
+Chapters: introduction, mathematical background, methodology, numerical results, and conclusions
+([`tex/src/chapters/`](tex/src/chapters/)). The compiled PDF is produced at `tex/build/TCC/TCC.pdf`.
 
-```bash
-pip install torch torchvision
+## Citation
+
+If you use this code or refer to this work, please cite:
+
+```bibtex
+@thesis{paranhos2026sciml,
+  author      = {Paranhos, Samuel Kutz},
+  title       = {Scientific Machine Learning Methods for the Nonlinear Boussinesq System of Equations},
+  type        = {Bachelor's thesis (Trabalho de Conclus{\~a}o de Curso)},
+  institution = {Universidade Federal do Paran{\'a}},
+  address     = {Curitiba, Brazil},
+  year        = {2026},
+  url         = {https://github.com/samuelkutz/TCC}
+}
 ```
 
-## Research context
+## License
 
-This code is built from the thesis project "Scientific Machine Learning Methods for the Nonlinear Boussinesq System of Equations". It is intended to:
+Released under the [MIT License](LICENSE) — © 2026 Samuel Kutz Paranhos.
 
-- bridge classical PDE solvers with modern SciML architectures,
-- analyze the effect of physics knowledge versus purely data-driven training,
-- compare operator learning (FNO/PINO) with pointwise PINN learning.
+## Acknowledgements
 
-## Notes
-
-- The code already uses a normalized dataset when training FNO, PINO, and PINN.
-- PINO is designed to support both data-constrained and fully physics-constrained training.
-- The Boussinesq residual is computed using spectral spatial derivatives and finite-difference time derivatives in `src/PINO/PINO.py`.
-- FNO uses a low-mode Fourier representation via `SpectralConv2d`, which restricts the learned operator to dominant frequency components.
-
-## Suggested next steps
-
-- add a dedicated CLI wrapper for each model,
-- include a detailed `results/` summary table for accuracy vs resolution,
-- add a README section with example evaluation plots and interpretation.
+Developed at the Departamento de Matemática, UFPR, under the guidance of Prof. Roberto Ribeiro, with the support of the Laboratório de Dinâmica de Fluidos (LabFluid) and CNPq.

@@ -46,6 +46,16 @@
     "data_weight": 1.0,
     "print_interval": 500
   },
+  "mlp": {
+    "epochs": 15000,
+    "neurons": 256,
+    "hidden_layers": 4,
+    "activation": "tanh",
+    "optimizer_name": "Adam",
+    "lr": 1e-3,
+    "batch_size": 0,
+    "print_interval": 500
+  },
   "pinn_ntk": {
     "widths": [8, 128, 512],
     "hidden_layers": 4,
@@ -55,5 +65,13 @@
     "n_ntk": 40,
     "log_interval": 500,
     "param_value": 3.21
+  },
+  "spectral_bias_theory": {
+    "n_grid": 128,
+    "n_frequencies": 18,
+    "gain_exponent": 1.5,
+    "n_iterations": 20000,
+    "tolerance": 0.08,
+    "seed": 37
   }
 }

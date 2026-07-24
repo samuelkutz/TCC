@@ -4,21 +4,19 @@ import random
 import numpy as np
 import torch
 
-from BOUSSINESQ.run_dataset import run_dataset
-from FNO.train_fno import train_fno
-from FNO.plots_fno import eval_fno, gif_fno
-from PINO.train_pino import train_pino
-from PINO.plots_pino import eval_pino, gif_pino
-from PINN.train_pinn import train_pinn
-from PINN.plots_pinn import eval_pinn, gif_pinn, run_ntk_experiment
-from _plots import (
-    plot_soliton_profile,
-    plot_spectral_bias_evolution,
-    plot_ntk_eigenvector_spectrogram,
-    plot_ntk_spectral_prediction,
-    plot_ntk_iteration_estimator,
-    plot_ntk_spectral_estimate,
-)
+from experiments.dataset import run_dataset
+from experiments.train_fno import train_fno
+from experiments.plot_fno import eval_fno, gif_fno
+from experiments.train_pino import train_pino
+from experiments.plot_pino import eval_pino, gif_pino
+from experiments.train_pinn import train_pinn
+from experiments.plot_pinn import eval_pinn, gif_pinn
+from experiments.train_mlp import train_mlp
+from experiments.plot_mlp import eval_mlp
+from experiments.ntk import run_ntk_experiment
+from experiments.plots_common import plot_soliton_profile
+from experiments.plot_spectral_bias import plot_spectral_bias_evolution
+from experiments.spectral_bias_theory import run_spectral_bias_theory
 
 
 with open(os.path.join(os.path.dirname(__file__), 'settings.json')) as settings_file:
@@ -61,6 +59,15 @@ PINN_CONFIG = {
     **settings['pinn'],
 }
 
+MLP_CONFIG = {
+    'x_limit':          X_LIMIT,
+    't_limit':          T_LIMIT,
+    'train_resolution': DATASET_RES,
+    'param_value':      MEDIAN_PDE_PARAM,
+    'results_dir':      RESULTS_DIR,
+    **settings['mlp'],
+}
+
 EVAL_CONFIG = {
     'x_limit':      X_LIMIT,
     't_limit':      T_LIMIT,
@@ -78,12 +85,19 @@ PINN_NTK_CONFIG = {
     **settings['pinn_ntk'],
 }
 
+SPECTRAL_BIAS_THEORY_CONFIG = {
+    'outdir': os.path.join(IMG_DIR, 'theory'),
+    **settings['spectral_bias_theory'],
+}
+
+MLP_EVAL_DIR = os.path.join(IMG_DIR, 'mlp')
 FNO_EVAL_DIR = os.path.join(IMG_DIR, 'fno')
 PINO_WITH_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pino', 'with_data')
 PINO_NO_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pino', 'no_data')
 PINN_WITH_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pinn', 'with_data')
 PINN_NO_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pinn', 'no_data')
 
+MLP_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'mlp', 'mlp_model_metadata.pth')
 FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'fno', 'fno_model_metadata.pth')
 PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pino', 'with_data', 'pino_model_metadata.pth')
 PINO_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pino', 'no_data', 'pino_no_data_model_metadata.pth')
@@ -128,18 +142,6 @@ def main():
     #print('\n=== plotting soliton profile ===')
     #plot_soliton_profile(outdir=IMG_DIR)
 
-    #print('\n=== plotting ntk eigenvector spectrogram ===')
-    #plot_ntk_eigenvector_spectrogram(outdir=IMG_DIR)
-
-    #print('\n=== plotting ntk spectral prediction vs gradient descent ===')
-    #plot_ntk_spectral_prediction(outdir=IMG_DIR)
-
-    #print('\n=== plotting ntk iteration estimator test ===')
-    #plot_ntk_iteration_estimator(outdir=IMG_DIR)
-
-    #print('\n=== plotting ntk spectral estimate test ===')
-    #plot_ntk_spectral_estimate(outdir=IMG_DIR)
-
     print('\n=== generating shared dataset ===')
     run_dataset(
         dataset_file=DATASET_FILE,
@@ -148,6 +150,16 @@ def main():
         x_limit=X_LIMIT,
         t_limit=T_LIMIT,
         dataset_res=DATASET_RES,
+    )
+
+    print('\n=== training mlp (data only) ===')
+    train_mlp(**MLP_CONFIG)
+
+    print('\n=== plotting mlp (data only) ===')
+    eval_mlp(
+        model_metadata_file=MLP_METADATA_FILE,
+        output_dir=MLP_EVAL_DIR,
+        **EVAL_CONFIG,
     )
 
     print('\n=== training fno ===')
@@ -207,9 +219,13 @@ def main():
     print('\n=== running NTK experiment ===')
     run_ntk_experiment(**PINN_NTK_CONFIG)
 
+    print('\n=== validating NTK spectral-bias theory (controlled toy) ===')
+    run_spectral_bias_theory(**SPECTRAL_BIAS_THEORY_CONFIG)
+
     print('\n=== plotting spectral bias evolution ===')
     plot_spectral_bias_evolution(
         ordered_metadata=[
+            ('MLP (data only)',  MLP_METADATA_FILE),
             ('PINN (no data)',   PINN_NO_DATA_METADATA_FILE),
             ('PINN (with data)', PINN_WITH_DATA_METADATA_FILE),
             ('PINO (no data)',   PINO_NO_DATA_METADATA_FILE),

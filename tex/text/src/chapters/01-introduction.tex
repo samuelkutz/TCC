@@ -1,0 +1,105 @@
+\chapter{INTRODUCTION}
+\label{chap:intro}
+
+
+
+
+Since the start of the scientific thinking, mathematics has been one of the key languages in which we can understand the world, and Partial Differential Equations (PDEs) are one of the main dialects of the mathematical language we use to model and to simplify nature's complexity.
+
+When modelling these equations, we cannot always afford them to have simple closed-form solutions (that is, when they have solution at all), this exposes the need of obtaining approximated solutions coming from numerical methods for these PDEs, also giving the option to circumvent analytical complexity. This allows the extraction of predictions, comparisons with data, build simulations and so on. These classical numerical methods, widely studied for all types of differential equations, usually rely on discretizing the PDE's domain into grids and performing temporal steps.
+
+With the recent ascension of Machine Learning (ML) methods and a whole ecosystem of tools built around it, a natural path is to bridge these two worlds and let ML augment the numerical solution of PDEs, taking advantage of the many software frameworks developed. This is one facet of Scientific Machine Learning (SciML), the broader effort to fuse physics-based, mechanistic models with data-driven methods. Within SciML, this work focuses on the numerical solution of PDEs and, given the vast literature around the topic, restricts its review of recent works to hydrodynamics equations.
+
+\section{Literature Overview on Scientific Machine Learning for PDEs}
+
+The neural network building blocks underlying all of these approaches trace a line beginning with the formal neuron of \textcite{mcculloch1943} and Rosenblatt's perceptron \parencite{rosenblatt1958}, the first trainable single-layer model. The key algorithmic advance that unlocked multi-layer training was the backpropagation algorithm \parencite{rumelhart1986}, making gradient-based optimization practical for deep architectures. Shortly after, the universal approximation theorem \parencite{cybenko1989, hornik1989} provided the theoretical guarantee for a multilayer perceptron (MLP) with a single hidden layer of sufficient width to be able to approximate any continuous function on a compact domain to arbitrary precision. This combination of practical and universal approximation established the MLP as the backbone of modern deep learning. The term neural network itself reflects the biological metaphor at the heart of these models, in which \textcite{mcculloch1943} drew an explicit analogy to the firing of biological neurons, and this vocabulary propagated through the field, causing MLPs to be routinely and interchangeably referred to as artificial neural networks (ANNs) or feedforward neural networks. The idea of ``deep'' in deep learning, popularized following the breakthrough results of \textcite{lecun2015deep}, simply denotes an MLP with many hidden layers, a regime in which representational capacity grows substantially and where the backpropagation-based training paradigm proves to be exceptionally efficient.
+
+These ML foundations become the basis of a scientific methodology once the methods are coupled to the physical laws that govern a problem of interest. This is the premise of Scientific Machine Learning, a term consolidated by \textcite{baker2019} to name the discipline at the intersection of scientific computing and machine learning, and surveyed in breadth by \textcite{karniadakis2021}. Its unifying goal is to combine the interpretability, generalization, and inductive biases of physics-based models with the flexibility and data-adaptivity of ML, rather than treating the network as a pure black box. The methods span several families. Some recover governing equations directly from data, as in the Sparse Identification of Nonlinear Dynamics (SINDy) \parencite{brunton2016}. Others embed differential-equation structure into the network itself, as in Neural Ordinary Differential Equations (neural ODEs) \parencite{chen2018node} and Universal Differential Equations (UDEs), in which a trainable network stands in for the unknown terms of an otherwise mechanistic model \parencite{rackauckas2020}. These tools have been carried across a wide range of domains, from global weather and climate forecasting \parencite{bonev2023} to molecular dynamics, materials design, and turbulence modelling \parencite{karniadakis2021}. Among all these directions, the one that concerns us here is the use of SciML to obtain numerical solutions of PDEs and, more specifically, of the hydrodynamics equations that govern water waves. Given the vastness of the literature, the remainder of this review is devoted to that subarea.
+
+The contemporary landscape of SciML for PDEs was reshaped by one idea in particular, the Physics-Informed Neural Networks (PINNs) \parencite{raissi2019}, that is, the embedding of the governing PDE residual directly into the training loss of a Neural Network, working as regularization term for not only fitting data, but also respecting the underlying physics. In hydrodynamics, a growing body of work has applied PINNs to water flow \parencite{depina2021, depina2023}, shallow-water dynamics on the sphere \parencite{bihlo2022}, and inverse problems in strongly nonlinear wave systems \parencite{jagtap2022}. The consistent result that we can address from reviews \parencite{cuomo2023} is that PINNs are most effective when observational data are sparse and the task is parameter identification, namely inverse problems, which are known for usually being not well-posed problems. But, for a reliable precise forward simulation at scale, they do not yet rival classical solvers. In our vision, these approaches serve best to complement them.
+
+As a natural extension from neural networks, there is a recent development in learning maps between infinite-dimensional function spaces, in which the theoretical foundation was popularized by \textcite{chen1995}, who extended the universal approximation theorem to nonlinear operator, in other words, a shallow network can approximate any continuous operator between Banach spaces to arbitrary precision. Bringing this idea into practical terms, \textcite{lu2021deeponet} introduced DeepONet, the first deep architecture expressly designed for learning operators coming from differential equations, demonstrating it across a range of ODEs and PDEs. Building on this line of work, operator learning puts aside the single-instance limitation of PINNs by training a model to approximate the full mapping from parameters and initial data to the solution, so that at inference time a new solution costs only a forward pass for the network. Parallel to DeepONet, Fourier Neural Operator (FNO) \parencite{li2021} is one of the most widely adopted instance of this idea, it parametrizes an integral kernel in Fourier space, achieving speed-ups over other neural operators and is discretization-independent, the so-called zero-shot superesolution. Subsequent works explored alternative bases like wavelets \parencite{gupta2021}, but FNO was validated on many types of equations such as dispersive and soliton wave equations \parencite{pei2022, zhong2023}, was also caled to geophysical problems spanning regional ocean modeling, shallow-water emulation, and global weather forecasting \parencite{bonev2023, lkhagvasuren2024, uchida2025, patel2025, yu2025}. 
+
+Following the idea for PINNs, The Physics-Informed Neural Operator (PINO) \parencite{li2023pino} combines operator learning with PDE-residual constraints, cutting the labelled-data requirement while preserving physical consistency. Applications to shallow-water systems \parencite{rosofsky2023} confirmed that this hybrid regime inherits the generalization of FNO without its data hunger. Broad surveys of the field \parencite{piml2023review} identify these physics-data approaches working together as the most promising SciML direction, although highlighting turbulence modeling, scalability, and noisy-data robustness as open challenges.
+
+A known limitation that cuts across all SciML architectures is the so-called spectral bias, the tendency of gradient-based optimizers to learn the low-frequency components of a solution faster than the high-frequency ones \parencite{rahaman2019, xu2019frequency}. The theoretical account of this behavior came with the Neural Tangent Kernel (NTK) \parencite{jacot2018}, which showed that a sufficiently wide network trains, to leading order, as a linear model governed by a kernel that stays essentially fixed during optimization, the so-called lazy-training regime. In this picture each mode of the solution is learned at a rate set by its associated NTK eigenvalue, so the wide disparity between the largest and smallest eigenvalues translates directly into the frequency imbalance seen during training \parencite{arora2019, cao2019, bordelon2020}. \textcite{wang2022ntk} carried this analysis to PINNs, showing that the eigenvalue disparity between the PDE-residual and initial-condition loss components is what drives their spectral bias. This pathology is especially consequential for dispersive wave problems, where the solution energy is broadly distributed across wavenumbers. A recent systematic study \parencite{khodakarami2026} showed that second-order optimizers combined with spectrum-aware loss formulations substantially mitigate it.
+
+As far as this review reveals, SciML methods have been applied to a broad class of shallow-water and dispersive wave equations. To the best of our knowledge, however, no study has systematically evaluated FNO, PINO, or PINNs on the parametric 1D Boussinesq system, where both the nonlinearity coefficient $\alpha$ and the dispersion coefficient $\beta$ vary simultaneously. This gap motivates our effort to implement and evaluate these models with the goal of exposing their details for the user aiming to bring together this new set of tools.
+
+\section{The Boussinesq System of Equations}
+
+For this work, we choose to implement SciML methods for a specific PDE originating from J.~Boussinesq's 1872 effort to give a theoretical account of the solitary wave of translation observed by J.~Scott Russell in a canal in 1834 \parencite{boussinesq1872}. Russell had noticed that a hump of water, set in motion by a stopping barge, could travel for miles without changing shape, a phenomenon the linear wave theory of the time could not explain. Boussinesq showed that the stability of such a wave is the result of a precise balance between nonlinear steepening and frequency dispersion, two effects that are separately destabilizing but mutually compensating in the shallow-water, long-wave regime. The mathematical structure of this balance, and of dispersive wave theory in general, are treated in depth by \textcite{whitham1974} and \textcite{debnath2012}.
+
+The modern two-field form of the system, for the free-surface elevation $\eta(x,t)$ and the depth-averaged horizontal velocity $u(x,t)$, was systematically derived and classified by \textcite{bona2002}, who identified a four-parameter family of equivalent Boussinesq systems obtainable from the incompressible, irrotational Euler equations by asymptotic simplifications. Earlier, \textcite{peregrine1967} had already written down the standard form of these equations for water of variable depth, establishing the notation and scaling that remain in widespread use. What makes the Boussinesq system particularly suitable as a parametric testbed for this work is that changing the nonlinearity and dispersion coefficients continuously deforms the solution from the near-linear, wave-packet regime to the strongly nonlinear soliton regime, giving rise to a more interesting range of behaviors within a single mathematical framework.
+
+The specific one-dimensional form of the system used in this work, with its parameterization of the nonlinearity coefficient $\alpha$ and the dispersion coefficient $\beta$, was adopted from \textcite{martins2023, martins2024}. In the dataset generated for this study $\alpha$ and $\beta$ are held equal, defining a one-parameter family of problems whose difficulty grows. Namely, for small $\alpha = \beta$ the dynamics are nearly linear and the solution is well-captured by low-frequency modes, while for large $\alpha = \beta$ the strong coupling between nonlinearity and dispersion produces sharper, more energetically distributed wave profiles that are fundamentally harder to learn. This controlled variation is precisely what makes the setting useful for comparing SciML architectures, with the goal of observing how each method learns the target solution's frequency.
+
+Classical numerical methods for the Boussinesq system rely on pseudospectral and finite-difference discretizations that exploit the periodic or nearly periodic spatial structure of the waves. Pseudospectral \parencite{trefethen2000spectral} schemes achieve spectral accuracy on the spatial derivatives and are therefore well suited to the dispersive character of the equations \parencite{engsigkarup2012}; this is the approach used to generate the reference dataset in this work. On the application side, operational coastal-engineering codes such as FUNWAVE \parencite{funwave2010} implement Boussinesq-type solvers for harbor and nearshore wave propagation, demonstrating the practical relevance of the model beyond the academic setting.
+
+SciML methods have recently only been applied to the Boussinesq equation, not the specific Boussinesq System. \textcite{zheng2023} applied parameter-integrated PINNs with phase-domain decomposition to reconstruct two-dimensional Boussinesq dynamics including phase transitions and rogue-wave formation, identifying spectral bias as a key obstacle at high nonlinearity. \textcite{wang2024} trained a physics-informed network to infer velocity and pressure fields from surface-elevation data alone on a Boussinesq model, demonstrating the inverse-problem capabilities of the approach. Complementary studies on related nonlinear wave equations \parencite{zhang2024, kumar2025} have confirmed that purely data-driven and purely physics-driven networks each display characteristic failure modes at strong nonlinearity. Taken together, these results suggest that a systematic, parametric evaluation of FNO/PINO/PINN on the 1D Boussinesq system, which is the focus of this work, can be fruitful to understand better the interactions between the method's ease of training and nonlinearities and dispersiveness.
+
+\section{Research Goals}
+
+This work implements and evaluates three SciML methods on the parametric 1D Boussinesq
+system: Physics-Informed Neural Networks (PINNs), Fourier Neural Operators (FNOs), and
+Physics-Informed Neural Operators (PINOs). All results are measured against a
+pseudospectral reference solver, which sets a high-accuracy baseline. The study is guided
+by the following questions.
+
+\begin{itemize}
+    \item Accuracy relative to the pseudospectral baseline: how closely can
+          each SciML method reproduce the reference solutions as nonlinearity and
+          dispersion grow? Where does each method start to fail, and how does its error
+          scale with the difficulty of the regime?
+
+    \item Data-driven, physics-informed, and hybrid training: how does the
+          presence or absence of supervised reference data affect the accuracy and
+          training behavior of each method? Does adding a physics residual term improve
+          generalization when data are scarce, or does it introduce new difficulties?
+
+    \item Spectral bias across training regimes: how does spectral bias
+          manifest in each architecture when the error spectrum is tracked band by band
+          during training, and to what extent does the inclusion of data or physics
+          constraints alter the frequency at which errors concentrate?
+
+    \item The mechanism behind spectral bias: does Neural Tangent Kernel
+          (NTK) theory genuinely predict the frequency imbalance seen on the Boussinesq
+          system, or only describe it after the fact? We put the theory to two
+          quantitative tests on the PINN residual, across a range of network widths. The
+          first targets the frozen-kernel (lazy-training) assumption the analysis
+          depends on: we measure how far the network parameters and the empirical kernel
+          drift over training, and whether the kernel's eigenvalue spectrum is
+          essentially unchanged from initialization to convergence, as lazy training
+          requires. The second targets the predicted driver of the bias: an eigenvalue
+          spectrum that decays across many orders of magnitude, so that the modes
+          carrying the high-frequency detail are learned far more slowly than the
+          smooth, low-frequency ones. Confirming both would tie the frequency-band
+          errors seen during training to a concrete mechanism rather than a loose
+          analogy.
+\end{itemize}
+
+Together, these questions aim to provide a clear picture of the strengths and limitations
+of each SciML approach for dispersive, nonlinear wave problems, and to offer practical
+guidance for choosing among them.
+
+\section{Work Structure}
+
+This work is written with the goal of sharing SciML for senior undergraduates in mathematics, physics, or engineering. We recommend the reader to have some knowledge of scientific computing and linear algebra.
+The remaining chapters are organized as follows.
+
+\begin{itemize}
+    \item Chapter~2 develops the mathematical background. It covers the
+          Boussinesq system and its analytical properties, the pseudospectral solver,
+          and the theoretical foundations of MLP, PINN, FNO, and PINO, including a
+          discussion of spectral bias.
+
+    \item Chapter~3 describes the experimental methodology. It details the
+          dataset generation procedure, the model architectures, the training setup,
+          and the evaluation metrics used throughout.
+
+    \item Chapter~4 presents the numerical results and discusses the
+          performance of each method across parameter regimes and spatial resolutions.
+
+    \item Chapter~5 summarizes the main findings and outlines directions for
+          future work.
+\end{itemize}

@@ -85,19 +85,6 @@ class L2_loss(object):
         return loss
 
 
-class RelativeL2_loss(object):
-    # relative l2 loss normalized by target norm
-    def __init__(self, eps=1e-10):
-        super(RelativeL2_loss, self).__init__()
-        self.eps = eps
-
-    def __call__(self, x, y):
-        diff = x - y
-        numerator = torch.sqrt(torch.sum(diff * diff, dim=[1, 2, 3]) + self.eps)
-        denominator = torch.sqrt(torch.sum(y * y, dim=[1, 2, 3]) + self.eps)
-        return torch.mean(numerator / (denominator + self.eps))
-
-
 def save_metadata_json(metadata, filepath):
     # save json-serializable training metadata to disk
     def _coerce(obj):
