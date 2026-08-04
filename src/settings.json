@@ -1,9 +1,11 @@
 {
   "results_dir": "results",
   "seed": 37,
+  "reseed_each_stage": false,
   "domain": {
     "x_limit": 60.0,
     "t_limit": 30.0,
+    "amplitude": 1.0,
     "dataset_res": 128,
     "param_values": { "start": 0.1, "stop": 4.0, "n": 20 }
   },
@@ -56,22 +58,18 @@
     "batch_size": 0,
     "print_interval": 500
   },
-  "pinn_ntk": {
-    "widths": [8, 128, 512],
+  "spectral_bias_ntk": {
+    "n_x": 128,
+    "t_slice": 15.0,
+    "widths": [8, 64, 512],
     "hidden_layers": 4,
-    "epochs": 15000,
-    "lr": 1e-5,
-    "optimizer_name": "SGD",
-    "n_ntk": 40,
-    "log_interval": 500,
-    "param_value": 3.21
-  },
-  "spectral_bias_theory": {
-    "n_grid": 128,
-    "n_frequencies": 18,
-    "gain_exponent": 1.5,
-    "n_iterations": 20000,
-    "tolerance": 0.08,
-    "seed": 37
+    "activation": "tanh",
+    "mu_frac": 0.2,
+    "n_iterations": 500000,
+    "tolerance": 0.05,
+    "reference_width": 512,
+    "eig_floor_rel": 1e-15,
+    "kernel_log_points": 60,
+    "sample_log_points": 600
   }
 }

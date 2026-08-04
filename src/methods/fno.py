@@ -1,4 +1,4 @@
-﻿import torch
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -6,12 +6,7 @@ from tools import normalize_tensor, unnormalize_tensor
 
 
 class SpectralConv2d(nn.Module):
-    """2d spectral convolution using low-frequency fourier modes.
-
-    references:
-    - li et al., 2021, fourier neural operator for parametric pdes.
-    - neuraloperator repository: https://github.com/neuraloperator/neuraloperator
-    """
+    """2D spectral convolution on the low Fourier modes (Li et al., 2021)."""
     def __init__(self, in_channels, out_channels, modes1, modes2):
         super(SpectralConv2d, self).__init__()
         self.in_channels = in_channels
@@ -19,10 +14,9 @@ class SpectralConv2d(nn.Module):
         self.modes1 = modes1
         self.modes2 = modes2
 
-        # Two weight tensors, one per sign of the (full-FFT) first axis, matching
-        # the canonical FNO: low modes live at both ends of the frequency axis, so
-        # `modes1` positive AND `modes1` negative low modes are kept (|k| up to
-        # ~modes1). A single centered band would retain only half the bandwidth.
+        # two weight tensors, one per sign of the full-FFT space axis: the low modes
+        # live at both ends, so |k| up to ~modes1 is kept. A single centred band
+        # would retain only half the bandwidth.
         self.scale = 1 / (in_channels * out_channels)
         self.weights1 = nn.Parameter(
             self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat)
@@ -32,13 +26,12 @@ class SpectralConv2d(nn.Module):
         )
 
     def compl_mul2d(self, input, weights):
-        # complex multiplication in fourier space.
+        # (b, in_ch, kx, kt) x (in_ch, out_ch, kx, kt) -> (b, out_ch, kx, kt)
         return torch.einsum("bixy,ioxy->boxy", input, weights)
 
     def forward(self, x):
-        # keep the lowest `modes1` frequencies at each end of the space axis and
-        # the lowest `modes2` of the rfft (time) axis; this is resolution-invariant
-        # because the same modes are retained regardless of the grid size.
+        # keeping the same modes at any grid size is what makes the operator
+        # resolution-invariant
         batchsize = x.shape[0]
         size1, size2 = x.size(-2), x.size(-1)
         x_ft = torch.fft.rfft2(x, norm='forward')
@@ -59,19 +52,14 @@ class SpectralConv2d(nn.Module):
 
 
 class FNO2d(nn.Module):
-    """fourier neural operator stack with spectral conv and local skip.
-
-    references:
-    - li et al., 2021, fourier neural operator for parametric pdes.
-    - neuraloperator repository: https://github.com/neuraloperator/neuraloperator
-    """
+    """Lifting, four Fourier layers each with a local 1x1 skip, projection
+    (Li et al., 2021)."""
     def __init__(self, modes1, modes2, width):
         super(FNO2d, self).__init__()
         self.modes1 = modes1
         self.modes2 = modes2
         self.width = width
 
-        # lifting and projection follow the fno operator-learning pattern from li et al. (2021).
         self.lifting = nn.Sequential(
             nn.Linear(6, self.width * 2),
             nn.GELU(),
@@ -103,7 +91,7 @@ class FNO2d(nn.Module):
         return torch.stack((gridx, gridy), dim=3)
 
     def forward(self, x):
-        # append grid coordinates then apply lifting p.
+        # the two normalized grid coordinates are appended to the four input channels
         grid = self.get_grid(x.shape, x.device)
         x = x.permute(0, 2, 3, 1)
         x = torch.cat((x, grid), dim=-1)
@@ -131,22 +119,21 @@ class FNO2d(nn.Module):
         x = x1 + x2
         # no activation after the last Fourier layer (canonical FNO)
 
-        # projection q produces the two target fields (eta, u).
         x = x.permute(0, 2, 3, 1)
         x = self.projection(x)
         x = x.permute(0, 3, 1, 2)
         return x
 
     def compute_loss(self, pred, target):
-        # mean-squared error between prediction and target (matches tools.L2_loss).
         diff = pred - target
         return torch.mean(diff * diff)
 
     def predict_physical(self, input_raw, norm_stats):
-        # normalize a physical-scale input, run the forward pass on the model's
-        # device, then map the prediction back to physical scale. Normalization and
-        # unnormalization stay on the norm_stats device so arithmetic is identical to
-        # the historical inline blocks regardless of where the model lives.
+        """Normalize, forward, unnormalize; returns a prediction in physical units.
+
+        Normalization stays on the norm_stats device and the forward pass on the
+        model's, so the result does not depend on where either lives.
+        """
         model_dev = next(self.parameters()).device
         stats_dev = norm_stats['input_min'].device
         x = normalize_tensor(input_raw, norm_stats['input_min'], norm_stats['input_max'], norm_stats['eps'])

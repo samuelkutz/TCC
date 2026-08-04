@@ -1,100 +1,60 @@
+"""The shared operator dataset: one pseudospectral solve per alpha = beta value.
+
+Inputs are the four channels [eta(.,0), u(.,0), alpha, beta] tiled over the
+space-time grid; outputs are the two solution fields [eta, u]. The FNO and the
+PINO both train on this file, and the pointwise models are scored against solves
+produced by the same solver, so every number in Chapter 4 traces to one ground
+truth.
+"""
+
 import os
+
 import numpy as np
 import torch
 
-from methods.boussinesq import Boussinesq, PseudoSpectralBoussinesq
 from tools import compute_norm_stats, save_dataset
-
-# Standalone defaults for running this module directly. The authoritative pipeline
-# (src/main.py) overrides every one of these from settings.json, so these values do
-# NOT define the thesis dataset; they are aligned to settings.json only to avoid a
-# standalone run silently producing a different dataset than the one described.
-DEFAULT_DATASET_FILE = os.path.join('results', 'models', 'boussinesq_dataset.pth')
-DEFAULT_DEVICE = 'cpu'
-DEFAULT_PARAM_VALUES = list(np.linspace(0.1, 4.0, 20))
-DEFAULT_X_LIMIT = 60.0
-DEFAULT_T_LIMIT = 30.0
-DEFAULT_DATASET_RES = 128
+from experiments.common import operator_input_tensor, reference_solution, resolve_device
 
 
-def generate_dataset(param_values, nx, nt, x_limit, t_limit, device):
-    # solve boussinesq at target resolution for each param value; returns x_train (n,4,nx,nt), y_train (n,2,nx,nt)
+def generate_dataset(param_values, nx, nt, x_limit, t_limit, device, amplitude=1.0):
+    # solve Boussinesq at the target resolution for each parameter value; returns
+    # x_train (n, 4, nx, nt) and y_train (n, 2, nx, nt)
     n_cases = len(param_values)
+    inputs = torch.empty((n_cases, 4, nx, nt), dtype=torch.float32)
+    outputs = torch.empty((n_cases, 2, nx, nt), dtype=torch.float32)
 
-    input_data = np.zeros((n_cases, nx, nt, 4), dtype=np.float32)
-    output_data = np.zeros((n_cases, nx, nt, 2), dtype=np.float32)
+    for i, value in enumerate(param_values):
+        # Nt is the number of RK4 steps, so nt-1 steps give exactly nt time levels
+        _, _, eta_sol, u_sol = reference_solution(
+            value, x_limit, t_limit, nx=nx, nt=nt - 1, device=device, amplitude=amplitude)
+        inputs[i] = operator_input_tensor(eta_sol, u_sol, value, nx=nx, nt=nt)[0]
+        outputs[i, 0] = torch.from_numpy(np.ascontiguousarray(eta_sol.T))
+        outputs[i, 1] = torch.from_numpy(np.ascontiguousarray(u_sol.T))
+        print(f'  case {i + 1}/{n_cases} (alpha=beta={value:.2f})')
 
-    for i, val in enumerate(param_values):
-        # solve boussinesq equation directly at the target dataset resolution
-        bsq = Boussinesq(-x_limit, x_limit, 0, t_limit, val, val, 1)
-        solver = PseudoSpectralBoussinesq(bsq, Nx=nx, Nt=nt - 1, device=device)
-        x_sol, t_sol, eta_sol, u_sol = solver.solve()
-
-        eta_sub = eta_sol.T
-        u_sub = u_sol.T
-
-        # input channels correspond to eta0, u0, alpha, beta
-        ch0 = np.tile(eta_sub[:, 0:1], (1, nt))
-        ch1 = np.tile(u_sub[:, 0:1], (1, nt))
-        ch2 = np.ones((nx, nt)) * val
-        ch3 = np.ones((nx, nt)) * val
-
-        input_data[i, ..., 0] = ch0
-        input_data[i, ..., 1] = ch1
-        input_data[i, ..., 2] = ch2
-        input_data[i, ..., 3] = ch3
-
-        # output channels correspond to eta and u solution fields
-        output_data[i, ..., 0] = eta_sub
-        output_data[i, ..., 1] = u_sub
-
-        print(f"processed case {i+1}/{n_cases} (alpha=beta={val:.2f})")
-
-    # convert to pytorch tensors: (batch, channels, height, width)
-    x_train = torch.from_numpy(input_data).permute(0, 3, 1, 2)
-    y_train = torch.from_numpy(output_data).permute(0, 3, 1, 2)
-
-    return x_train, y_train
+    return inputs, outputs
 
 
-def run_dataset(dataset_file,
-                device,
-                param_values,
-                x_limit,
-                t_limit,
-                dataset_res):
-    if any(v is None for v in [dataset_file, device, param_values, x_limit, t_limit, dataset_res]):
-        raise ValueError(
-            'run_dataset requires explicit values for dataset_file, device, param_values, '
-            'x_limit, t_limit, and dataset_res.'
-        )
+def run_dataset(dataset_file, param_values, x_limit, t_limit, dataset_res,
+                device=None, amplitude=1.0):
+    device = device or resolve_device()
     os.makedirs(os.path.dirname(dataset_file) or '.', exist_ok=True)
-    print('generating dataset with the following settings:')
-    print(f'  dataset_file: {dataset_file}')
-    print(f'  device: {device}')
-    print(f'  param_values: {param_values}')
-    print(f'  x_limit: {x_limit}, t_limit: {t_limit}')
-    print(f'  dataset_res: {dataset_res}')
+    print(f'  {len(param_values)} cases at resolution {dataset_res} on '
+          f'[{-x_limit}, {x_limit}] x [0, {t_limit}], device {device}')
+    print(f'  alpha=beta in [{min(param_values):.2f}, {max(param_values):.2f}]')
 
     x_train, y_train = generate_dataset(
-        param_values,
-        nx=dataset_res,
-        nt=dataset_res,
-        x_limit=x_limit,
-        t_limit=t_limit,
-        device=device,
-    )
-    norm_stats = compute_norm_stats(x_train, y_train)
-    save_dataset(x_train, y_train, dataset_file, norm_stats=norm_stats)
-    print(f'dataset written to {dataset_file}')
+        param_values, nx=dataset_res, nt=dataset_res,
+        x_limit=x_limit, t_limit=t_limit, device=device, amplitude=amplitude)
+    save_dataset(x_train, y_train, dataset_file,
+                 norm_stats=compute_norm_stats(x_train, y_train, amplitude,
+                                               min(param_values), max(param_values)))
 
 
 if __name__ == '__main__':
-    run_dataset(
-        dataset_file=DEFAULT_DATASET_FILE,
-        device=DEFAULT_DEVICE,
-        param_values=DEFAULT_PARAM_VALUES,
-        x_limit=DEFAULT_X_LIMIT,
-        t_limit=DEFAULT_T_LIMIT,
-        dataset_res=DEFAULT_DATASET_RES,
-    )
+    # standalone run, using the same settings.json the pipeline reads
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from config import Config
+
+    run_dataset(**Config().dataset_kwargs)

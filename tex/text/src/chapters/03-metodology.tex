@@ -1,26 +1,29 @@
+
 \chapter{METHODOLOGY}
 \label{chap:methodology}
 
-This chapter turns the theory of Chapter~2 into concrete experiments and explains how each one was built and evaluated. Three ingredients are shared by every experiment, so we describe them first: the computational setup and the reproducibility rules (Section~\ref{sec:m_setup}), the pseudospectral data that serve both as training targets and as ground truth (Section~\ref{sec:m_dataset}), and the error metrics that score every model on the same scale (Section~\ref{sec:m_metrics}). Section~\ref{sec:m_ladder} then defines the six trained models. They form a nested sequence over four architectures: each model adds one ingredient to the previous one, so any change in behaviour can be attributed to that addition. Section~\ref{sec:m_probe} sets up two probes of spectral bias, the one behaviour common to all of them, and Section~\ref{sec:m_config} collects every hyperparameter in a single table.
+This chapter aims to show how the experiments were built, on what data, and under which rules, in enough detail to enable reproduction. Three things are common to every experiment, so we settle them first with the computational setup and the reproducibility rules (Section~\ref{sec:m_setup}), then the pseudospectral dataset that act both as training targets and as ground truth (Section~\ref{sec:m_dataset}), and the error metrics that score every model on one scale (Section~\ref{sec:m_metrics}). Section~\ref{sec:m_ladder} then defines the six trained models. Section~\ref{sec:m_probe} sets up the probe of spectral bias, the behaviour they all share, run on the same Boussinesq solution and the same network as the rest of the work, and Section~\ref{sec:m_config} collects the hyperparameters in one table.
 
 % ===============================================================
 \section{Computational Setup and Reproducibility}
 \label{sec:m_setup}
 
-All of the software behind these experiments was written for this work rather than taken from an existing package. The code runs on Python~3.11 with PyTorch~2.12 and CUDA~13.0 \parencite{paszke2019pytorch}, and all timings were measured on a single NVIDIA GeForce GTX~1660~SUPER card with $6$\,GB of memory. NumPy handles array bookkeeping outside the training loops, and Matplotlib and Plotly draw the figures. We used no pre-trained weights, no third-party operator-learning library, and no external dataset. The pseudospectral solver, the multilayer perceptron, the Fourier layers, and each optimization loop are our own implementations, which is what allowed us to instrument them for the spectral diagnostics of Chapter~\ref{chap:results}. The complete implementation is available at \url{https://github.com/samuelkutz/TCC}.
+The software behind these experiments was all written for this work. It runs on Python~3.11 with PyTorch~2.12.0 \parencite{paszke2019pytorch} built against CUDA~13.0, on a single NVIDIA GeForce GTX~1660~SUPER GPU. Figures were make Matplotlib/Plotly. We used no pre-trained weights, no third-party operator-learning library, and no external dataset, although we took much inspiration from existing work. The pseudospectral solver, the multilayer perceptron, PINNs, and each optimization loop are our own code, which is what let us instrument them for the spectral analysis and the custom visualization used in upcoming chapters. The full implementation is available at \url{https://github.com/samuelkutz/TCC}.
 
-Each learned architecture follows its original reference as closely as possible. The Fourier Neural Operator follows \textcite{li2021}, the Physics-Informed Neural Operator follows \textcite{li2023pino} and its released code \parencite{li2023pino_code}, and the Physics-Informed Neural Network follows \textcite{raissi2019}. Departures from a reference are noted where they occur.
+Each learned architecture stays close to its source. The Fourier Neural Operator follows \textcite{li2021} original implementation, the Physics-Informed Neural Operator follows \textcite{li2023pino} too, together with its released code \parencite{li2023pino_code}, and the Physics-Informed Neural Network follows \textcite{raissi2019}, but implemented from scratch with PyTorch. Where an implementation departs from its reference, we explicitly point that out .
 
-Two conventions support reproducibility. A global seed of $37$ initializes the Python, NumPy, and PyTorch random number generators at the start of the pipeline, and the cuDNN backend runs in deterministic mode with autotuning disabled. The spatial and temporal domains are fixed throughout at
-\begin{equation}\label{eq:domain}
-    x \in [-L, L], \quad L = 60, \qquad t \in [0, T], \quad T = 30,
+Reproducibility rests on two conventions. A single global seed initializes the Python, NumPy, and PyTorch at the start of the pipeline, so a rerun should reproduce the reported results.
+
+Now, let us set the experimental parameters for our models and methods. Starting with the physical model, we define the spatial and temporal domains of the Boussinesq System \ref{eq:boussinesq} to be:
+\begin{equation}\label{eq:m_domain}
+    x \in [-L, L], \quad L = 60, \qquad t \in [0, T], \quad T = 30.
 \end{equation}
-and every experiment uses the initial condition of Equation~\eqref{eq:boussinesq} at unit amplitude $A = 1$, so that $\eta(x,0) = \sech^2(x)$ and $u(x,0) = 0$. A unit-height, unit-width crest sits at the centre of a domain $120$ units across, wide enough that the two counter-propagating pulses of the wave-equation limit~\eqref{eq:dalembert_eta}--\eqref{eq:dalembert_u} do not reach the periodic boundary within the simulated horizon. Table~\ref{tab:sim_params} lists the simulation, dataset, and evaluation constants that hold everywhere; each is restated below where it first matters.
+Every experiment uses the initial condition of Equation~\eqref{eq:boussinesq} at unit amplitude $A = 1$, together with the initial conditions $\eta(x,0) = \sech^2(x)$ and $u(x,0) = 0$. A unit crest sits at the centre of a domain $120$ units wide. That width is deliberate. It keeps the two counter-propagating pulses of the wave-equation limit~\eqref{eq:dalembert_eta}--\eqref{eq:dalembert_u} away from the imposed periodic boundary for the whole simulated horizon. Table~\ref{tab:m_fixed} lists the constants that hold everywhere. Each of them is restated below at the point where it first matters.
 
 \begin{table}[htbp]
     \centering
-    \caption{Fixed simulation, dataset and evaluation parameters shared by every experiment. Unless a section states otherwise, these values hold throughout.}
-    \label{tab:sim_params}
+    \caption{Fixed simulation, dataset, and evaluation constants shared by every experiment. Unless a section says otherwise, these values hold throughout.}
+    \label{tab:m_fixed}
     \small
     \begin{tabular}{@{}p{9.4cm}l@{}}
         \hline
@@ -29,25 +32,25 @@ and every experiment uses the initial condition of Equation~\eqref{eq:boussinesq
         \multicolumn{2}{@{}l}{\textit{Domain and initial condition}}\\
         Spatial half-length $L$ \; ($\Omega = [-L, L]$)       & $60$ \\
         Final time $T$ \; ($t \in [0, T]$)                    & $30$ \\
-        Initial wave amplitude $A$                            & $1$ \\
+        Initial amplitude $A$                                 & $1$ \\
         Initial condition                                     & $\eta(x,0) = \sech^2(x),\ u(x,0) = 0$ \\
         \hline
-        \multicolumn{2}{@{}l}{\textit{Discretization (dataset solve)}}\\
+        \multicolumn{2}{@{}l}{\textit{Dataset solve}}\\
         Spatial grid points $N_x$                             & $128$ \\
-        Time levels $N_t$ \; ($127$ RK4 steps)                & $128$ \\
+        Time levels ($127$ RK4 steps)                         & $128$ \\
         Spatial spacing $\Delta x = 2L / N_x$                 & $0.9375$ \\
-        Temporal spacing $\Delta t = T / (N_t - 1)$           & $\approx 0.2362$ \\
+        Temporal spacing $\Delta t = T / 127$                 & $\approx 0.2362$ \\
         \hline
         \multicolumn{2}{@{}l}{\textit{Parameter sampling}}\\
-        Coupled nonlinearity and dispersion                   & $\alpha = \beta$ \\
-        Number of training samples $M$                        & $20$ \\
+        Coupled coefficients                                  & $\alpha = \beta$ \\
+        Training samples $M$                                  & $20$ \\
         Sampling grid                                         & $\operatorname{linspace}(0.1,\, 4.0,\, 20)$ \\
         \hline
         \multicolumn{2}{@{}l}{\textit{Evaluation and reproducibility}}\\
-        Evaluation parameters $\alpha = \beta$                & $\{0.1,\, 3.21,\, 4.2\}$ \\
+        Evaluation values $\alpha = \beta$                    & $\{0.1,\, 3.21,\, 4.2\}$ \\
         Evaluation resolutions $N_x$                          & $\{128,\, 256,\, 512\}$ \\
-        Spectral evaluation resolution                        & $256$ \\
-        Global random seed                                    & $37$ \\
+        Spectral snapshot resolution                          & $256$ \\
+        Global seed                                           & $37$ \\
         \hline
     \end{tabular}
     \\[0.4em]
@@ -58,188 +61,169 @@ and every experiment uses the initial condition of Equation~\eqref{eq:boussinesq
 \section{The Parametric Dataset}
 \label{sec:m_dataset}
 
-The reference solutions serve two purposes. They are the supervised targets that the data-driven regimes learn from, and they are the ground truth against which every model is later scored. The pseudospectral Runge--Kutta solver of Section~\ref{sec:pseudospectral} produces them, and its spectral spatial accuracy is what a dispersive wave problem requires from a high-fidelity baseline \parencite{engsigkarup2012, trefethen2000}.
+The reference solutions do double duty. They are the supervised targets that the data-driven models learn from, and they are the ground truth against which every model is scored, working as a high-fidelity baseline in which the pseudospectral Runge--Kutta solver of Section~\ref{sec:pseudospectral} supplies it well, since we take domains big enough to consider the Boussinesq system \ref{eq:boussinesq} a periodic domain.
 
-The parameter family is one-dimensional by design. Following Section~\ref{sec:dataset}, we hold the initial condition fixed and vary only the PDE coefficients, tying them together as $\alpha = \beta$ so that the two-parameter Boussinesq family reduces to a single axis of difficulty. At the small end of that axis the dynamics stay close to linear and the solution energy occupies a handful of low modes; at the large end, steepening and dispersion sharpen the crests and spread their energy across a wider band of wavenumbers. We sample the axis uniformly at $M = 20$ points,
+We keep the parameter family one-dimensional on purpose. Following Section~\ref{sec:dataset}, the initial conditions are fixed and only the PDE coefficients vary, tied together as $\alpha = \beta$ so that the two-parameter Boussinesq family collapses onto a single dimesion of difficulty. For small values of the parameters, the dynamics stay close to linear. For larger values, nonlinearities bring richier behavior. We sample parameter-solutinon pairs uniformly at $M = 20$ points,
 \begin{equation}\label{eq:param_grid}
     \alpha_i = \beta_i \in \operatorname{linspace}(0.1,\, 4.0,\, 20), \qquad i = 1, \ldots, 20,
 \end{equation}
-from the near-linear value $0.1$ to the strongly nonlinear value $4.0$.
+running from the near-linear value $0.1$ to a more nonlinear regime at $4.0$.
 
-Each parameter in~\eqref{eq:param_grid} is passed to the solver on $N_x = 128$ spatial points and marched through $N_t = 128$ time levels, that is $127$ Runge--Kutta steps over $[0,T]$, with spacings
-\begin{equation}\label{eq:spacings}
+Each value in~\eqref{eq:param_grid} is handed to the solver on $N_x = 128$ spatial points and marched through $127$ Runge--Kutta steps over $[0, T]$, giving $128$ time levels. The grid spacings are
+\begin{equation}\label{eq:m_spacings}
     \Delta x = \frac{2L}{N_x} = \frac{120}{128} = 0.9375,
     \qquad
-    \Delta t = \frac{T}{N_t - 1} = \frac{30}{127} \approx 0.2362.
+    \Delta t = \frac{T}{127} = \frac{30}{127} \approx 0.2362.
 \end{equation}
-A solve returns the two space-time fields $\eta_i(x_j, t_n)$ and $u_i(x_j, t_n)$ on the $128 \times 128$ grid, which we collect into the dataset $\mathcal{S}$ of Equation~\eqref{eq:dataset}. We store the fields in the channel-first tensors that the two-dimensional operators expect, four channels in and two out:
-\begin{equation}\label{eq:tensor_shapes}
+A solve returns the two space-time fields $\eta_i(x_j, t_n)$ and $u_i(x_j, t_n)$ on the $128 \times 128$ grid, and we collect them into the solution dataset $\mathcal{S}$ of Equation~\eqref{eq:dataset}. The fields are stored as four channels in and two out, meaning we gather, for each sample, the iniital conditions $\eta_i(x_j, 0)$ and $u_i(x_j, 0) $ for each spatial point $x_j$, and the two coefficientes $\alpha_i$ and $\beta_i$, all in the spacetime grid:
+\begin{equation}\label{eq:m_tensors}
     X \in \mathbb{R}^{M \times 4 \times N_x \times N_t},
     \qquad
     Y \in \mathbb{R}^{M \times 2 \times N_x \times N_t}.
 \end{equation}
-The four input channels hold, at every grid point, the initial elevation $\eta_i(x_j, 0)$, the initial velocity $u_i(x_j, 0)$, and the two constant coefficient fields $\alpha_i$ and $\beta_i$, with the initial-condition channels broadcast along the time axis so that the operator receives a full space-time array. The two output channels hold the reference fields $\eta_i$ and $u_i$. From here on every panel reports the surface elevation $\eta$ alone, since it carries the wave structure of interest and the velocity field behaves the same way.
+The two output channels carry $\eta_i$ and $u_i$. 
 
-These channels mix quantities of unlike magnitude: an elevation of order one, a velocity field, and coefficients that span more than an order of magnitude. To place them on a common scale we map every tensor into the unit interval with one affine, channel-wise min--max transform computed once over the whole dataset,
-\begin{equation}\label{eq:minmax}
-    \tilde v = \frac{v - v_{\min}}{v_{\max} - v_{\min} + \varepsilon},
-    \qquad \varepsilon = 10^{-12},
+From now on the panels report only the surface elevation $\eta$, since it carries the wave structure we care about and the velocity field behaves the same way.
+
+Following standard practices of deep learning, we map every channel to a common scale with a single linear, channel-wise affine transform. The scale is fixed from quantities the problem already provides rather than from the reference solutions, so that a physics-only model borrows nothing from the dataset. The elevation and velocity channels, together with the initial-condition inputs that feed them, are scaled by the known initial amplitude $A$; the coefficient channels $\alpha$ and $\beta$ by the endpoints of the sampling range~\eqref{eq:param_grid}. Writing $[f_{\min}, f_{\max}]$ for the fixed envelope of channel $f$, namely $[-A, A]$ for the fields and $[\alpha_{\min}, \alpha_{\max}]$ for the coefficients,
+\begin{equation}\label{eq:m_minmax}
+    \tilde f = \frac{f - f_{\min}}{f_{\max} - f_{\min} + \varepsilon},
+    \qquad \varepsilon = 10^{-12}.
 \end{equation}
-where $v_{\min}$ and $v_{\max}$ are taken per channel across the sample, spatial, and temporal axes. Operators train and predict in this normalized space, and their outputs are returned to physical units by inverting~\eqref{eq:minmax} before any metric or residual is formed. This has one consequence for the physics-only regimes of Section~\ref{sec:m_pino}: because $v_{\min}$ and $v_{\max}$ are taken from the reference solutions, a model trained without a data-fitting term still inherits the output scale of the dataset through~\eqref{eq:minmax}. In this work ``no data'' therefore means no supervised residual on the interior fields; it does not mean full independence from the reference.
+The operators train and predict in this normalized space, and every prediction is sent back to physical units by inverting~\eqref{eq:m_minmax} before any metric or residual is formed. Because the constants are set from the initial amplitude and the sampling range, both of which the physics-only regimes of Section~\ref{sec:m_pino} already know, the transform carries no information about the reference solutions, and the no-data models remain data-free in the output scale as well.
 
 % ===============================================================
 \section{Error Metrics}
 \label{sec:m_metrics}
 
-A fair comparison requires that every model be measured against the same reference with the same metrics, so that a measured difference reflects the architecture rather than the measurement. Each method is scored against a freshly recomputed pseudospectral reference using the three quantities defined below. Three parameter values sample the difficulty axis,
-\begin{equation}\label{eq:eval_params}
+A comparison is only fair if every model is measured against the same reference and scales. Each method is scored against a freshly recomputed pseudospectral reference for three parameter values for \ref{eq:boussinesq},
+\begin{equation}\label{eq:m_eval_params}
     \alpha = \beta \in \{0.1,\; 3.21,\; 4.2\},
 \end{equation}
-one near-linear, one intermediate, and one strongly nonlinear. The intermediate value $3.21$ is our default whenever a single representative parameter is needed, and it is where the single-parameter PINNs of Section~\ref{sec:m_pinn} are trained. To probe the discretization invariance that operators are meant to enjoy, each trained operator is also queried, without retraining, on grids of resolution
-\begin{equation}\label{eq:eval_res}
+one near-linear and seen in the dataset, one intermediatly nonlinear and not seen in the dataset, and another even more nonlinear and outside the dataset. The middle value $3.21$ is our default whenever a single representative parameter is wanted, e.g MLPs and PINNs.
+
+To test the discretization invariance that operators are supposed to enjoy, each trained operator is queried without retraining on grids of resolution
+\begin{equation}\label{eq:m_eval_res}
     N_x \in \{128,\; 256,\; 512\},
 \end{equation}
-the training resolution together with two and four times finer. For each such query we resample the input channels of Section~\ref{sec:m_dataset} onto the finer grid and recompute the reference at the matching resolution.
+the training resolution and its two and four times refinements, chosen to also allow FFT \parencite{trefethen2000} implementations. For each query we resample the input channels of Section~\ref{sec:m_dataset} onto the finer grid and recompute the reference at the matching resolution.
 
-Let $\eta_{\text{true}}$ and $\eta_{\text{pred}}$ be the reference and predicted elevation on a common space-time grid. We report three complementary quantities.
+Let $\eta_{\text{true}}$ and $\eta_{\text{pred}}$ be the reference and predicted elevation on a shared space-time grid. We report three complementary numbers.
 
-\paragraph{Time-resolved relative error.} At each time level $t_n$ we form the spatial $L^2$ discrepancy and divide it by the norm of the reference at that instant,
-\begin{equation}\label{eq:rel_time}
-    \mathcal{E}(t_n) = \frac{\bigl\| \eta_{\text{pred}}(\cdot, t_n) - \eta_{\text{true}}(\cdot, t_n) \bigr\|_2}{\bigl\| \eta_{\text{true}}(\cdot, t_n) \bigr\|_2}.
+\paragraph{Time-resolved relative error} At each time level $t_n$ we take the spatial $L^2$ error and divide it by the norm of the reference at that instant,
+\begin{equation}\label{eq:m_rel_time}
+    \mathbb{E}(t_n) = \frac{\bigl\| \eta_{\text{pred}}(\cdot, t_n) - \eta_{\text{true}}(\cdot, t_n) \bigr\|_2}{\bigl\| \eta_{\text{true}}(\cdot, t_n) \bigr\|_2 + \varepsilon}, \qquad \varepsilon = 10^{-12}.
 \end{equation}
-Read against time, $\mathcal{E}(t_n)$ shows where along the trajectory the error accumulates, and its distribution over all time levels is summarized by a box plot. This is the quantity behind the parameter and resolution panels of Chapter~\ref{chap:results}.
+Read against time, $\mathbb{E}(t_n)$ shows where along the trajectory the error piles up, and its spread over all time levels is summarized by a box plot. This is the quantity behind the parameter and resolution panels of Chapter~\ref{chap:results}.
 
-\paragraph{Relative spectral error.} To identify \emph{which} spatial frequencies are wrong, we take the spatial real DFT at a fixed time and compare amplitudes mode by mode. Writing $\hat\eta(k, t_n)$ for the amplitude at wavenumber index $k$, the per-mode relative error is
-\begin{equation}\label{eq:rel_spec}
-    \mathcal{E}_{\text{spec}}(k, t_n) = \frac{\bigl| \, |\hat\eta_{\text{pred}}(k,t_n)| - |\hat\eta_{\text{true}}(k,t_n)| \, \bigr|}{\max\!\bigl(|\hat\eta_{\text{true}}(k,t_n)|,\, \delta\bigr)},
+\paragraph{Relative spectral error} To see which spatial frequencies are wrong, we take the spatial real DFT at a fixed time and compare amplitudes mode by mode. Writing $\hat\eta(k, t_n)$ for the amplitude at wavenumber index $k$, the per-mode error is
+\begin{equation}\label{eq:m_rel_spec}
+    \mathbb{E}_{\text{spec}}(k, t_n) = \frac{\bigl| \, |\hat\eta_{\text{pred}}(k,t_n)| - |\hat\eta_{\text{true}}(k,t_n)| \, \bigr|}{|\hat\eta_{\text{true}}(k,t_n)|}.
 \end{equation}
-where the floor $\delta = \max(\delta_r\,|\hat\eta_{\text{true}}|_{\max},\, \delta_m)$, with $\delta_r = 10^{-2}$ and $\delta_m = 10^{-3}$, keeps the ratio finite at modes whose reference amplitude is near zero. Averaging over the retained modes yields one spectral number per time level, and the spectral panels display both the mode-resolved curves at $t = 0$, $t = T/2$, and $t = T$ and the time evolution of the average.
 
-\paragraph{Frequency-band error during training.} To track how spectral bias forms as the optimizer runs, we split the spatial spectrum of the error into three contiguous wavenumber bands and log each band error every $500$ iterations. The tracked ratio differs slightly from~\eqref{eq:rel_spec}: here we apply the spatial real DFT to the \emph{error field} $\eta_{\text{pred}} - \eta_{\text{true}}$ and to the reference, average each amplitude over the time levels, and take the quotient,
-\begin{equation}\label{eq:band_err}
-    \mathcal{E}_{\text{band}}(k) = \frac{\big\langle\, \bigl|\widehat{(\eta_{\text{pred}} - \eta_{\text{true}})}(k, t_n)\bigr| \,\big\rangle_{t_n}}{\big\langle\, |\hat\eta_{\text{true}}(k, t_n)| \,\big\rangle_{t_n} + \varepsilon},
-    \qquad \varepsilon = 10^{-12}.
+\paragraph{Frequency-band error during training} To watch spectral bias form as the optimizer runs, we split the spatial spectrum into three bands and save each band error every $500$ optimizer iterations. The per-mode quantity is exactly the relative spectral error~\eqref{eq:m_rel_spec}, and the band error is its average over the time levels,
+\begin{equation}\label{eq:m_band_err}
+    \mathbb{E}_{\text{band}}(k) = \big\langle\, \mathbb{E}_{\text{spec}}(k, t_n) \,\big\rangle_{t_n},
 \end{equation}
-Transforming the error before taking magnitudes makes this metric sensitive to the phase of the error, rather than performing a mode-by-mode magnitude comparison. With $N_k = \lfloor N_x/2 \rfloor + 1$ the number of retained real-DFT modes, the low, mid, and high bands cut the index range into quarters,
-\begin{equation}\label{eq:bands}
+so the same metric drives the per-frequency spectra and the band-tracking curves. With $N_k = \lfloor N_x/2 \rfloor + 1$ retained real-DFT modes, the low, mid, and high bands cut the index range into quarters,
+\begin{equation}\label{eq:m_bands}
     k < \tfrac{N_k}{4}, \qquad \tfrac{N_k}{4} \le k < \tfrac{N_k}{2}, \qquad k \ge \tfrac{N_k}{2},
 \end{equation}
-which fall near $N_x/8$ and $N_x/4$ on the full grid. Each band error is the average of~\eqref{eq:band_err} over the modes in that band. These curves feed the band-tracking comparison of Chapter~\ref{chap:results}. One detail of the logging affects how the curves are read: each operator is tracked on the first dataset sample, $\alpha = \beta = 0.1$, while the single-parameter MLP and PINN are tracked on their own training solution at $\alpha = \beta = 3.21$. We keep this difference in reference sample in mind when reading the results.
+and each band error is the average of~\eqref{eq:m_band_err} over its modes. These curves feed the band-tracking comparison of Chapter~\ref{chap:results}. Every model is tracked against one common reference, the training solution at $\alpha = \beta = 3.21$: the pointwise MLP and PINN on their own solution at that value, and each operator on the dataset sample nearest it, so the bands are read at a single parameter across all six.
 
 % ===============================================================
 \section{The Six Models}
 \label{sec:m_ladder}
 
-The six trained models form a nested sequence over four architectures. Each keeps the machinery of the model before it and adds exactly one ingredient, so that a change in behaviour can be traced to that single addition. The first is a plain regressor that knows only the data. The second wraps the same network in the governing equation. The third lifts the problem from one solution to the whole family. The fourth adds the equation to that family-wide operator. Two of the four architectures, the PINN and the PINO, are run in two regimes each, with and without a supervised data term, which brings the total to six trained models. Proceeding in this order isolates, one addition at a time, what the physics term contributes, what operator learning contributes, and what the two contribute together.
+Four architectures give rise to six trained models, arranged along two axes. The first is the architecture family. The pointwise networks, the multilayer perceptron of Section~\ref{subsec:mlp} and the physics-informed network of Section~\ref{subsec:pinn}, represent one solution as a continuous map $(x,t) \mapsto (\eta, u)$ and are retrained for each parameter. The operator networks, the Fourier neural operator of Section~\ref{subsec:fno} and its physics-informed variant of Section~\ref{subsec:pino}, learn the whole parameter family~\eqref{eq:param_grid} at once and return a new parameter's solution in a single forward pass.
 
-% ---------------------------------------------------------------
-\subsection{MLP: A Data-Only Regressor}
-\label{sec:m_mlp}
-
-The first model is a Multilayer Perceptron that fits one solution from data alone. It is the fully connected network of Section~\ref{subsec:mlp}, mapping a space-time point to an elevation, $(x,t) \mapsto \eta_\theta(x,t)$, with two input units, one output unit, four hidden layers of $256$ neurons, and hyperbolic-tangent activations, for $198{,}401$ trainable parameters. The PINN of the next model reuses this same backbone, so any difference between them comes from the training signal and not the architecture.
-
-Training is pure supervised regression. The objective is the mean-squared error~\eqref{eq:data_loss_nn} between the network output and the pseudospectral reference at the fixed parameter $\alpha = \beta = 3.21$, on the training grid of resolution $128$. We optimize with Adam \parencite{kingma2014adam} at learning rate $10^{-3}$ for $15{,}000$ iterations, taking one full-batch gradient step over the entire reference field per iteration. This matches the PINN budget exactly.
-
-The value of this model lies in what its objective omits. It carries no PDE-residual term and no initial-condition term, so the equation~\eqref{eq:boussinesq} never enters and the network sees only data. This makes it the cleanest testbed for spectral bias in this work: with nothing competing against the data fit, the order in which the network resolves the spatial frequencies of the target is set by the fitting dynamics alone, with no confounders. We measure that order with the frequency-band error~\eqref{eq:band_err}--\eqref{eq:bands}, tracked on the network's own training solution at $\alpha = \beta = 3.21$, and connect it to the eigenvalue mechanism through the diagnostics of Section~\ref{sec:m_probe}.
-
-% ---------------------------------------------------------------
-\subsection{PINN: Adding the Equation}
-\label{sec:m_pinn}
-
-The second model keeps the feed-forward backbone and adds the Boussinesq residual to its loss. The PINN of Section~\ref{subsec:pinn} represents the solution as one continuous map $(x,t) \mapsto (\eta_\theta, u_\theta)$ and is therefore tied to a single parameter pair. Each network is fully connected with two input units, two output units, four hidden layers of $256$ neurons, and hyperbolic-tangent activations, for $198{,}658$ trainable parameters, and it is optimized with Adam \parencite{kingma2014adam} at learning rate $10^{-3}$ for $15{,}000$ iterations.
-
-The composite objective~\eqref{eq:pinn_loss_boussinesq} has three parts. The residual term is evaluated at $5{,}000$ interior collocation points resampled uniformly at random over $[-L,L] \times [0,T]$ at every iteration, and the derivatives entering the Boussinesq operators $\mathcal{D}_1, \mathcal{D}_2$ come from automatic differentiation, so they carry no discretization error. The initial-condition term is enforced at $500$ equispaced points at $t = 0$. The data term, when present, is a supervised mean-squared error against a subsample of the pseudospectral reference. That data term is the single ingredient we toggle, giving two regimes:
+The second axis is the training regime, that is, what the loss is allowed to see:
 \begin{itemize}
-    \item \textbf{PINN (no data)}: purely physics-informed, data weight $0$; the network sees only the equation and the initial condition.
-    \item \textbf{PINN (with data)}: hybrid, data weight $1$; the network additionally fits the reference at the training parameter.
+    \item Pure data fits the reference solutions with a supervised term alone and no equation. The data-only MLP and the FNO sit here.
+    \item Data and physics keeps that supervised term and adds the Boussinesq residual beside it. The PINN and the PINO with data sit here.
+    \item Pure physics switches the supervised term off, leaving the equation residual and the initial condition to drive the network. The PINN and the PINO without data sit here.
 \end{itemize}
-Both regimes train at $\alpha = \beta = 3.21$, the intermediate difficulty of~\eqref{eq:eval_params}, chosen in the nonlinear range where spectral bias is expected to be most visible \parencite{wang2024, zheng2023}. Placing the two regimes side by side isolates the effect of the physics term with the architecture and the budget held fixed.
+The MLP and the FNO carry no residual, so each family contributes a single pure-data model; the PINN and the PINO carry a residual whose data weight can be set on or off, so each contributes one data-and-physics and one pure-physics model. Crossing the two families with the three regimes therefore fills a $2 \times 3$ grid, the six models collected in Table~\ref{tab:m_config}.
 
-% ---------------------------------------------------------------
-\subsection{FNO: Learning the Operator}
-\label{sec:m_fno}
-
-The third model changes the target of learning. Instead of one solution, the Fourier Neural Operator learns the map from parameter to solution for the entire family~\eqref{eq:param_grid} in a single training, so that a new $\alpha = \beta$ then costs one forward pass rather than a fresh optimization. Its architecture is the general operator of Section~\ref{subsec:fno}: a pointwise lifting takes the six input features at each grid point, the four channels of~\eqref{eq:tensor_shapes} together with the two normalized grid coordinates, up to a channel width of $32$; four Fourier layers each combine a spectral convolution truncated to $16$ modes per axis with a local $1\times 1$ convolution and a GELU activation; and a pointwise projection returns the two output channels. This gives $2{,}106{,}146$ trainable parameters, an order of magnitude above the pointwise models. Training minimizes the supervised mean-squared error~\eqref{eq:fno_loss} on the normalized fields with Adam at learning rate $10^{-3}$ for $15{,}000$ iterations; with only $M = 20$ samples, each iteration is effectively a full-batch step.
-
-One implementation choice drives a result in Chapter~\ref{chap:results}. Each Fourier layer applies a two-dimensional real DFT over the last two axes of the feature array, which are the spatial \emph{and the temporal} axes. The operator therefore treats time as a second periodic spectral dimension and emits the whole space-time solution in one pass. This keeps the architecture uniform, but it carries over the periodicity assumption discussed in Section~\ref{subsubsec:fno_time}: the Boussinesq solution is not periodic in time, so the implicit wrap-around at $t = T$ excites the Gibbs phenomenon \parencite{gibbs1899}. This boundary artifact is measurable, and it later distinguishes the FNO from its physics-informed successor.
-
-% ---------------------------------------------------------------
-\subsection{PINO: Physics on the Operator}
-\label{sec:m_pino}
-
-The fourth model adds the equation to the operator, combining the two previous additions. The Physics-Informed Neural Operator keeps the FNO backbone of Section~\ref{sec:m_fno} unchanged and modifies only the objective, appending the Boussinesq residual~\eqref{eq:pino_loss} to the data loss. Evaluating that residual means differentiating the predicted space-time array, and, following the reference implementation \parencite{li2023pino_code}, we treat the two directions differently.
-
-Spatial derivatives are taken pseudospectrally with the wavenumbers $\xi_k$ of~\eqref{eq:xi_def}: we multiply the spatial DFT of the predicted field by $i\xi_k$ for the first derivative and by $-\xi_k^2$ for the second, then transform back. Temporal derivatives are taken by finite differences on the grid, second-order central in the interior and first-order one-sided at the two temporal boundaries. The mixed term $u_{xxt}$ is formed by taking the spatial second derivative spectrally and then applying the temporal stencil. The residual is assembled in \emph{physical} units: the normalized output and coefficients are mapped back through the inverse of~\eqref{eq:minmax} before the derivatives are formed, so the constraint enforces the true Boussinesq balance rather than a rescaled surrogate.
-
-The residual differs from the data term in one further respect. The supervised loss is evaluated on the native $128 \times 128$ training grid, but the physics residual is evaluated on a finer $256 \times 256$ grid, onto which the predicted field is spectrally interpolated before the derivatives are formed. A denser residual grid places a stricter, better-resolved constraint on the high-wavenumber content, at the cost of extra transforms per iteration, and it means the physics term already sees resolution $256$ during training, a fact we return to when reading the zero-shot resolution behaviour in Chapter~\ref{chap:results}. The objective is the weighted sum
-\begin{equation}\label{eq:met_pino_loss}
-    \mathcal{L}_{\text{PINO}} = \lambda_{\text{pde}}\, \mathcal{L}_{\text{pde}} + \lambda_{\text{ic}}\, \mathcal{L}_{\text{ic}} + \lambda_{\text{data}}\, \mathcal{L}_{\text{data}},
-\end{equation}
-with the interior residual, the initial-condition term, and the supervised term of~\eqref{eq:pino_loss}. We weight the physics residual well above the other two, $\lambda_{\text{pde}} = 100$ against $\lambda_{\text{ic}} = 1$, so that the equation constraint leads the optimization; this emphasis was needed for the residual to leave a visible mark against the operator's strong pull toward the data. As with the PINN, the data weight is the single toggle:
-\begin{itemize}
-    \item \textbf{PINO (with data)}: $\lambda_{\text{pde}} = 100$, $\lambda_{\text{ic}} = \lambda_{\text{data}} = 1$; physics and data act together, the residual dominating the objective and the data term anchoring the solution to the reference.
-    \item \textbf{PINO (no data)}: $\lambda_{\text{pde}} = 100$, $\lambda_{\text{ic}} = 1$, $\lambda_{\text{data}} = 0$; the operator is guided by the equation and the initial condition only, subject to the normalization caveat of Section~\ref{sec:m_dataset}.
-\end{itemize}
-Optimization is again Adam at learning rate $10^{-3}$ for $15{,}000$ iterations, and every remaining hyperparameter matches the FNO, so that a change in behaviour can be traced to the physics term alone.
+Reading across the grid isolates what each ingredient contributes. Within a family, pure data against data and physics measures what the residual adds when the data are present, and data and physics against pure physics measures how far the equation alone carries the network once the data are removed. Across families at a fixed regime, the operator against the pointwise model measures what operator learning contributes. Every model draws on the same dataset of Section~\ref{sec:m_dataset} and is scored by the same metrics of Section~\ref{sec:m_metrics}, so a difference in behaviour traces to the family and the regime rather than to the setup.
 
 % ===============================================================
-\section{Two Probes of the Spectral-Bias Mechanism}
+\section{Probing the Spectral-Bias Mechanism}
 \label{sec:m_probe}
 
-Every model shares one behaviour, the spectral bias derived in Section~\ref{subsec:spectral_bias}, and its cause deserves direct examination rather than inference from the training curves. We examine it with two probes of the same mechanism. The first inspects the Neural Tangent Kernel of a real Boussinesq PINN and asks whether the theory's assumptions hold there. The second builds a controlled model in which those assumptions hold exactly, so that the theory's quantitative predictions can be checked with nothing approximated. Together they connect the abstract eigenvalue analysis to the behaviour measured on the full architectures.
+In some level, all models share some spectral bias derived in Section~\ref{subsec:spectral_bias}. We examine it on the simplest object this work can offer, and we keep it on the Boussinesq system: a simple multilayer perceptron from $\mathbb{R}$ to $\mathbb{R}$ that learns one elevation profile $\eta$ at fixed time $t=15$, the with solution coming from pseudospectral again at intermediate parameter $\alpha = \beta = 3.21$,
+\begin{equation}\label{eq:m_probe_target}
+    x \longmapsto \eta_\theta(x) \approx \eta(x,\, 15), \qquad x \in [-L, L].
+\end{equation}
+One input, one output, one field, one instant. Nothing is introduced that the rest of the work does not already use: no auxiliary equation, no synthetic target, no second architecture. Serving as a proof of concept of the theory that Section~\ref{subsec:spectral_bias} speaks of, a target function sampled on a regular periodic grid and fit by gradient descent.
 
-\subsection{The Kernel of a Real PINN}
+Two choices deserve a word. Fixing the time removes the temporal axis from the problem, so the Fourier analysis of the error is a plain spatial transform on the $N_x = 128$ grid and the wavenumbers of the theory are the wavenumbers of the figure, with no averaging in between. The instant $t = 15$ sits at the middle of the horizon.
+
+\subsection{The Probe Setting}
+\label{sec:m_probe_setting}
+
+We train three networks, at widths $N_{\mathrm{MLP}} \in \{8, 64, 512\}$, each with four hidden layers, hyperbolic-tangent activations, one input, one output, and the spatial coordinate mapped to $[-1,1]$, before the forward pass. Every figure in this section comes from those same three runs.
+
+Because the target lives on a single grid of $N_x = 128$ points, the Jacobian $J \in \mathbb{R}^{N_x \times N_\theta}$ is cheap enough to assemble explicitly, one backward pass per grid point, at every width including the widest. That matters, because the empirical kernel
+\begin{equation}\label{eq:m_probe_kernel}
+    K_0 = J_0 J_0^{\mathsf{T}} = V \Lambda V^{\mathsf{T}}
+\end{equation}
+has to be eigendecomposed, not merely applied, and it is only $128 \times 128$. It is also cheap enough to rebuild the kernel during training, which allow us to see how much it drifts from the initial state. Every run is carried out in double precision so the small eigenvalues survive the decomposition. The three widths are trained with the same learning rate, a fixed fraction of the stability bound of Section~\ref{subsec:spectral_bias}, and for the same number of iterations, aiming fair comparisions.
+
+Training is full-batch gradient descent on the sum-of-squares loss $\tfrac{1}{2}\|e\|^2$, so that a single step is exactly
+\begin{equation}\label{eq:m_theory_step}
+    \theta \leftarrow \theta - \mu\, J^{\mathsf{T}} e,
+\end{equation}
+the update behind~\eqref{eq:error_discrete_step}, with $e = \eta_\theta - \eta_{\text{true}}$ measured on the grid. The learning rate is fixed to the same fraction of each width's stability bound, $\mu = 0.2\,(2/\lambda_{\max}) = 0.4/\lambda_{\max}$, with $\lambda_{\max}$ the largest eigenvalue of $K_0$ at that width. Anchoring $\mu$ to the bound $\mu < 2/\lambda_{\max}$ of Section~\ref{subsec:spectral_bias} rather than to a randomly chosen value keeps the three widths comparable too. We iterate $500{,}000$ times.
+
+One caveat has to be explained, the MLP is nonlinear in its parameters, so its Jacobian is not constant: $J$ drifts away from $J_0$ as training proceeds, and the initial-kernel prediction $e^{(n)} = (I - \mu K_0)^n e_0$ of~\eqref{eq:error_discrete} is an approximation here, coming from the gradient descent/forward euler discretization of the gradient flow \ref{eq:error_linear_ode}.
+
+Therefore, we analyse the three predictions and compare them against the initial-kernel predictions of Section~\ref{subsec:spectral_bias}.
+\begin{itemize}
+    \item Error decay $e(\tau)$. We project the measured error onto each eigenvector $v_k$ of $K_0$, giving $c_k^{(n)} = v_k^{\mathsf{T}} e^{(n)}$, and compare its amplitude against the predicted $|c_k(0)|\,|1 - \mu\lambda_k|^n$ of~\eqref{eq:error_discrete}. Because the decay times $1/(\mu\lambda_k)$ span several decades, the tracked eigendirections are chosen to spread over the timescales the run can resolve, and the iteration axis is logarithmic.
+    \item Spectral decay $\hat e(\tau)$. We take the real DFT of the error profile at each iteration, giving one amplitude per wavenumber, and compare the measured decay against the prediction of~\eqref{eq:fourier_evolution}. The wavenumbers are fixed at physical values, so the panel reads the frequency principle literally.
+    \item Per-mode iteration count $n_k$. For each eigendirection we record the iteration at which $|c_k^{(n)}|$ first drops below a precision $\varepsilon$ and compare it against the discrete crossing time $n_k = \lceil \ln(|c_k(0)|/\varepsilon)/(-\ln|1-\mu\lambda_k|)\rceil$ of~\eqref{eq:iteration_bound_discrete}, the exact step at which the geometric law $|1-\mu\lambda_k|^n$ of~\eqref{eq:error_discrete} falls below $\varepsilon$. Using this discrete count rather than its continuous small-step limit~\eqref{eq:iteration_count} keeps the panel on the same $(1-\mu\lambda_k)^n$ law as the decay curves, so a departure from the diagonal reflects kernel drift rather than the truncation of the exponential. We set $\varepsilon = 0.05\,\max_k |c_k(0)|$, a fraction of the largest initial coefficient rather than an absolute number, so the threshold scales with the amplitude of $\eta$ instead of with the units it is measured in. The closed form carries no width, so the three networks should fall on one diagonal; both axes are logarithmic, since the counts span decades.
+\end{itemize}
+The first two panels are drawn at the widest network, where the initial-kernel picture has the best claim to hold; the third collects all three widths.
+
+\subsection{Kernel Drift and the Eigenvalue Spectrum}
 \label{sec:m_probe_ntk}
 
-The first probe inspects the Neural Tangent Kernel of the PINN residual directly. We train three networks of increasing width, $N_{\mathrm{MLP}} \in \{8, 128, 512\}$ with four hidden layers, at $\alpha = \beta = 3.21$ on the physics-only objective, using stochastic gradient descent with a small learning rate ($10^{-5}$), the regime in which the frozen-kernel approximation~\eqref{eq:error_linear_ode} is expected to hold. The empirical kernel $K = J J^{\mathsf{T}}$ is built explicitly at a fixed set of $40$ probe points: automatic differentiation supplies the parameter gradient of each Boussinesq residual, and their Gram matrix~\eqref{eq:ntk_entry} is the kernel. Every $500$ iterations we log three quantities: the relative parameter drift $\|\theta - \theta_0\| / \|\theta_0\|$, the relative kernel drift $\|K - K_0\| / \|K_0\|$, and the eigenvalue spectrum of $K$ at initialization and at the end of training. The first two ask whether the kernel stays fixed, as lazy training assumes; the third exposes the eigenvalue disparity that~\eqref{eq:training_time} identifies as the cause of spectral bias.
+The predictions above assume the kernel stays put, and we measure that during the very runs whose predictions we are testing. We log the relative parameter drift $\|\theta - \theta_0\| / \|\theta_0\|$ and the relative kernel drift $\|K - K_0\| / \|K_0\|$; the eigenvalue spectrum of $K$ is recorded at initialization and again at the end of training.
 
-\subsection{A Toy Model Where the Theory Is Exact}
-\label{sec:m_probe_theory}
-
-The kernel probe can only check whether the theory's assumptions nearly hold, because a real network freezes its kernel only approximately. The second probe removes that gap. We build a small model in which the frozen-kernel dynamics of Section~\ref{subsec:spectral_bias} hold exactly, so that the predicted error decay, spectral decay, and per-mode iteration counts can be compared against measurement with nothing left to interpretation.
-
-The construction is a Fourier-feature model, linear in its trainable parameters, fit to a periodic target on a regular grid. We sample a periodic target on $N$ equispaced points and map each point through a fixed bank of Fourier features, sines and cosines at a range of wavenumbers; the only trainable parameters are the weights of a single linear layer on top of those features. Because the output is linear in those weights, the error Jacobian $J$ does not depend on the parameters: it equals its initial value $J_0$ for the whole run, and the empirical kernel $K_0 = J_0 J_0^{\mathsf{T}}$ is genuinely constant rather than slowly drifting. Lazy training is then a property of the model by construction, not an approximation.
-
-We train the model by full-batch gradient descent on the mean-squared error, so a single step is exactly
-\begin{equation}\label{eq:theory_step}
-    \theta \leftarrow \theta - \mu\, J_0^{\mathsf{T}} e,
-\end{equation}
-the linearized update~\eqref{eq:error_discrete_step} with no higher-order correction. We set the learning rate to $\mu = 1/\lambda_{\max}$, with $\lambda_{\max}$ the largest eigenvalue of $K_0$, which sits inside the stability bound $\mu < 2/\lambda_{\max}$ of Section~\ref{subsec:spectral_bias}, so every eigendirection contracts monotonically. Under these choices the error obeys $e^{(n)} = (I - \mu K_0)^n e_0$ of Equation~\eqref{eq:error_discrete} exactly, and the three predictions of the theory become testable one at a time:
-\begin{itemize}
-    \item \textbf{Error decay $e(\tau)$.} We project the measured error onto each eigenvector $v_k$ of $K_0$ and compare the amplitude against the predicted $(1 - \mu\lambda_k)^n$ of~\eqref{eq:error_discrete}, following each eigendirection down to the float64 floor.
-    \item \textbf{Spectral decay $\hat e(\tau)$.} We take the discrete Fourier transform of the error and compare the measured per-mode amplitude against the predicted decay of~\eqref{eq:fourier_evolution}, checking that low wavenumbers resolve first and high wavenumbers last.
-    \item \textbf{Per-mode iteration count $n_k$.} For each mode we record the iteration at which its amplitude first drops below a target precision $\varepsilon$ and compare it against the closed-form estimate $n_k = \lceil \ln(|c_k(0)|/\varepsilon)/(\mu\lambda_k)\rceil$ of~\eqref{eq:iteration_count}.
-\end{itemize}
-These predictions open the results of Chapter~\ref{chap:results}, where they anchor the reading of the spectral-bias curves measured on the full models.
+The first two ask whether the kernel stays put, as lazy training assumes, and whether it does so more convincingly as the network widens, which is what the initial-kernel approximation~\eqref{eq:error_linear_ode} predicts. The third exposes the eigenvalue disparity that~\eqref{eq:training_time} names as the cause of spectral bias. Together with the three checks of Section~\ref{sec:m_probe_setting}, these curves open the results of Chapter~\ref{chap:results}, where they anchor the reading of the spectral-bias curves measured on the full models.
 
 % ===============================================================
 \section{Configuration Summary}
 \label{sec:m_config}
 
-Table~\ref{tab:hyperparams} gathers the configuration of every experiment in one place. The four learned architectures were trained under a common budget, $15{,}000$ iterations and, for the Adam-optimized models, learning rate $10^{-3}$, so that the comparison of Chapter~\ref{chap:results} reflects the architecture and the training regime rather than the effort spent on optimization.
+Table~\ref{tab:m_config} gathers the configuration of every experiment. The four learned architectures share a common budget, $15{,}000$ iterations and, for the Adam-optimized models, learning rate $10^{-3}$, so the comparison of Chapter~\ref{chap:results} reflects the architecture and the training regime rather than the effort spent on tuning. The last row reports the measured training wall-clock on the hardware of Section~\ref{sec:m_setup}, which is indicative and depends on the GPU used.
 
 \begin{table}[htbp]
     \centering
-    \caption{Configuration of the four training architectures and the NTK diagnostic. The FNO and PINO share the same operator backbone and therefore the same parameter count; the MLP and PINN share the same feed-forward backbone and are single-parameter models. All Adam-trained models use $15{,}000$ iterations.}
-    \label{tab:hyperparams}
-    \small
+    \caption{Configuration of the four training architectures and of the spectral-bias probe. The FNO and PINO share the operator backbone and its parameter count; the MLP and PINN share the feed-forward backbone and are single-parameter models. All Adam-trained models use $15{,}000$ iterations. The probe is a separate, deliberately minimal network, $\mathbb{R} \to \mathbb{R}$ on the single profile $\eta(x, 15)$, trained once per width.}
+    \label{tab:m_config}
+    \footnotesize
     \setlength{\tabcolsep}{4pt}
-    \begin{tabular}{lcccccc}
+    \begin{tabular}{lccccc}
         \hline
-        \textbf{Setting} & \textbf{MLP} & \textbf{PINN} & \textbf{FNO} & \textbf{PINO} & \textbf{NTK probe} \\
+        \textbf{Setting} & \textbf{MLP} & \textbf{PINN} & \textbf{FNO} & \textbf{PINO} & \textbf{Bias probe} \\
         \hline
-        Trainable parameters      & $198{,}401$ & $198{,}658$ & $2{,}106{,}146$ & $2{,}106{,}146$ & $8/128/512$ width \\
+        Input $\to$ output        & $\mathbb{R}^2 \to \mathbb{R}$ & $\mathbb{R}^2 \to \mathbb{R}^2$ & operator & operator & $\mathbb{R} \to \mathbb{R}$ \\
+        Trainable parameters      & $198{,}401$ & $198{,}658$ & $2{,}106{,}146$ & $2{,}106{,}146$ & by width \\
         Hidden layers             & $4$         & $4$         & $4$ Fourier     & $4$ Fourier     & $4$ \\
-        Width / channels          & $256$       & $256$       & $32$            & $32$            & $8,128,512$ \\
+        Width / channels          & $256$       & $256$       & $32$            & $32$            & $8, 64, 512$ \\
         Fourier modes (per axis)  & ---         & ---         & $16$            & $16$            & --- \\
-        Optimizer                 & Adam        & Adam        & Adam            & Adam            & SGD \\
-        Learning rate             & $10^{-3}$   & $10^{-3}$   & $10^{-3}$       & $10^{-3}$       & $10^{-5}$ \\
-        Iterations                & $15{,}000$  & $15{,}000$  & $15{,}000$      & $15{,}000$      & $15{,}000$ \\
+        Optimizer                 & Adam        & Adam        & Adam            & Adam            & GD \\
+        Learning rate             & $10^{-3}$   & $10^{-3}$   & $10^{-3}$       & $10^{-3}$       & $0.4/\lambda_{\max}$ \\
+        Iterations                & $15{,}000$  & $15{,}000$  & $15{,}000$      & $15{,}000$      & $500{,}000$ \\
         Parameters trained        & single ($3.21$) & single ($3.21$) & all $20$    & all $20$        & single ($3.21$) \\
-        Collocation / batch       & full batch  & $5{,}000$ pts & full batch     & full batch     & $40$ probe pts \\
-        Loss weights $\lambda_{\text{pde}}/\lambda_{\text{ic}}/\lambda_{\text{data}}$ & $-/-/1$ & $1/1/\{1,0\}$ & $-/-/1$ & $100/1/\{1,0\}$ & $1/1/0$ \\
-        Physics-residual grid     & ---         & $5{,}000$ pts & ---            & $256 \times 256$ & $40$ pts \\
-        Data regimes              & data only   & with / without & supervised   & with / without & physics only \\
+        Collocation / batch       & full batch  & $5{,}000$ pts & batch $256$    & batch $256$    & $128$ pts (full) \\
+        Loss weights pde/ic/data  & $-/-/1$     & $1/1/\{1,0\}$ & $-/-/1$        & $100/1/\{1,0\}$  & $-/-/1$ \\
+        Physics-residual grid     & ---         & $5{,}000$ pts & ---            & $256 \times 256$ & --- \\
+        Target                    & $\eta(x,t)$ & $\eta, u$     & family         & family           & $\eta(x, 15)$ \\
+        Data regimes              & data only   & with / without & supervised   & with / without & data only \\
+        Training wall-clock       & $\approx 143$\,s & $\approx 880$\,s & $\approx 1104$\,s & $\approx 4200$--$5200$\,s & --- \\
         \hline
     \end{tabular}
     \\[0.4em]

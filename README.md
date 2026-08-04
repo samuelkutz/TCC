@@ -67,7 +67,7 @@ Reference solutions are produced by a **pseudospectral solver** (Fourier transfo
 | **PINO** | [`src/PINO/PINO.py`](src/PINO/PINO.py) | with / without data | Same operator backbone as the FNO, plus the Boussinesq residual in the loss. |
 | **PINN** | [`src/PINN/PINN.py`](src/PINN/PINN.py) | with / without data | Continuous map `(x,t) → (η,u)` trained on the PDE residual via automatic differentiation. |
 
-The FNO and PINO share the same spectral backbone, so any difference in behaviour isolates the effect of the physics term. The PINN is a single-parameter model, whereas the operators cover the whole parameter family from one training. A **Neural Tangent Kernel (NTK)** diagnostic probes the spectral-bias mechanism directly on the PINN residual.
+The FNO and PINO share the same spectral backbone, so any difference in behaviour isolates the effect of the physics term. The PINN is a single-parameter model, whereas the operators cover the whole parameter family from one training. A **Neural Tangent Kernel (NTK)** probe ([`src/experiments/spectral_bias_ntk.py`](src/experiments/spectral_bias_ntk.py)) examines the spectral-bias mechanism on the data-only MLP fitting `η` of the same Boussinesq solution at `α = β = 3.21`: it measures the frozen-kernel predictions (per-eigendirection decay, per-mode spectral decay, closed-form iteration counts) and, across widths `8/128/512`, the parameter and kernel drift together with the NTK eigenvalue spectrum.
 
 ## Repository structure
 
@@ -107,7 +107,7 @@ Reference hardware: a single **NVIDIA GeForce GTX 1660 SUPER** (6 GB). A CPU-onl
 
 ## Reproducing the results
 
-Every experiment is driven by [`src/settings.json`](src/settings.json) and a single fixed global seed (`37`), with cuDNN set to deterministic mode. The full pipeline — generate the shared dataset, train all five models (FNO; PINO with/without data; PINN with/without data), run the NTK diagnostic, and render every evaluation figure — is reproduced by one command:
+Every experiment is driven by [`src/settings.json`](src/settings.json) and a single fixed global seed (`37`), with cuDNN set to deterministic mode. The full pipeline — generate the shared dataset, train all five models (FNO; PINO with/without data; PINN with/without data), run the NTK spectral-bias probe, and render every evaluation figure — is reproduced by one command:
 
 ```bash
 python src/main.py

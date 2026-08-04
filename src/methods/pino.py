@@ -5,13 +5,7 @@ from tools import unnormalize_tensor
 
 
 class PINO2d(FNO2d):
-    """physics-informed neural operator with an fno backbone.
-
-    references:
-    - li et al., 2021, fourier neural operator for parametric pdes.
-    - li et al., 2023, physics-informed neural operator for learning pdes.
-    - neuraloperator repository: https://github.com/neuraloperator/neuraloperator
-    """
+    """FNO backbone with a configurable output width (Li et al., 2023)."""
     def __init__(self, modes1, modes2, width, out_channels):
         super(PINO2d, self).__init__(modes1=modes1, modes2=modes2, width=width)
         self.out_channels = out_channels
@@ -24,10 +18,9 @@ class PINO2d(FNO2d):
 
 
 def spectral_spatial_derivatives(u, dx):
-    """compute spatial derivatives via fft using forward normalization.
+    """u_x = ifft(i kx fft(u)) and u_xx = ifft(-kx^2 fft(u)) along the space axis (-2).
 
-    dx is spatial spacing, kx = 2*pi*fftfreq
-    ux = ifft(i*kx*fft(u)), uxx = ifft(-kx^2*fft(u))
+    Both are returned with the channel axis restored: (B, 1, Nx, Nt).
     """
     if u.ndim == 4 and u.shape[1] == 1:
         u = u[:, 0, :, :]
@@ -43,7 +36,7 @@ def spectral_spatial_derivatives(u, dx):
 
 
 def finite_time_derivative(u, dt):
-    # central differences in interior, one-sided at boundaries; second-order accuracy
+    """d/dt along the last axis: central in the interior, one-sided at the ends."""
     if u.ndim == 4 and u.shape[1] == 1:
         u = u[:, 0, :, :]
 
@@ -56,8 +49,8 @@ def finite_time_derivative(u, dt):
 
 
 def _dealias_23_space(field):
-    """zero the top 1/3 of spatial modes (Orszag 2/3 rule) of a quadratic product,
-    so the aliasing error of the nonlinear terms does not pollute the residual."""
+    """Orszag 2/3 rule: zero the top third of spatial modes of a quadratic product,
+    so aliasing from the nonlinear terms does not pollute the residual."""
     Nx = field.shape[-2]
     k_cut = Nx // 3
     field_ft = torch.fft.fft(field, dim=-2)
@@ -71,9 +64,10 @@ def _dealias_23_space(field):
 
 
 def _fourier_interp_space(field, n_target):
-    """band-limited (spectral) interpolation of a field along the space axis (-2)
-    from its current resolution to n_target. Exact for band-limited inputs, so the
-    smooth initial profiles resample onto a finer grid without interpolation error."""
+    """Spectral interpolation along the space axis (-2) to n_target points.
+
+    Exact for band-limited inputs, so the smooth initial profiles resample without
+    interpolation error."""
     n_src = field.shape[-2]
     if n_target == n_src:
         return field
@@ -87,10 +81,10 @@ def _fourier_interp_space(field, n_target):
 
 
 def build_finer_input(batch_x, phys_nx, phys_nt):
-    """rebuild the operator input on a finer (phys_nx, phys_nt) grid for zero-shot
-    physics. The input channels are [eta0 tiled, u0 tiled, alpha, beta], all constant
-    in time; only the two space profiles are resampled (spectrally), so nothing is
-    upsampled from a coarse *solution* -- the input is reconstructed exactly."""
+    """Rebuild the operator input on a finer (phys_nx, phys_nt) grid.
+
+    Only the two space profiles are resampled spectrally; alpha and beta are
+    constant. Nothing is upsampled from a coarse solution."""
     B = batch_x.shape[0]
     eta0 = _fourier_interp_space(batch_x[:, 0:1, :, 0:1], phys_nx)  # (B,1,phys_nx,1)
     u0 = _fourier_interp_space(batch_x[:, 1:2, :, 0:1], phys_nx)
@@ -104,14 +98,13 @@ def build_finer_input(batch_x, phys_nx, phys_nt):
 
 
 def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta, dealias=False):
-    """compute boussinesq continuity and momentum residuals.
+    """Continuity and momentum residuals:
 
-    res_eq_1 = eta_t + u_x + alpha*partial_x(eta*u)
-    res_eq_2 = u_t - (beta/3)*u_xxt + eta_x + alpha*0.5*partial_x(u^2)
+        res_1 = eta_t + u_x + alpha (eta u)_x
+        res_2 = u_t - (beta/3) u_xxt + eta_x + alpha (u^2)_x / 2
 
-    The momentum nonlinearity uses the conservative form 0.5*(u^2)_x (matching the
-    pseudospectral solver's flux), and the quadratic products are optionally 2/3
-    dealiased so the discrete residual of the true solution stays small.
+    The momentum nonlinearity is in conservative form, matching the flux used by
+    the pseudospectral solver.
     """
     eta_x, _ = spectral_spatial_derivatives(eta, dx)
     u_x, u_xx = spectral_spatial_derivatives(u, dx)
@@ -146,11 +139,13 @@ def _unnorm_channel(t, norm_stats, key_min, key_max, ch):
 def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
               phys_weight=1.0, ic_weight=1.0, data_weight=0.01,
               x_limit=None, t_limit=None, phys_nx=None, phys_nt=None, dealias=False):
-    """PINO objective. The supervised term is evaluated on the training grid, while
-    the PDE and initial-condition terms can be evaluated zero-shot on a finer
-    (phys_nx, phys_nt) grid, where the discrete residual of the true solution is far
-    smaller (less aliasing) so the physics constraint is cleaner. Set phys_nx/phys_nt
-    to None to keep physics on the training grid."""
+    """PINO objective; returns (loss, loss_pde, loss_ic, loss_data).
+
+    The supervised term uses the training grid. The PDE and initial-condition terms
+    may be evaluated zero-shot on a finer (phys_nx, phys_nt) grid, where the
+    discrete residual of the true solution is smaller because of less aliasing.
+    Pass phys_nx/phys_nt as None to keep the physics on the training grid.
+    """
     nx, nt = batch_x.shape[2], batch_x.shape[3]
     use_finer = (phys_nx is not None and phys_nt is not None
                  and (phys_nx != nx or phys_nt != nt))
@@ -187,7 +182,8 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
     alpha = _unnorm_channel(src_x[:, 2:3], norm_stats, 'input_min', 'input_max', 2)
     beta = _unnorm_channel(src_x[:, 3:4], norm_stats, 'input_min', 'input_max', 3)
 
-    # pde residual is computed in physical units for physics-consistent constraints.
+    # residual in physical units, so the constraint is the true balance and not a
+    # rescaled surrogate
     res_eq_1, res_eq_2 = pde_residual_boussinesq(eta_p, u_p, phys_dx, phys_dt, alpha, beta, dealias=dealias)
     loss_pde = torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2)
 
@@ -195,6 +191,5 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
     u0_phys = _unnorm_channel(src_x[:, 1:2, :, 0:1], norm_stats, 'input_min', 'input_max', 1)
     loss_ic = torch.mean((u_p[:, :, :, 0:1] - u0_phys) ** 2 + (eta_p[:, :, :, 0:1] - eta0_phys) ** 2)
 
-    # weighted objective follows the standard pino decomposition (physics + ic + data).
     loss = phys_weight * loss_pde + ic_weight * loss_ic + data_weight * loss_data
     return loss, loss_pde, loss_ic, loss_data

@@ -21,7 +21,7 @@ We note that $u u_x = \frac{1}{2}(u^2)_x$, so the momentum equation in~\eqref{eq
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=\textwidth]{soliton_profile.png}
+    \includegraphics[width=\textwidth]{setup/soliton_profile.png}
     \caption{Initial condition $\eta(x,0) = A\operatorname{sech}^2(x)$ for $A = 1$.}
     \label{fig:soliton_profile}
     \autoriapropria
@@ -391,7 +391,7 @@ Written component-wise, the $i$-th row of this system is
 \end{equation}
 where $K_0^{ij} = \nabla_{\theta_0} e_i^T\,\nabla_{\theta_0} e_j$ is the inner product, at initialization, of the parameter gradients of the network output at training points $x_i$ and $x_j$. The rate of change of the error at point $i$ is therefore a weighted sum of all current errors, with weights given by these pairwise kernel values. This coupling is what makes the geometry of the sample grid and the architecture of the network jointly determine the convergence of every component.
 
-Since $K_0 \in \mathbb{R}^{N \times N}$ is symmetric and positive semi-definite, the spectral theorem guarantees a decomposition
+Since $K_0 \in \mathbb{R}^{N \times N}$ is symmetric and positive semi-definite, the spectral theorem for symmetric matrices \parencite{strang2006, golub2013} guarantees a decomposition
 \begin{equation}\label{eq:spectral_decomp}
     K_0 = V\,\Lambda\,V^T,
 \end{equation}
@@ -419,7 +419,7 @@ using $V^T V = I$ at each step. Since $\Lambda$ is diagonal, this decouples into
     \frac{dc_k}{d\tau} = -\lambda_k\,c_k(\tau), \qquad k = 1,\ldots,N.
 \end{equation}
 
-Each equation in~\eqref{eq:decoupled_ode} is a first-order linear ODE with constant coefficient \parencite{strogatz2018}. Separating the variables and integrating both sides from the initial state at $\tau = 0$ up to time $\tau$, with $s$ and $r$ as integration variables for the amplitude and the time,
+Each equation in~\eqref{eq:decoupled_ode} is a first-order linear ODE with constant coefficient \parencite{boyce2012}. Separating the variables and integrating both sides from the initial state at $\tau = 0$ up to time $\tau$, with $s$ and $r$ as integration variables for the amplitude and the time,
 \begin{equation}
     \int_{c_k(0)}^{c_k(\tau)} \frac{ds}{s}
     = -\lambda_k \int_0^{\tau} dr
@@ -438,15 +438,35 @@ Returning to the original coordinates via $e(\tau) = Vc(\tau)$:
 \end{equation}
 The error decomposes into $N$ independent eigendirections. Each eigenvector $v_k$ carries initial amplitude $v_k^T e_0$ and decays exponentially at rate $\lambda_k$: eigenvectors with large $\lambda_k$ are suppressed quickly, while those with small $\lambda_k$ persist throughout training. This per-eigendirection decay, each at the rate set by its eigenvalue, is the rigorous statement of spectral bias established by \textcite{cao2019}; the same spectral ordering governs generalization as the training set grows \parencite{bordelon2020}.
 
-Equation~\eqref{eq:error_evolution} is the continuous flow; gradient descent takes finite steps, and its error evolution inherits the same eigenstructure in discrete form. Linearizing the update~\eqref{eq:gd_discrete} about the frozen Jacobian $J_0$, a single step moves the parameters by $\theta^{(n+1)} - \theta^{(n)} = -\mu\,J_0^T e^{(n)}$, and to first order the error responds as $e^{(n+1)} - e^{(n)} = J_0\,(\theta^{(n+1)} - \theta^{(n)})$. Combining the two,
-\begin{equation}\label{eq:error_discrete_step}
-    e^{(n+1)} = e^{(n)} - \mu\,J_0 J_0^T e^{(n)} = (I - \mu K_0)\,e^{(n)}.
+Equation~\eqref{eq:error_evolution} is the continuous flow; gradient descent takes finite steps, and its error evolution inherits the same eigenstructure in discrete form. The link between the two is the training-time stamp of~\eqref{eq:tau_k}: iterate $n$ sits at continuous time $\tau^{(n)} = n\mu$, so the iteration count and the training time are read off one another through
+\begin{equation}\label{eq:tau_n_dictionary}
+    \tau = n\mu, \qquad n = \tau/\mu,
 \end{equation}
-Iterating from $e^{(0)} = e_0$ and diagonalizing with $K_0 = V\Lambda V^T$,
+and one gradient-descent step of size $\mu$ is one forward-Euler step of length $\mu$ along the flow.
+
+Two routes lead to the discrete law, and they agree. The first linearizes the update~\eqref{eq:gd_discrete} about the initial Jacobian $J_0$: a single step moves the parameters by $\theta^{(n+1)} - \theta^{(n)} = -\mu\,J_0^T e^{(n)}$, and to first order the error responds as $e^{(n+1)} - e^{(n)} = J_0\,(\theta^{(n+1)} - \theta^{(n)})$. The second applies the forward (explicit) Euler scheme \parencite{suli2003, leveque2007} directly to the linear ODE~\eqref{eq:error_linear_ode}, replacing the derivative by the forward difference $(e^{(n+1)} - e^{(n)})/\mu$ and evaluating the right-hand side at the current iterate, $(e^{(n+1)} - e^{(n)})/\mu = -K_0\,e^{(n)}$. Both give
+\begin{equation}\label{eq:error_discrete_step}
+    e^{(n+1)} = e^{(n)} - \mu\,J_0 J_0^T e^{(n)} = (I - \mu K_0)\,e^{(n)},
+\end{equation}
+in keeping with the reading of gradient descent as the forward-Euler discretization of the gradient flow~\eqref{eq:grad_flow}. Iterating from $e^{(0)} = e_0$ and diagonalizing with $K_0 = V\Lambda V^T$,
 \begin{equation}\label{eq:error_discrete}
     e^{(n)} = (I - \mu K_0)^n e_0 = \sum_{k=1}^N \bigl(v_k^T e_0\bigr)\,(1 - \mu\lambda_k)^n\,v_k.
 \end{equation}
-This is the forward-Euler counterpart of~\eqref{eq:error_evolution}: each eigendirection is multiplied by $(1-\mu\lambda_k)^n$ rather than $e^{-\lambda_k\tau}$, and the two coincide as $\mu\to0$ with $\tau = n\mu$, since $(1-\mu\lambda_k)^n \to e^{-\lambda_k\tau}$. The discrete mode contracts only when $|1-\mu\lambda_k| < 1$, that is $\mu < 2/\lambda_k$, so the largest eigenvalue caps the stable learning rate at $\mu < 2/\lambda_{\max}$.
+The same expression follows from the continuous solution~\eqref{eq:error_evolution} by discretizing each mode on its own. Evaluating the decay factor at $\tau = n\mu$ and splitting it across the $n$ steps gives $e^{-\lambda_k\tau} = \bigl(e^{-\lambda_k\mu}\bigr)^n$; truncating the exponential at first order in the step by its Taylor expansion \parencite{burden2011},
+\begin{equation}\label{eq:euler_truncation}
+    e^{-\lambda_k\mu} = 1 - \mu\lambda_k + O\bigl((\mu\lambda_k)^2\bigr) \approx 1 - \mu\lambda_k,
+\end{equation}
+replaces $e^{-\lambda_k\tau}$ by $(1-\mu\lambda_k)^n$ and carries~\eqref{eq:error_evolution} into~\eqref{eq:error_discrete} term by term. The discrete factor $(1-\mu\lambda_k)^n$ is therefore the forward-Euler counterpart of the continuous $e^{-\lambda_k\tau}$, and the two coincide as $\mu\to0$ with $\tau = n\mu$ held fixed, since $(1-\mu\lambda_k)^{\tau/\mu} \to e^{-\lambda_k\tau}$.
+
+The same truncation is what constrains the step. Under the continuous flow every mode with $\lambda_k > 0$ decays for any $\mu > 0$, but the forward-Euler mode contracts only when its amplification factor $1 - \mu\lambda_k$ is smaller than one in magnitude, $|1 - \mu\lambda_k| < 1$, that is
+\begin{equation}\label{eq:euler_stability}
+    0 < \mu\lambda_k < 2.
+\end{equation}
+This is the absolute-stability condition of the explicit Euler method \parencite{leveque2007, suli2003}, and the product $\mu\lambda_k$ alone fixes how the $k$-th mode behaves. When $0 < \mu\lambda_k < 1$ the factor $1-\mu\lambda_k$ lies in $(0,1)$ and the mode decays monotonically toward zero; at $\mu\lambda_k = 1$ the factor vanishes and the mode is removed in a single step; for $1 < \mu\lambda_k < 2$ the factor lies in $(-1,0)$, so the mode still decays but flips sign at every step; and once $\mu\lambda_k > 2$ the factor exceeds one in magnitude and the mode grows without bound. Since $\lambda_1 = \lambda_{\max}$ is the largest eigenvalue, every mode stays stable only when the largest one does, which caps the learning rate at
+\begin{equation}\label{eq:euler_bound}
+    \mu < \frac{2}{\lambda_{\max}}.
+\end{equation}
+The spectral-bias probe of Section~\ref{sec:m_probe} sets its step from this limit: rather than a nominal value, $\mu$ is fixed at a constant fraction of $2/\lambda_{\max}$ at every width, small enough to keep every mode in the monotone regime $\mu\lambda_k < 1$ while staying comparable across widths whose $\lambda_{\max}$ differ.
 
 From~\eqref{eq:error_mode}, the amplitude of the $k$-th eigenvector at time $\tau$ satisfies $|c_k(\tau)| = |v_k^T e_0|\,e^{-\lambda_k\tau}$. To reduce this amplitude below a target precision $\varepsilon > 0$:
 \begin{equation}
@@ -523,6 +543,14 @@ gives an estimate of the number of gradient-descent iterations needed to resolve
     n_k = \left\lceil \frac{1}{\mu\,\lambda_k}\,\ln\frac{|(F v_k)^{*}\hat u|}{\varepsilon}\right\rceil.
 \end{equation}
 
+The same count follows directly from the discrete recursion, without passing through the continuous flow. The discrete counterpart of~\eqref{eq:fourier_amplitude} is the modal amplitude read off~\eqref{eq:error_discrete}, $|\tilde c_k^{(n)}| = |\tilde c_k(0)|\,|1 - \mu\lambda_k|^n$, and requiring it below $\varepsilon$ gives
+\begin{equation}\label{eq:iteration_bound_discrete}
+    |\tilde c_k(0)|\,|1 - \mu\lambda_k|^n < \varepsilon
+    \;\implies\;
+    n > \frac{1}{-\ln|1 - \mu\lambda_k|}\,\ln\frac{|\tilde c_k(0)|}{\varepsilon},
+\end{equation}
+the inequality flipping because in the stable regime $|1 - \mu\lambda_k| < 1$, so $\ln|1 - \mu\lambda_k| < 0$. This exact discrete count reduces to the continuous estimate~\eqref{eq:iteration_count}: by the first-order truncation~\eqref{eq:euler_truncation}, $-\ln|1 - \mu\lambda_k| = \mu\lambda_k + O\bigl((\mu\lambda_k)^2\bigr)$, so the denominator collapses to $\mu\lambda_k$ and, with $|\tilde c_k(0)| \approx |(F v_k)^{*}\hat u|$, equation~\eqref{eq:iteration_bound_discrete} becomes~\eqref{eq:iteration_count}. Substituting $\tau = n\mu$ into the continuous decay and counting steps directly on the discrete recursion therefore agree to leading order in the step, exactly as the forward-Euler link between~\eqref{eq:error_evolution} and~\eqref{eq:error_discrete} requires.
+
 \subsection{Physics-Informed Neural Networks}
 \label{subsec:pinn}
 
@@ -590,7 +618,7 @@ The Neural Tangent Kernel analysis of Sections~\ref{subsec:ntk}--\ref{subsec:spe
 \end{equation}
 so that, up to normalization, $\mathcal{L}_{\text{PINN}}$ reduces to the same quadratic form $\tfrac{1}{2}\|e\|^2$ analyzed for the MLP. With this definition the gradient-flow derivation leading to~\eqref{eq:ntk_dynamics} carries over verbatim, with the Jacobian now also containing the parameter gradients of the PDE residuals, and the error still obeys the linear dynamics $\frac{de}{d\tau} = -K_0\,e$, with convergence of each eigenvector governed by its eigenvalue exactly as in~\eqref{eq:training_time} \parencite{wang2022ntk}.
 
-This prediction is borne out empirically. Spectral bias is among the most consistently reported obstacles in PINN training: networks fit smooth, low-frequency solutions readily but stall on sharp gradients and high-frequency content \parencite{rahaman2019, xu2019frequency, wang2021understanding}, and the same pathology underlies several documented PINN failure modes \parencite{krishnapriyan2021characterizing}. \textcite{wang2022ntk} traced the effect directly to the NTK, showing that its spectrum is concentrated at low eigenvalues, so that high-frequency PDE residuals are the last to be minimized; for the Boussinesq system specifically, \textcite{wang2024} report the same difficulty in resolving the finer wave structure. A range of remedies target precisely this imbalance, including adaptive loss weighting \parencite{wang2021understanding}, Fourier feature embeddings, and domain decomposition. Understanding the spectral bias is therefore essential background for the neural-operator methods studied in the remainder of this work, whose ability to capture the high-frequency content of the Boussinesq solutions is examined directly in the numerical results of Chapter~4.
+This prediction is borne out empirically. Spectral bias is among the most consistently reported obstacles in PINN training: networks fit smooth, low-frequency solutions readily but stall on sharp gradients and high-frequency content \parencite{rahaman2019, xu2019frequency, wang2021understanding}, and the same pathology underlies several documented PINN failure modes \parencite{krishnapriyan2021characterizing}. \textcite{wang2022ntk} traced the effect directly to the NTK, showing that its spectrum is concentrated at low eigenvalues, so that high-frequency PDE residuals are the last to be minimized; for the Boussinesq system specifically, \textcite{wang2024} report the same difficulty in resolving the finer wave structure. A range of remedies target this imbalance directly, among them Fourier feature mappings that recondition the kernel spectrum \parencite{tancik2020}, adaptive loss weighting \parencite{wang2021understanding}, and second-order or spectrum-aware optimizers \parencite{khodakarami2026}. Pursuing these mitigations is beyond the scope of this work: our aim is to apply the SciML methods to the Boussinesq system and to expose and understand the spectral bias that emerges there, not to remove it. Understanding the effect nonetheless remains essential background for the neural-operator methods studied in the remainder of this work, whose ability to capture the high-frequency content of the Boussinesq solutions is examined directly in Chapter~\ref{chap:results}.
 
 \section{Neural Operators}
 \label{sec:neural_operators}
@@ -638,7 +666,7 @@ The operator $\mathcal{K}_\ell$ acts via convolution with the shift-invariant ke
 \begin{equation}
     (\mathcal{K}_\ell v_\ell)(x) = \int_{D} \kappa_\ell(x-y)\,v_\ell(y)\,dy.
 \end{equation}
-By the convolution theorem, this equals:
+By the convolution theorem \parencite{debnath2012}, this equals:
 \begin{equation}
     (\mathcal{K}_\ell v_\ell)(x) = \mathcal{F}^{-1} \Big( \mathcal{F}(\kappa_\ell) \cdot \mathcal{F}(v_\ell) \Big)(x).
     \label{eq:fno_approximation}

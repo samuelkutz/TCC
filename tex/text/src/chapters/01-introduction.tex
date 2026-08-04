@@ -42,7 +42,7 @@ SciML methods have recently only been applied to the Boussinesq equation, not th
 
 This work implements and evaluates three SciML methods on the parametric 1D Boussinesq
 system: Physics-Informed Neural Networks (PINNs), Fourier Neural Operators (FNOs), and
-Physics-Informed Neural Operators (PINOs). All results are measured against a
+Physics-Informed Neural Operators (PINOs). A plain multilayer perceptron (MLP), trained on data alone, serves as a baseline and as the testbed for the spectral-bias analysis. All results are measured against a
 pseudospectral reference solver, which sets a high-accuracy baseline. The study is guided
 by the following questions.
 
@@ -65,8 +65,8 @@ by the following questions.
     \item The mechanism behind spectral bias: does Neural Tangent Kernel
           (NTK) theory genuinely predict the frequency imbalance seen on the Boussinesq
           system, or only describe it after the fact? We put the theory to two
-          quantitative tests on the PINN residual, across a range of network widths. The
-          first targets the frozen-kernel (lazy-training) assumption the analysis
+          quantitative tests on a minimal network fitting a single Boussinesq elevation profile, across a range of network widths. The
+          first targets the initial-kernel (lazy-training) assumption the analysis
           depends on: we measure how far the network parameters and the empirical kernel
           drift over training, and whether the kernel's eigenvalue spectrum is
           essentially unchanged from initialization to convergence, as lazy training

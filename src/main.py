@@ -1,246 +1,198 @@
+"""Pipeline driver: dataset, the six trained models, the NTK probe, every figure.
+
+Runs top to bottom with no optional stages. Each stage takes its arguments from
+`settings.json` through `config.Config`, and each fails immediately if an input
+it needs is missing, so a broken stage does not surface as a confusing failure
+several stages later.
+
+Figures are written under `results/imgs` in two experiment sets:
+
+    boussinesq_sciml/            the six trained models, grouped as
+        nn/{pure_data,data_and_physics,pure_physics}   MLP, PINN(+data), PINN(phys)
+        no/{pure_data,data_and_physics,pure_physics}   FNO,  PINO(+data), PINO(phys)
+        comparison/              the six-model spectral-bias band tracking
+    boussinesq_spectral_bias_mlp/  the R -> R spectral-bias probe (+ ntk/ drift)
+    setup/                       the reference soliton profile
+
+Every figure is drawn from saved weights/metadata, so `--plots-only` skips
+training and regenerates the whole figure tree from the saved `.pth` files.
+"""
+
 import os
-import json
-import random
-import numpy as np
-import torch
+import shutil
+import sys
 
+from config import Config
+from tools import set_seed
+from experiments.common import resolve_device
 from experiments.dataset import run_dataset
-from experiments.train_fno import train_fno
-from experiments.plot_fno import eval_fno, gif_fno
-from experiments.train_pino import train_pino
-from experiments.plot_pino import eval_pino, gif_pino
-from experiments.train_pinn import train_pinn
-from experiments.plot_pinn import eval_pinn, gif_pinn
-from experiments.train_mlp import train_mlp
-from experiments.plot_mlp import eval_mlp
-from experiments.ntk import run_ntk_experiment
-from experiments.plots_common import plot_soliton_profile
-from experiments.plot_spectral_bias import plot_spectral_bias_evolution
-from experiments.spectral_bias_theory import run_spectral_bias_theory
+from experiments.evaluate import load_stage_metadata
+from experiments.plots.figures import plot_soliton_profile, plot_spectral_bias_panel
+from experiments.plots.fno import eval_fno, gif_fno
+from experiments.plots.mlp import eval_mlp
+from experiments.plots.ntk import plot_ntk
+from experiments.plots.pinn import eval_pinn, gif_pinn
+from experiments.plots.pino import eval_pino, gif_pino
+from experiments.train.fno import train_fno
+from experiments.train.mlp import train_mlp
+from experiments.train.ntk import train_ntk
+from experiments.train.pinn import train_pinn
+from experiments.train.pino import train_pino
+
+# Set 1: the six SciML models, keyed by architecture family and training regime.
+SCIML = 'boussinesq_sciml'
 
 
-with open(os.path.join(os.path.dirname(__file__), 'settings.json')) as settings_file:
-    settings = json.load(settings_file)
-
-RESULTS_DIR      = settings['results_dir']
-SEED             = settings['seed']
-X_LIMIT          = settings['domain']['x_limit']
-T_LIMIT          = settings['domain']['t_limit']
-DATASET_RES      = settings['domain']['dataset_res']
-EVAL_PARAMS      = settings['eval']['params']
-
-param_values_spec = settings['domain']['param_values']
-PARAM_VALUES      = list(np.linspace(param_values_spec['start'], param_values_spec['stop'], param_values_spec['n'], dtype=np.float32))
-MEDIAN_PDE_PARAM  = sorted(EVAL_PARAMS)[len(EVAL_PARAMS) // 2]
-
-DEVICE       = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-DATASET_FILE = os.path.join(RESULTS_DIR, 'models', 'boussinesq_dataset.pth')
-
-FNO_CONFIG = {
-    'dataset_file': DATASET_FILE,
-    'results_dir':  RESULTS_DIR,
-    **settings['fno'],
-}
-
-PINO_CONFIG = {
-    'dataset_file': DATASET_FILE,
-    'x_limit':      X_LIMIT,
-    't_limit':      T_LIMIT,
-    'results_dir':  RESULTS_DIR,
-    **settings['pino'],
-}
-
-PINN_CONFIG = {
-    'x_limit':          X_LIMIT,
-    't_limit':          T_LIMIT,
-    'train_resolution': DATASET_RES,
-    'param_value':      MEDIAN_PDE_PARAM,
-    'results_dir':      RESULTS_DIR,
-    **settings['pinn'],
-}
-
-MLP_CONFIG = {
-    'x_limit':          X_LIMIT,
-    't_limit':          T_LIMIT,
-    'train_resolution': DATASET_RES,
-    'param_value':      MEDIAN_PDE_PARAM,
-    'results_dir':      RESULTS_DIR,
-    **settings['mlp'],
-}
-
-EVAL_CONFIG = {
-    'x_limit':      X_LIMIT,
-    't_limit':      T_LIMIT,
-    'eval_params':  EVAL_PARAMS,
-    'resolutions':  [DATASET_RES, DATASET_RES * 2, DATASET_RES * 4],
-    'spectral_res': settings['eval']['spectral_res'],
-}
-
-IMG_DIR = os.path.join(RESULTS_DIR, 'imgs')
-
-PINN_NTK_CONFIG = {
-    'x_limit': X_LIMIT,
-    't_limit': T_LIMIT,
-    'outdir':  os.path.join(IMG_DIR, 'pinn', 'ntk'),
-    'seed':    SEED,
-    **settings['pinn_ntk'],
-}
-
-# the spectral-bias theory (toy Fourier-feature model) is the theoretical companion
-# to the MLP's empirical spectral bias, so its figures live alongside the MLP figures
-SPECTRAL_BIAS_THEORY_CONFIG = {
-    'outdir': os.path.join(IMG_DIR, 'mlp'),
-    **settings['spectral_bias_theory'],
-}
-
-MLP_EVAL_DIR = os.path.join(IMG_DIR, 'mlp')
-FNO_EVAL_DIR = os.path.join(IMG_DIR, 'fno')
-PINO_WITH_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pino', 'with_data')
-PINO_NO_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pino', 'no_data')
-PINN_WITH_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pinn', 'with_data')
-PINN_NO_DATA_EVAL_DIR = os.path.join(IMG_DIR, 'pinn', 'no_data')
-
-MLP_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'mlp', 'mlp_model_metadata.pth')
-FNO_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'fno', 'fno_model_metadata.pth')
-PINO_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pino', 'with_data', 'pino_model_metadata.pth')
-PINO_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pino', 'no_data', 'pino_no_data_model_metadata.pth')
-PINN_WITH_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pinn', 'with_data', 'pinn_model_metadata.pth')
-PINN_NO_DATA_METADATA_FILE = os.path.join(RESULTS_DIR, 'models', 'metadata', 'pinn', 'no_data', 'pinn_no_data_model_metadata.pth')
-
-# gifs: solution evolving in time (orange) vs reference, for the median and last eval params
-GIF_DIR        = os.path.join(IMG_DIR, 'gifs')
-GIF_LAST_PARAM = sorted(EVAL_PARAMS)[-1]
-GIF_PARAMS     = [MEDIAN_PDE_PARAM, GIF_LAST_PARAM]
-GIF_RES        = DATASET_RES
+def _stage(name):
+    print(f'\n=== {name} ===')
 
 
-def main():
-    random.seed(SEED)
-    np.random.seed(SEED)
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+def _metadata_files(cfg):
+    """Every stage's metadata path, resolved once and shared by train and plot."""
+    return {
+        'mlp': cfg.metadata_file('mlp', 'mlp'),
+        'fno': cfg.metadata_file('fno', 'fno'),
+        'pino_data': cfg.metadata_file('pino', 'pino', 'data_and_physics'),
+        'pino_no_data': cfg.metadata_file('pino', 'pino', 'pure_physics'),
+        'pinn_data': cfg.metadata_file('pinn', 'pinn', 'data_and_physics'),
+        'pinn_no_data': cfg.metadata_file('pinn', 'pinn', 'pure_physics'),
+        'ntk': cfg.metadata_file(os.path.join('mlp', 'ntk'), 'mlp_ntk'),
+    }
 
-    os.makedirs(os.path.dirname(DATASET_FILE), exist_ok=True)
-    os.makedirs(GIF_DIR, exist_ok=True)
 
-    #  --- solution gifs (unchanged by the styling pass): disabled for a plots-only run ---
-    #print('\n=== generating FNO gifs (median + last param) ===')
-    #gif_fno(FNO_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-    #         params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
+def plot_spectral_bias_evolution(ordered_metadata, outdir,
+                                 filename='spectral_bias_evolution.png'):
+    """The six-model band-tracking figure, read back from the saved histories."""
+    models_data = []
+    for label, metadata_file in ordered_metadata:
+        history = load_stage_metadata(metadata_file).get('spectral_history')
+        if not history or not history.get('epochs'):
+            raise ValueError(f'no spectral_history in {metadata_file}; the training '
+                             'stage must record band errors for this figure')
+        models_data.append((label, history))
+    plot_spectral_bias_panel(models_data, outdir=outdir, filename=filename)
 
-    #print('\n=== generating PINO gifs (with data + no data, median + last param) ===')
-    #gif_pino('data', PINO_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-    #          params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
-    #gif_pino('no_data', PINO_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-    #          params=GIF_PARAMS, resolution=GIF_RES, outdir=GIF_DIR)
 
-    #print('\n=== generating PINN gifs (with data + no data, median param) ===')
-    #gif_pinn('data', PINN_WITH_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-    #          params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
-    #gif_pinn('no_data', PINN_NO_DATA_METADATA_FILE, x_limit=X_LIMIT, t_limit=T_LIMIT,
-    #          params=[MEDIAN_PDE_PARAM], resolution=GIF_RES, outdir=GIF_DIR)
+def train_all(cfg, device):
+    """Dataset, the six models and the probe. Each writes its own `.pth`."""
+    _stage('shared dataset')
+    run_dataset(device=device, **cfg.dataset_kwargs)
 
-    #print('\n=== plotting soliton profile ===')
-    #plot_soliton_profile(outdir=IMG_DIR)
+    _stage('training mlp (data only)')
+    train_mlp(**cfg.mlp_kwargs)
 
-    print('\n=== generating shared dataset ===')
-    run_dataset(
-        dataset_file=DATASET_FILE,
-        device=DEVICE,
-        param_values=PARAM_VALUES,
-        x_limit=X_LIMIT,
-        t_limit=T_LIMIT,
-        dataset_res=DATASET_RES,
-    )
+    _stage('training fno')
+    train_fno(**cfg.fno_kwargs)
 
-    print('\n=== training mlp (data only) ===')
-    train_mlp(**MLP_CONFIG)
+    _stage('training pino (data and physics)')
+    train_pino('data_and_physics', **cfg.pino_kwargs)
 
-    print('\n=== plotting mlp (data only) ===')
-    eval_mlp(
-        model_metadata_file=MLP_METADATA_FILE,
-        output_dir=MLP_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    _stage('training pino (pure physics)')
+    train_pino('pure_physics', **cfg.pino_kwargs)
 
-    print('\n=== training fno ===')
-    train_fno(**FNO_CONFIG)
+    _stage('training pinn (data and physics)')
+    train_pinn('data_and_physics', **cfg.pinn_kwargs)
 
-    print('\n=== plotting fno ===')
-    eval_fno(
-        model_metadata_file=FNO_METADATA_FILE,
-        output_dir=FNO_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    _stage('training pinn (pure physics)')
+    train_pinn('pure_physics', **cfg.pinn_kwargs)
 
-    print('\n=== training pino with data ===')
-    train_pino('data', **PINO_CONFIG)
+    _stage('training spectral-bias probe (NTK)')
+    train_ntk(**cfg.ntk_kwargs)
 
-    print('\n=== plotting pino with data ===')
-    eval_pino(
-        'data',
-        PINO_WITH_DATA_METADATA_FILE,
-        output_dir=PINO_WITH_DATA_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
 
-    print('\n=== training pino without data ===')
-    train_pino('no_data', **PINO_CONFIG)
+def plot_all(cfg, meta):
+    """Every figure and gif, drawn from the saved weights/metadata alone.
 
-    print('\n=== plotting pino without data ===')
-    eval_pino(
-        'no_data',
-        PINO_NO_DATA_METADATA_FILE,
-        output_dir=PINO_NO_DATA_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    Reads nothing a training stage leaves in memory, so it reproduces the whole
+    figure tree from the committed `.pth` files (this is what `--plots-only`
+    runs). Each model's figures land in its Set-1 slot; the probe is Set 2.
+    """
+    _stage('soliton profile')
+    plot_soliton_profile(outdir=cfg.img_subdir('setup'), amplitude=cfg.amplitude)
 
-    print('\n=== training pinn with data ===')
-    train_pinn('data', **PINN_CONFIG)
+    _stage('plotting mlp (data only)')
+    eval_mlp(meta['mlp'], output_dir=cfg.img_subdir(SCIML, 'nn', 'pure_data'),
+             **cfg.eval_kwargs)
 
-    print('\n=== plotting pinn with data ===')
-    eval_pinn(
-        'data',
-        PINN_WITH_DATA_METADATA_FILE,
-        output_dir=PINN_WITH_DATA_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    _stage('plotting fno')
+    eval_fno(meta['fno'], output_dir=cfg.img_subdir(SCIML, 'no', 'pure_data'),
+             **cfg.eval_kwargs)
 
-    print('\n=== training pinn without data ===')
-    train_pinn('no_data', **PINN_CONFIG)
+    _stage('plotting pino (data and physics)')
+    eval_pino('data_and_physics', meta['pino_data'],
+              output_dir=cfg.img_subdir(SCIML, 'no', 'data_and_physics'), **cfg.eval_kwargs)
 
-    print('\n=== plotting pinn without data ===')
-    eval_pinn(
-        'no_data',
-        PINN_NO_DATA_METADATA_FILE,
-        output_dir=PINN_NO_DATA_EVAL_DIR,
-        **EVAL_CONFIG,
-    )
+    _stage('plotting pino (pure physics)')
+    eval_pino('pure_physics', meta['pino_no_data'],
+              output_dir=cfg.img_subdir(SCIML, 'no', 'pure_physics'), **cfg.eval_kwargs)
 
-    print('\n=== running NTK experiment ===')
-    run_ntk_experiment(**PINN_NTK_CONFIG)
+    _stage('plotting pinn (data and physics)')
+    eval_pinn('data_and_physics', meta['pinn_data'],
+              output_dir=cfg.img_subdir(SCIML, 'nn', 'data_and_physics'), **cfg.eval_kwargs)
 
-    print('\n=== validating NTK spectral-bias theory (controlled toy) ===')
-    run_spectral_bias_theory(**SPECTRAL_BIAS_THEORY_CONFIG)
+    _stage('plotting pinn (pure physics)')
+    eval_pinn('pure_physics', meta['pinn_no_data'],
+              output_dir=cfg.img_subdir(SCIML, 'nn', 'pure_physics'), **cfg.eval_kwargs)
 
-    print('\n=== plotting spectral bias evolution ===')
+    _stage('plotting spectral-bias probe (NTK)')
+    plot_ntk(meta['ntk'], **cfg.ntk_plot_kwargs)
+
+    _stage('spectral bias evolution')
     plot_spectral_bias_evolution(
         ordered_metadata=[
-            ('MLP (data only)',  MLP_METADATA_FILE),
-            ('PINN (no data)',   PINN_NO_DATA_METADATA_FILE),
-            ('PINN (with data)', PINN_WITH_DATA_METADATA_FILE),
-            ('PINO (no data)',   PINO_NO_DATA_METADATA_FILE),
-            ('PINO (with data)', PINO_WITH_DATA_METADATA_FILE),
-            ('FNO',              FNO_METADATA_FILE),
+            ('MLP (pure data)', meta['mlp']),
+            ('PINN (pure physics)', meta['pinn_no_data']),
+            ('PINN (data and physics)', meta['pinn_data']),
+            ('PINO (pure physics)', meta['pino_no_data']),
+            ('PINO (data and physics)', meta['pino_data']),
+            ('FNO (pure data)', meta['fno']),
         ],
-        outdir=IMG_DIR,
+        outdir=cfg.img_subdir(SCIML, 'comparison'),
     )
 
+    # gifs: eta(x, t) evolving in time against the reference. The operators are
+    # shown at the median and the largest evaluation parameter; the pointwise
+    # models are trained at the median alone, so they only get that one.
+    gif_params = [cfg.median_param, sorted(cfg.eval_params)[-1]]
+
+    _stage('fno gifs')
+    gif_fno(meta['fno'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
+            params=gif_params, resolution=cfg.dataset_res, outdir=cfg.gif_dir)
+
+    _stage('pino gifs (data and physics + pure physics)')
+    gif_pino('data_and_physics', meta['pino_data'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
+             params=gif_params, resolution=cfg.dataset_res, outdir=cfg.gif_dir)
+    gif_pino('pure_physics', meta['pino_no_data'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
+             params=gif_params, resolution=cfg.dataset_res, outdir=cfg.gif_dir)
+
+    _stage('pinn gifs (data and physics + pure physics)')
+    gif_pinn('data_and_physics', meta['pinn_data'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
+             params=[cfg.median_param], resolution=cfg.dataset_res, outdir=cfg.gif_dir)
+    gif_pinn('pure_physics', meta['pinn_no_data'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
+             params=[cfg.median_param], resolution=cfg.dataset_res, outdir=cfg.gif_dir)
+
+
+def main(plots_only=False):
+    cfg = Config()
+    set_seed(cfg.seed)
+    device = resolve_device()
+    print(f'device: {device}, seed: {cfg.seed}, '
+          f'reseed_each_stage: {cfg.reseed_each_stage}, plots_only: {plots_only}')
+
+    meta = _metadata_files(cfg)
+    # plot_all regenerates the whole figure tree, so clear the previous one first
+    # to avoid leaving orphaned files behind if the layout or naming changed
+    if os.path.isdir(cfg.img_dir):
+        shutil.rmtree(cfg.img_dir)
+    os.makedirs(os.path.dirname(cfg.dataset_file), exist_ok=True)
+    os.makedirs(cfg.gif_dir, exist_ok=True)
+
+    if not plots_only:
+        train_all(cfg, device)
+
+    plot_all(cfg, meta)
     print('\nall experiments completed successfully.')
 
 
 if __name__ == '__main__':
-    main()
- 
+    main(plots_only=('--plots-only' in sys.argv))

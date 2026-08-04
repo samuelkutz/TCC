@@ -1183,17 +1183,12 @@ File: ../imgs//ufpr_logo.jpg Graphic file (type bmp)
 \tf@toc=\write6
 \openout6 = `TCC.toc'.
 
- (TCC.lof [7]
-Overfull \hbox (4.50606pt too wide) in paragraph at lines 17--17
- \T1/lmr/m/n/12 propagating pulses, but the time-resolved rel-a-tive er-ror (ri
-ght) spikes sharply 
- []
-
-[8])
+ (TCC.lof [7] [8])
 \tf@lof=\write7
 \openout7 = `TCC.lof'.
 
- [9] [10] [11] [12]
+
+[9] [10] [11] [12]
 \openout2 = `chapters/01-introduction.aux'.
 
  (chapters/01-introduction.tex
@@ -1229,7 +1224,7 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
  (chapters/03-metodology.tex
 Chapter 3.
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-0.
+1.
 (t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 ) [42
@@ -1237,17 +1232,13 @@ File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 
 
 
-] [43] [44] [45] [46] [47] [48] [49] [50] [51]
-Overfull \hbox (55.24106pt too wide) in paragraph at lines 227--245
- [][] 
- []
-
-) [52]
+] [43] [44] [45] [46] [47] [48] [49] [50] [51]) [52] [53]
 \openout2 = `chapters/04-numerical-results.aux'.
 
- (chapters/04-numerical-results.tex
+
+(chapters/04-numerical-results.tex
 Chapter 4.
-[53
+[54
 
 
 
@@ -1258,20 +1249,25 @@ File: ../../../results/imgs//mlp/ntk_error_decay.png Graphic file (type bmp)
 File: ../../../results/imgs//mlp/ntk_spectral_decay.png Graphic file (type bmp)
 
 <../../../results/imgs//mlp/ntk_spectral_decay.png>
+File: ../../../results/imgs//mlp/ntk_band_decay.png Graphic file (type bmp)
+<../../../results/imgs//mlp/ntk_band_decay.png>
 File: ../../../results/imgs//mlp/ntk_iteration_count.png Graphic file (type bmp
 )
 <../../../results/imgs//mlp/ntk_iteration_count.png>
- [54] [55]
-File: ../../../results/imgs//pinn/ntk/pinn_ntk_panel_param.png Graphic file (ty
-pe bmp)
-<../../../results/imgs//pinn/ntk/pinn_ntk_panel_param.png>
-File: ../../../results/imgs//pinn/ntk/pinn_ntk_panel_kernel.png Graphic file (t
+ [55] [56]
+File: ../../../results/imgs//mlp/ntk_fit.png Graphic file (type bmp)
+<../../../results/imgs//mlp/ntk_fit.png>
+ [57] [58]
+File: ../../../results/imgs//mlp/ntk/mlp_ntk_panel_param.png Graphic file (type
+ bmp)
+<../../../results/imgs//mlp/ntk/mlp_ntk_panel_param.png>
+File: ../../../results/imgs//mlp/ntk/mlp_ntk_panel_kernel.png Graphic file (typ
+e bmp)
+<../../../results/imgs//mlp/ntk/mlp_ntk_panel_kernel.png>
+File: ../../../results/imgs//mlp/ntk/mlp_ntk_panel_spectrum.png Graphic file (t
 ype bmp)
-<../../../results/imgs//pinn/ntk/pinn_ntk_panel_kernel.png>
-File: ../../../results/imgs//pinn/ntk/pinn_ntk_panel_spectrum.png Graphic file 
-(type bmp)
-<../../../results/imgs//pinn/ntk/pinn_ntk_panel_spectrum.png>
- [56]
+<../../../results/imgs//mlp/ntk/mlp_ntk_panel_spectrum.png>
+ [59]
 File: ../../../results/imgs//spectral_bias_evolution_mlp_data_only.png Graphic 
 file (type bmp)
 <../../../results/imgs//spectral_bias_evolution_mlp_data_only.png>
@@ -1290,7 +1286,7 @@ ile (type bmp)
 File: ../../../results/imgs//spectral_bias_evolution_pino_with_data.png Graphic
  file (type bmp)
 <../../../results/imgs//spectral_bias_evolution_pino_with_data.png>
- [57] [58]
+ [60] [61]
 File: ../../../results/imgs//mlp/mlp_model2_spectral_panel_spectrum_1.png Graph
 ic file (type bmp)
 <../../../results/imgs//mlp/mlp_model2_spectral_panel_spectrum_1.png>
@@ -1314,7 +1310,7 @@ e (type bmp)
 <../../../results/imgs//mlp/mlp_model2_spectral_panel_mean.png>
 
 
-LaTeX Warning: Float too large for page by 0.88867pt on input line 221.
+LaTeX Warning: Float too large for page by 0.88867pt on input line 250.
 
 File: ../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_sp
 ectrum_1.png Graphic file (type bmp)
@@ -1371,6 +1367,7 @@ File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_relerr_3
 File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_mean.png
  Graphic file (type bmp)
 <../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_mean.png>
+[62] [63] [64] [65]
 File: ../../../results/imgs//fno/fno_model2_spectral_panel_spectrum_1.png Graph
 ic file (type bmp)
 <../../../results/imgs//fno/fno_model2_spectral_panel_spectrum_1.png>
@@ -1420,7 +1417,8 @@ File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_mean.png
  Graphic file (type bmp)
 <../../../results/imgs//pino/with_data/pino_model2_spectral_panel_mean.png>
 
-LaTeX Warning: Float too large for page by 0.88867pt on input line 427.
+
+LaTeX Warning: Float too large for page by 0.88867pt on input line 456.
 
 File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_sp
 ectrum_1.png Graphic file (type bmp)
@@ -1450,7 +1448,6 @@ File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_me
 an.png Graphic file (type bmp)
 <../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_mean.pn
 g>
-[59] [60] [61] [62] [63] [64] [65]
 File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_surface_1.png Grap
 hic file (type bmp)
 <../../../results/imgs//fno/fno_model2_alpha_beta_panel_surface_1.png>
@@ -1473,8 +1470,7 @@ File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_box.png Graphic fi
 le (type bmp)
 <../../../results/imgs//fno/fno_model2_alpha_beta_panel_box.png>
 
-
-LaTeX Warning: Float too large for page by 15.74928pt on input line 537.
+LaTeX Warning: Float too large for page by 15.74928pt on input line 566.
 
 File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_surfac
 e_1.png Graphic file (type bmp)
@@ -1504,9 +1500,9 @@ File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_box.pn
 g Graphic file (type bmp)
 <../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_box.png>
 
-LaTeX Warning: Float too large for page by 15.74928pt on input line 588.
+LaTeX Warning: Float too large for page by 15.74928pt on input line 617.
 
-[66] [67] [68]
+[66] [67] [68] [69] [70] [71]
 File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surfac
 e_1.png Graphic file (type bmp)
 <../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surface_1.p
@@ -1536,30 +1532,30 @@ g Graphic file (type bmp)
 <../../../results/imgs//pino/with_data/pino_model2_resolution_panel_box.png>
 
 
-LaTeX Warning: Float too large for page by 43.2419pt on input line 651.
+LaTeX Warning: Float too large for page by 43.2419pt on input line 680.
 
-[69] [70]) [71] [72]
+[72] [73] [74]) [75]
 \openout2 = `chapters/05-conclusions.aux'.
 
  (chapters/05-conclusions.tex
 Chapter 5.
-[73
+[76
 
 
 
 
-] [74] [75]) [76] [77
+] [77] [78]) [79] [80
 
 
 
-] [78] [79] [80] [81] [82] [83] [84] (TCC.aux
+] [81] [82] [83] [84] [85] [86] [87] (TCC.aux
 (chapters/01-introduction.aux) (chapters/02-mathematical-background.aux)
 (chapters/03-metodology.aux) (chapters/04-numerical-results.aux)
 (chapters/05-conclusions.aux))
 Package rerunfilecheck Info: File `TCC.out' has not changed.
-(rerunfilecheck)             Checksum: 963CAF455FD0B3BEEFF035E7578AA10A;10114.
+(rerunfilecheck)             Checksum: C77BABA36E53A6D9D02ADB268C7818E1;10038.
 Package logreq Info: Writing requests to 'TCC.run.xml'.
 \openout1 = `TCC.run.xml'.
 
  ) )
-Output written on TCC.xdv (84 pages, 424944 bytes).
+Output written on TCC.xdv (87 pages, 444136 bytes).

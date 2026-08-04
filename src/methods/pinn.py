@@ -5,10 +5,16 @@ import torch.optim as optim
 from timeit import default_timer
 
 from methods.mlp import MLP
+from tools import is_log_epoch, log_epoch
 
 
 class PINN(nn.Module):
-    # physics-informed neural network for boussinesq residuals and ic constraints
+    """Physics-informed network for the Boussinesq system (Raissi et al., 2019).
+
+    Maps (x, t) -> (eta, u) with an MLP backbone and trains on the PDE residual,
+    the initial condition and an optional supervised data term.
+    """
+
     def __init__(self, input_size, output_size, neurons, hidden_layers,
                  Boussinesq, domain_points=3000, ic_points=500,
                  optimizer_name='Adam', lr=1e-3, data=None, data_weight=1.0,
@@ -27,13 +33,13 @@ class PINN(nn.Module):
         self.data = data
         self.data_weight = data_weight
 
-        # base MLP: identical Linear/Tanh sequence to the historical construction,
-        # so seeded initialization stays bit-for-bit reproducible.
+        # same Linear/Tanh sequence as the data-only MLP, so the two models differ
+        # only in training signal
         self.net = MLP(input_size, output_size, neurons, hidden_layers,
                        activation='tanh', device=self.device)
         self.to(self.device)
 
-        # pre-convert data to device tensors once; avoid repeated cpu->gpu per epoch
+        # pre-converted once to avoid a host-to-device copy every epoch
         self._x_flat = self._t_flat = self._eta_flat = self._u_flat = None
         if data is not None and data_weight > 0.0:
             x_data = torch.from_numpy(data['x']).float().to(self.device)
@@ -48,13 +54,12 @@ class PINN(nn.Module):
             self._u_flat = u_data.reshape(-1, 1)
 
     def _build_optimizer(self):
-        # create optimizer for network parameters using selected lr
         if self.optimizer_name.lower() == 'sgd':
             return optim.SGD(self.parameters(), lr=self.lr)
         return optim.Adam(self.parameters(), lr=self.lr)
 
     def forward(self, x, t):
-        # map (x,t) to network output [eta, u] using fully connected layers
+        """(x, t) -> (eta, u), each (N, 1)."""
         if x.ndim == 1:
             x = x.unsqueeze(-1)
         if t.ndim == 1:
@@ -65,9 +70,7 @@ class PINN(nn.Module):
         return output[..., 0:1], output[..., 1:2]
 
     def predict_eta_grid(self, x_np, t_np):
-        # evaluate eta on the tensor-product grid (x_np x t_np); returns a numpy
-        # array shaped (Nx, Nt). Mirrors the historical meshgrid/flatten/predict/
-        # reshape blocks used across the PINN plots and the spectral snapshot.
+        """Evaluate eta on the grid x_np x t_np; returns (Nx, Nt)."""
         x_np = np.asarray(x_np, dtype=np.float32)
         t_np = np.asarray(t_np, dtype=np.float32)
         Nx = x_np.shape[0]
@@ -91,7 +94,6 @@ class PINN(nn.Module):
         return x, t
 
     def _initial_condition_loss(self):
-        # enforce eta(x,0)=eta0 and u(x,0)=u0 at initial time t=0
         x0 = torch.linspace(self.Boussinesq.domain['x_min'],
                             self.Boussinesq.domain['x_max'],
                             self.ic_points, device=self.device).unsqueeze(-1)
@@ -101,7 +103,7 @@ class PINN(nn.Module):
         return torch.mean((eta_pred - eta_true) ** 2 + (u_pred - u_true) ** 2)
 
     def _data_loss(self):
-        # supervised data loss: random subsample from pre-converted flat grid
+        # random subsample of the flattened reference grid
         if self._x_flat is None:
             return torch.tensor(0.0, device=self.device)
 
@@ -111,18 +113,13 @@ class PINN(nn.Module):
         return torch.mean((eta_pred - self._eta_flat[idx]) ** 2 + (u_pred - self._u_flat[idx]) ** 2)
 
     def _pde_loss(self):
-        # estimate pde residual loss from sampled interior domain points
         x_f, t_f = self._sample_domain(self.domain_points)
         res_eq_1, res_eq_2 = self.Boussinesq.residual(self, x_f, t_f)
         return torch.mean(res_eq_1 ** 2 + res_eq_2 ** 2)
 
-    def run_train_loop(self, boussinesq, epochs, seed, print_interval, snapshot_callback=None):
-        # train network on pde residual + ic loss + optional supervised data loss
-        if seed is not None:
-            torch.manual_seed(seed)
-
-        self.Boussinesq = boussinesq
-        self.optimizer = self._build_optimizer()  # single creation point
+    def run_train_loop(self, epochs, print_interval, snapshot_callback=None):
+        # PDE residual + initial condition + optional supervised data term
+        self.optimizer = self._build_optimizer()
         history = []
         start_time = default_timer()
 
@@ -139,15 +136,10 @@ class PINN(nn.Module):
             self.optimizer.step()
             history.append(loss.item())
 
-            if (ep + 1) % print_interval == 0 or ep == epochs - 1:
-                elapsed = default_timer() - start_time
-                print(
-                    f'epoch {ep + 1}, elapsed {elapsed:.1f}s, '
-                    f'total_loss {loss.item():.4e}, '
-                    f'pde_loss {pde_loss.item():.4e}, '
-                    f'ic_loss {ic_loss.item():.4e}, '
-                    f'data_loss {data_loss.item():.4e}'
-                )
+            if is_log_epoch(ep, epochs, print_interval):
+                log_epoch(ep + 1, epochs, default_timer() - start_time,
+                          total_loss=loss.item(), pde_loss=pde_loss.item(),
+                          ic_loss=ic_loss.item(), data_loss=data_loss.item())
                 if snapshot_callback is not None:
                     snapshot_callback(self, ep + 1)
 

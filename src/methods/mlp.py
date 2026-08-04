@@ -6,10 +6,12 @@ _ACTIVATIONS = {'tanh': nn.Tanh, 'relu': nn.ReLU, 'gelu': nn.GELU}
 
 
 class MLP(nn.Module):
-    # plain feed-forward network: input Linear+activation, then (hidden_layers-1)
-    # blocks of [Linear+activation], then an output Linear. The layer order is kept
-    # identical to the historical PINN construction so seeded initialization is
-    # bit-for-bit reproducible.
+    """Linear+activation, then (hidden_layers-1) more, then a linear output.
+
+    For input and output size 1 and width W the parameter count is
+    3W + 1 + (hidden_layers - 1)(W^2 + W).
+    """
+
     def __init__(self, input_size, output_size, neurons, hidden_layers,
                  activation='tanh', device='cpu'):
         super().__init__()

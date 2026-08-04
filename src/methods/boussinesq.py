@@ -3,7 +3,8 @@ import torch
 
 
 class Boussinesq:
-    # container for boussinesq parameters and domain definitions
+    """Coefficients (a, b), amplitude A and domain of the Boussinesq system."""
+
     def __init__(self, x_min, x_max, t_min, t_max, a, b, A):
         self.domain = {
             'x_min': torch.tensor(x_min),
@@ -16,7 +17,7 @@ class Boussinesq:
         self.A = A
 
     def ic(self, x):
-        # initial condition eta(x,0)=a*sech^2(x) and u(x,0)=0
+        """eta(x, 0) = A sech^2(x - x_mid),  u(x, 0) = 0."""
         mid = (self.domain['x_max'] + self.domain['x_min']) / 2
         val = (x - mid)
         eta_0 = self.A / (torch.cosh(val)**2)
@@ -24,7 +25,11 @@ class Boussinesq:
         return eta_0, u_0
 
     def residual(self, model, x, t):
-        # compute boussinesq pde residuals for network predictions at (x,t)
+        """Autograd residuals of
+
+            eta_t + u_x + a (eta u)_x            = 0
+            u_t - (b/3) u_xxt + eta_x + a u u_x  = 0
+        """
         x = x.requires_grad_(True)
         t = t.requires_grad_(True)
 
@@ -49,7 +54,12 @@ class Boussinesq:
 
 
 class PseudoSpectralBoussinesq:
-    # pseudo-spectral solver using rk4 time integration in fourier space
+    """Fourier pseudospectral solver with RK4 in time (Trefethen, 2000).
+
+    Nt is the number of steps, so solve() returns Nt+1 time levels. The spatial
+    grid is periodic: linspace(x_min, x_max, Nx+1) with the right endpoint dropped.
+    """
+
     def __init__(self, boussinesq, Nx, Nt, device):
         self.Nx = Nx
         self.Nt = Nt
@@ -66,7 +76,6 @@ class PseudoSpectralBoussinesq:
         self.x = torch.linspace(self.x_min.item(), self.x_max.item(), Nx + 1, device=device)[:-1]
         self.dx = self.x[1] - self.x[0]
 
-        # fft frequencies
         self.k = 2 * torch.pi * torch.fft.fftfreq(Nx, d=(self.x_max.item() - self.x_min.item()) / Nx).to(device)
         self.ik = 1j * self.k
         self.k2 = self.k ** 2
@@ -78,8 +87,7 @@ class PseudoSpectralBoussinesq:
         self.time_steps = np.linspace(self.t_min, self.t_max, Nt + 1)
 
     def field(self, eta_hat, u_hat):
-        # compute time derivatives in spectral form from current fourier coefficients
-        # only physical fields needed: eta and u for nonlinear products
+        """Spectral time derivatives; nonlinear products are formed in physical space."""
         eta = torch.fft.ifft(eta_hat).real
         u = torch.fft.ifft(u_hat).real
 
@@ -97,7 +105,6 @@ class PseudoSpectralBoussinesq:
         return eta_t_hat, u_t_hat
 
     def RK4_step(self, eta_hat, u_hat):
-        # one rk4 time step for spectral coefficients
         dt = self.dt
         k1_eta, k1_u = self.field(eta_hat, u_hat)
         k2_eta, k2_u = self.field(eta_hat + 0.5 * dt * k1_eta, u_hat + 0.5 * dt * k1_u)
@@ -109,7 +116,7 @@ class PseudoSpectralBoussinesq:
         return eta_hat_new, u_hat_new
 
     def solve(self):
-        # integrate the pseudo-spectral solver and return solution histories
+        """Returns (x, t, eta, u) with eta, u of shape (Nt+1, Nx)."""
         eta_h, u_h = self.eta_hat, self.u_hat
 
         res_eta = np.zeros((self.Nt + 1, self.Nx), dtype=np.float32)

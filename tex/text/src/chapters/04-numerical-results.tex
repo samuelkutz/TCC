@@ -1,17 +1,17 @@
 \chapter{NUMERICAL RESULTS}
 \label{chap:results}
 
-This chapter presents the numerical results. Section~\ref{sec:r_cost} reports what each model costs to train. Section~\ref{sec:r_bias} establishes the spectral-bias mechanism, carrying it from an exact toy calculation to the kernel of a real network. Section~\ref{sec:r_bands} follows the error through the frequency bands as training proceeds, Section~\ref{sec:r_spectrum} fixes a common parameter to compare the final spectra, and Section~\ref{sec:r_gibbs} isolates the temporal artifact that the physics term corrects. Two stress tests then push the operators off their training conditions (Section~\ref{sec:r_stress}), and Section~\ref{sec:r_synthesis} gathers the findings. The pseudospectral solver is the ground truth throughout, and each model leaves a characteristic failure mode.
+This chapter reports what the experiments of Chapter~\ref{chap:methodology} produced. Section~\ref{sec:r_cost} accounts for what each model costs to train. Section~\ref{sec:r_bias} establishes the spectral-bias mechanism on the kernel of the data-only MLP fitting the Boussinesq elevation. Section~\ref{sec:r_bands} then follows the error through the frequency bands as training proceeds. Section~\ref{sec:r_spectrum} fixes a common parameter and compares the final spectra, and Section~\ref{sec:r_gibbs} isolates the temporal artifact that the physics term corrects. Two stress tests push the operators off their training conditions in Section~\ref{sec:r_stress}, and Section~\ref{sec:r_synthesis} gathers the findings. The pseudospectral solver is the ground truth throughout, and each model turns out to fail in its own characteristic way.
 
 % ===============================================================
 \section{Training Cost}
 \label{sec:r_cost}
 
-Before asking how well the models perform, we ask what they cost. Table~\ref{tab:training} lists the size, wall-clock training time, and final training loss of the six trained models. Two quantities organize it. In capacity, the operators carry about $2.1$ million parameters, roughly ten times the $\sim\!200{,}000$ of the pointwise MLP and PINN. In training time, the models separate sharply: the MLP finishes in under three minutes, the plain FNO and the two PINNs in fifteen to twenty, and the PINO in well over an hour, because its physics residual is assembled on the finer $256 \times 256$ grid (Section~\ref{sec:m_pino}) at every iteration.
+Before asking how well the models perform, we ask what they cost. Table~\ref{tab:training} lists the size, wall-clock training time, and final training loss of the six trained models. Two quantities set the models apart. In capacity, the operators carry about $2.1$ million parameters, roughly ten times the $\sim\!200{,}000$ of the pointwise MLP and PINN. In training time, the gap is wide: the MLP finishes in under three minutes, the plain FNO and the two PINNs in fifteen to twenty, and the PINO in well over an hour. The PINO is slow because it assembles its physics residual on the finer $256 \times 256$ grid (Section~\ref{sec:m_pino}) at every iteration.
 
 \begin{table}[htbp]
     \centering
-    \caption{Model size, training time on the GTX~1660~SUPER, and final training loss. The final-loss column is \emph{not} comparable across rows: each objective combines data, residual and initial-condition terms differently, so its magnitude reflects the makeup of the loss rather than solution accuracy. Accuracy is measured instead by the relative-error metrics of the following sections.}
+    \caption{Model size, training time on the GTX~1660~SUPER, and final training loss. The final-loss column is not comparable across rows: each objective combines data, residual and initial-condition terms differently, so its magnitude reflects the makeup of the loss rather than solution accuracy. Accuracy is measured instead by the relative-error metrics of the following sections.}
     \label{tab:training}
     \small
     \begin{tabular}{llrrr}
@@ -30,62 +30,87 @@ Before asking how well the models perform, we ask what they cost. Table~\ref{tab
     \autoriapropria
 \end{table}
 
-That hour buys generality. A single FNO or PINO covers the entire $20$-point family~\eqref{eq:param_grid} from one training, whereas each MLP and PINN is fixed to $\alpha = \beta = 3.21$ and must be retrained from scratch for any other value. Spread over the family, the operators, and the FNO in particular, are the cheaper route to a solution at a new parameter, since inference there is a single forward pass.
+That extra hour of training is what makes the operators general. A single FNO or PINO covers the entire $20$-point family~\eqref{eq:param_grid} from one training, whereas each MLP and PINN is fixed to $\alpha = \beta = 3.21$ and must be retrained from scratch for any other value. Spread over the family, the operators are the cheaper route to a solution at a new parameter, and the FNO especially so, since inference there is a single forward pass.
 
-One caution belongs up front, because the final-loss column should not be read as a ranking. The losses do not share a scale: each objective sums a different subset of data, residual, and initial-condition terms. The PINO with data reaches a larger final loss ($8.1 \times 10^{-5}$) than the PINO without ($4.7 \times 10^{-5}$) because the extra supervised term adds its own residual to the total, and the sections below show that it is in fact the more accurate of the two. The plain FNO carries the smallest loss in the table ($3.6 \times 10^{-6}$) because its objective is a single data term with nothing added. Training loss is a poor proxy for accuracy here, and every comparison that follows rests on the held-out relative-error metrics of Section~\ref{sec:m_metrics}.
+One caution belongs up front, because the final-loss column is not a ranking. The losses do not share a scale, as each objective sums a different subset of data, residual, and initial-condition terms. The PINO with data reaches a larger final loss ($8.1 \times 10^{-5}$) than the PINO without ($4.7 \times 10^{-5}$) because the extra supervised term adds its own residual to the total, and the sections below show that it is the more accurate of the two. The plain FNO carries the smallest loss in the table ($3.6 \times 10^{-6}$) because its objective is a lone data term with nothing added. Training loss is a poor proxy for accuracy here. Every comparison that follows rests instead on the held-out relative-error metrics of Section~\ref{sec:m_metrics}.
 
 % ===============================================================
 \section{Spectral Bias, From Theory to the Network}
 \label{sec:r_bias}
 
-The models share one behaviour above all others, and before comparing them we establish its mechanism. Spectral bias, derived in Section~\ref{subsec:spectral_bias}, predicts that gradient training resolves low frequencies before high ones at a rate set by the eigenvalues of the Neural Tangent Kernel. We confirm this in two steps. First we check the prediction where it can be made exact, on the toy Fourier-feature model of Section~\ref{sec:m_probe_theory}. Then we look for the same mechanism in the kernel of a real Boussinesq PINN, where the assumptions hold only approximately.
-
-The toy model removes every approximation, so it is the right place to test the theory quantitatively. Its Jacobian is constant by construction, so the frozen-kernel dynamics hold exactly and the closed-form predictions of Section~\ref{subsec:spectral_bias} can be compared against measurement with nothing left to interpretation. Figure~\ref{fig:theory} reports the three checks.
+One behaviour is common to all the models, and we establish its mechanism before comparing them. Spectral bias, derived in Section~\ref{subsec:spectral_bias}, predicts that gradient training resolves low frequencies before high ones at a rate set by the eigenvalues of the Neural Tangent Kernel. The probe of Section~\ref{sec:m_probe} puts that prediction on the Boussinesq system in its barest form: a network from $\mathbb{R}$ to $\mathbb{R}$ learning the single profile $\eta(x, 15)$ at $\alpha = \beta = 3.21$, at three widths, by gradient descent at the fixed step $\mu = 10^{-4}$. Because the network is nonlinear in its parameters, nothing here is true by construction. Figure~\ref{fig:theory} reports the four checks.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/ntk_error_decay.png}
+        \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk_error_decay.png}
         \caption{Per-eigendirection error decay.}
         \label{fig:theory_error}
-    \end{subfigure}
+    \end{subfigure} 
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/ntk_spectral_decay.png}
+        \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk_spectral_decay.png}
         \caption{Per-mode spectral decay.}
         \label{fig:theory_spectral}
     \end{subfigure}
 
     \vspace{0.8em}
-    \begin{subfigure}[t]{0.60\textwidth}
+    \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/ntk_iteration_count.png}
+        \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk_band_decay.png}
+        \caption{Band-averaged relative spectral error.}
+        \label{fig:theory_band}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk_iteration_count.png}
         \caption{Measured versus predicted iteration count $n_k$.}
         \label{fig:theory_iter}
     \end{subfigure}
-    \caption{Spectral-bias theory validated on the Fourier-feature model of Section~\ref{sec:m_probe_theory}, trained by full-batch gradient descent at $\mu = 1/\lambda_{\max}$ so that the linearized update~\eqref{eq:error_discrete} is exact. Measured curves (markers) overlay the theoretical predictions (lines) until the float64 floor.}
+    \caption{Spectral-bias predictions measured on the Boussinesq probe of Section~\ref{sec:m_probe}, an $\mathbb{R} \to \mathbb{R}$ network fitting $\eta(x, 15)$ at $\alpha = \beta = 3.21$ by full-batch gradient descent at the fixed step $\mu = 10^{-4}$. Panels (a)--(c) are the widest network, $N_{\mathrm{MLP}} = 512$; panel (d) collects all three widths. Lines are measured, open markers are the linearized prediction.}
     \label{fig:theory}
     \autoriapropria
 \end{figure}
 
-Each panel confirms one prediction. In Figure~\ref{fig:theory_error} the amplitude of the error along each eigendirection follows the predicted $(1 - \mu\lambda_k)^n$ of~\eqref{eq:error_discrete}: the measured markers sit on the theoretical curves down to the float64 floor, and the directions with large eigenvalues collapse first while those with small eigenvalues linger, the per-eigendirection ordering of~\eqref{eq:error_evolution}. Figure~\ref{fig:theory_spectral} reads the same dynamics in Fourier space, where the measured per-mode amplitude tracks the prediction of~\eqref{eq:fourier_evolution} and the low wavenumbers resolve first, the frequency principle stated literally. Figure~\ref{fig:theory_iter} makes the agreement quantitative: plotting, for each mode, the measured iteration at which its amplitude first falls below the target precision against the closed-form estimate $n_k$ of~\eqref{eq:iteration_count} places the points on the $y = x$ diagonal, coloured by $\log_{10}\lambda_k$, with the smallest-eigenvalue modes demanding the most iterations. The theory holds to numerical precision on the model built to satisfy its assumptions.
+Each panel tests one prediction. In Figure~\ref{fig:theory_error} the amplitude of the error along each eigendirection follows the predicted $|1 - \mu\lambda_k|^n$ of~\eqref{eq:error_discrete} over four to five decades, and the ordering is unmistakable. The leading eigendirection is spent within about $70$ iterations, the second within some $300$, the third only in the last part of the run near $2 \times 10^4$, and the fourth has barely begun to move by the time the run ends. Each waits its turn in exact order of eigenvalue, which is the per-eigendirection ordering of~\eqref{eq:error_evolution} read directly off a real network. The measured curves leave the prediction only where a coefficient passes through zero and turns back up, at amplitudes near $10^{-6}$, which is where the drifting Jacobian finally overtakes the initial-kernel approximation. Figure~\ref{fig:theory_spectral} reads the same dynamics in Fourier space, where the frequency principle is stated as plainly as it can be: the wavenumber $k = 1$ amplitude is driven down while $k = 4$, $k = 9$ and $k = 15$ lie flat across the entire run, unchanged from their initial values. Figure~\ref{fig:theory_band} takes the whole spectrum rather than four sampled wavenumbers, averaging the relative error over the low, mid and high bands of~\eqref{eq:m_bands}. Only the low band descends and stays down, from $1.35$ to $0.88$. The mid and high bands fall from $1.84$ and $1.73$ but level off at $1.01$ and $1.00$ within the first hundred iterations and never move again, meaning the error at those wavenumbers remains the size of the reference itself.
 
-With the prediction confirmed in the exact case, we look for the same mechanism in a real network, whose kernel drifts. Figure~\ref{fig:ntk_panel} shows the diagnostic of Section~\ref{sec:m_probe_ntk} on the Boussinesq PINN residual for three network widths.
+Figure~\ref{fig:theory_iter} makes the agreement quantitative and adds the check the other panels cannot make. The closed form $n_k = \ln(|c_k(0)|/\varepsilon)/(\mu\lambda_k)$ of~\eqref{eq:iteration_count} carries no width, so if it transfers, networks of $241$, $12{,}673$ and $789{,}505$ parameters must fall on one diagonal. They do, across four decades of iteration count. In log space the measured and predicted counts correlate at $0.99999$ for both width $64$ and width $512$, and the median ratio of measured to predicted tightens from $1.11$ at width $8$ to $1.00$ at width $64$ and $0.99$ at width $512$. The prediction is accurate, and it becomes more accurate as the network widens, which is what lazy training claims.
+
+One measurement qualifies all of this, and it is the most telling result in the section. None of the three networks learns the profile. Figure~\ref{fig:probe_fit} sets what they produced against what they were asked to reproduce.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.72\textwidth]{boussinesq_spectral_bias_mlp/ntk_fit.png}
+    \caption{The three gradient-descent probes against the reference profile $\eta(x, 15)$ at $\alpha = \beta = 3.21$, after $20{,}000$ iterations, with an Adam-trained control of the same architecture and budget. Every descent run returns a nearly flat curve; the control recovers the crests. The gap between them is the practical content of spectral bias.}
+    \label{fig:probe_fit}
+    \autoriapropria
+\end{figure}
+
+The reference carries two sharp crests near $x = \pm 20$, reaching about $0.31$, with dispersive oscillations between them. All three descent runs return a nearly flat curve close to $0.025$, recovering little beyond a constant offset. The error norm falls from $2.360$ to $0.723$ at width $8$, from $0.779$ to $0.721$ at width $64$, and from $0.798$ to $0.720$ at width $512$, against $\|\eta(\cdot,15)\| = 0.756$: the three runs converge to the same residual and are left with $95.7\%$, $95.4\%$ and $95.3\%$ relative error. That is also why the band curves of Figure~\ref{fig:theory_band} barely descend, and why only one of the four wavenumbers in Figure~\ref{fig:theory_spectral} moves.
+
+The eigenvalues say why. At width $512$ they run $1968$, $444$, $6.93$, $0.333$, $1.2 \times 10^{-2}$, $7.6 \times 10^{-4}$, $2.8 \times 10^{-5}$, and by the thirteenth mode they reach the resolution of a double-precision eigendecomposition. Only the leading smooth directions are reachable in any practical number of steps, and the target does not live there: it is two narrow pulses in a domain $120$ units wide, so once $x$ is mapped to $[-1,1]$ a pulse of unit width occupies a sixtieth of the input range. Its energy is spread accordingly, with the first eight wavenumbers holding only $70\%$ of it and sixteen needed for $92\%$. The gap between what the kernel offers and what the target requires is the whole of the effect.
+
+Two controls fix what this does and does not say. The bound is set by the spectrum rather than by patience: repeating the run at the largest stable step, ten times the one used here, ends at the same $95.2\%$. And it is a property of the optimizer, not of the architecture. Trained with Adam at learning rate $10^{-3}$, for the same budget and the same width, the identical network ends at $13.8\%$ and reproduces both crests, as the control curve of Figure~\ref{fig:probe_fit} shows. Adam rescales each parameter direction by its own gradient statistics and is therefore not confined to the leading eigendirections, whereas plain descent is exactly the dynamics~\eqref{eq:error_discrete} describes and exactly the setting in which the eigenvalue disparity binds. The factor of seven between those two figures is the practical size of spectral bias here, and it is why the adaptive and spectrum-aware optimizers of Section~\ref{sec:c_future} are the natural lever against it.
+
+That distinction governs how the rest of the chapter reads. All six trained models of Section~\ref{sec:m_ladder} use Adam at learning rate $10^{-3}$, so the descent runs above are an instrument for testing~\eqref{eq:error_discrete}, not a forecast of what the MLP of Section~\ref{sec:m_mlp} achieves; the band-tracking curves of the next section duly show that model driving its low band down by nearly two orders of magnitude. What survives the change of optimizer is not the magnitude of the failure but its shape, the ordering of the bands and the fact that the high wavenumbers are the ones left behind. That is the question the following sections put to the full architectures, which carry far more structure than this probe: how much of the wall does each of them move.
+
+The predictions above assume the kernel stays put. Figure~\ref{fig:ntk_panel} reports whether it does, measured along the same three runs.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/ntk/pinn_ntk_panel_param.png}
+        \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_param.png}
         \caption{Relative parameter drift $\|\theta-\theta_0\|/\|\theta_0\|$.}
         \label{fig:ntk_param}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/ntk/pinn_ntk_panel_kernel.png}
+        \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_kernel.png}
         \caption{Relative kernel drift $\|K-K_0\|/\|K_0\|$.}
         \label{fig:ntk_kernel}
     \end{subfigure}
@@ -93,61 +118,63 @@ With the prediction confirmed in the exact case, we look for the same mechanism 
     \vspace{0.8em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/ntk/pinn_ntk_panel_spectrum.png}
+        \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_spectrum.png}
         \caption{Eigenvalue spectrum of $K$: initialization (solid) versus end of training (dashed), on log--log axes.}
         \label{fig:ntk_spectrum}
     \end{subfigure}
-    \caption{Neural Tangent Kernel diagnostic for the Boussinesq PINN residual at $\alpha = \beta = 3.21$, for widths $8$, $128$ and $512$.}
+    \caption{Neural Tangent Kernel diagnostic for the Boussinesq probe at $\alpha = \beta = 3.21$, logged along the same gradient-descent runs as Figure~\ref{fig:theory}, for widths $8$, $64$ and $512$. Eigenvalues below $10^{-13}\lambda_{\max}$ are numerical noise and are not drawn.}
     \label{fig:ntk_panel}
     \autoriapropria
 \end{figure}
 
-The diagnostic supports both ingredients the theory depends on. The parameter drift is the clearest signature of the frozen-parameter regime: over the full run the network moves by about $1.5\%$ of its initial norm at width $8$, $0.4\%$ at width $128$, and $0.1\%$ at width $512$, shrinking monotonically as the network widens (Figure~\ref{fig:ntk_param}). The kernel drifts more, but in the same direction, from about $22\%$ at width $8$ to $20\%$ at width $128$ and $13\%$ at width $512$ in relative norm (Figure~\ref{fig:ntk_kernel}), so the frozen-kernel approximation~\eqref{eq:error_linear_ode} sharpens as the network widens, as the analysis assumes. The eigenvalue spectrum of the last panel supplies the driver: it spans many orders of magnitude and falls off steeply, with the narrow kernel collapsing to the numerical floor after a few dozen modes and the wider kernels decaying more gradually but still steeply. By~\eqref{eq:training_time} the time to resolve an eigendirection is inversely proportional to its eigenvalue, so this steep decay means every direction past the leading smooth ones is learned prohibitively slowly. This is the eigenvalue disparity that \textcite{wang2022ntk} identify as the source of spectral bias, and it sets the expectation for everything that follows: the network resolves the low-frequency structure readily and stalls on the high-frequency detail. The exact toy confirmed the prediction; the real kernel shows the same mechanism at work, and the band-tracking curves of the next section can be read as that mechanism operating inside the full architectures.
+The diagnostic supports both ingredients the theory rests on, and both shrink monotonically with width. Over the full run the parameters move by $5.3\%$ of their initial norm at width $8$, $1.2\%$ at width $64$, and $0.20\%$ at width $512$ (Figure~\ref{fig:ntk_param}), a factor of twenty-six across the range. The empirical kernel follows the same ordering, drifting by $4.5\%$, $2.1\%$ and $1.3\%$ in relative norm (Figure~\ref{fig:ntk_kernel}). Almost all of the movement in both quantities happens in the first few hundred iterations, after which the curves are nearly flat, which is the behaviour the linearization needs. The initial-kernel approximation~\eqref{eq:error_linear_ode} therefore sharpens with width exactly as the analysis assumes, and it does so in step with the iteration counts of Figure~\ref{fig:theory_iter}, whose median ratio tightens toward unity over the same three networks. The two measurements agree on which network the theory describes best.
+
+The last panel supplies the driver, and it is the one figure worth carrying into every later section. The eigenvalue spectrum falls by roughly $14$ orders of magnitude within about a dozen modes at every width, from $\lambda_{\max} \approx 259$, $478$ and $1968$ down to the double-precision floor. The initialization and end-of-training curves lie almost on top of each other at every width, separating perceptibly only at width $8$, which is the same ordering the drift panels give. By~\eqref{eq:training_time} the time to resolve an eigendirection is inversely proportional to its eigenvalue, so a spectrum this steep means that beyond the first handful of smooth directions the cost of learning becomes prohibitive, and beyond about the twelfth there is no direction left to learn at all. This is the eigenvalue disparity that \textcite{wang2022ntk} identify as the source of spectral bias. It sets the expectation for everything that follows: a network resolves low-frequency structure readily and stalls on high-frequency detail, and on a target as sharp as a Boussinesq pulse the stall dominates. The band-tracking curves of the next section can be read as that mechanism operating inside the full architectures, where a supervised objective, a physics residual and an operator backbone all push against it with varying success.
 
 % ===============================================================
 \section{Learning by Frequency Band}
 \label{sec:r_bands}
 
-We now watch spectral bias develop as the optimizer runs. Figure~\ref{fig:spectral_bias} tracks the relative spectral error in the low, mid, and high bands of~\eqref{eq:bands} across training for all six models. Within any single panel the figure tells one clean story; across panels it carries the caveat of Section~\ref{sec:m_metrics}, that the operators are monitored on the near-linear sample $\alpha = \beta = 0.1$ while the pointwise MLP and PINN are monitored on the harder $\alpha = \beta = 3.21$. Cross-family magnitudes are therefore not directly comparable in this figure, and the matched comparison waits for Section~\ref{sec:r_spectrum}, where every model is evaluated at the common parameter $3.21$.
+We now watch spectral bias develop as the optimizer runs. Figure~\ref{fig:spectral_bias} tracks the relative spectral error in the low, mid, and high bands of~\eqref{eq:m_bands} across training for all six models. Within any single panel the figure tells one clean story. Across panels it carries the caveat of Section~\ref{sec:m_metrics}: the operators are monitored on the near-linear sample $\alpha = \beta = 0.1$, while the pointwise MLP and PINN are monitored on the harder $\alpha = \beta = 3.21$. Cross-family magnitudes are therefore not directly comparable here, and the matched comparison waits for Section~\ref{sec:r_spectrum}, where every model is evaluated at the common parameter $3.21$.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{spectral_bias_evolution_mlp_data_only.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_mlp_pure_data.png}
         \caption{MLP (data only), at $\alpha = \beta = 3.21$.}
         \label{fig:sb_mlp}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{spectral_bias_evolution_pinn_no_data.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_pinn_pure_physics.png}
         \caption{PINN (no data), at $\alpha = \beta = 3.21$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{spectral_bias_evolution_pinn_with_data.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_pinn_data_and_physics.png}
         \caption{PINN (with data), at $\alpha = \beta = 3.21$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{spectral_bias_evolution_fno.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_fno_pure_data.png}
         \caption{FNO, at $\alpha = \beta = 0.1$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{spectral_bias_evolution_pino_no_data.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_pino_pure_physics.png}
         \caption{PINO (no data), at $\alpha = \beta = 0.1$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{spectral_bias_evolution_pino_with_data.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_pino_data_and_physics.png}
         \caption{PINO (with data), at $\alpha = \beta = 0.1$.}
     \end{subfigure}
     \caption{Relative spectral error by frequency band during training. In every panel the low band (blue) is learned first and driven lowest, the mid band (purple) trails it, and the high band (red) is learned last and least, the signature of spectral bias. Note the mixed reference samples: the pointwise MLP and PINN are tracked at $\alpha = \beta = 3.21$, the operators at $\alpha = \beta = 0.1$.}
@@ -155,67 +182,67 @@ We now watch spectral bias develop as the optimizer runs. Figure~\ref{fig:spectr
     \autoriapropria
 \end{figure}
 
-The ordering within each panel is the same in all six cases: the low band is driven lowest, the mid band trails, and the high band is resolved last and least. Every architecture and every regime obeys this ordering, which is the measured face of the NTK spectrum of Figure~\ref{fig:ntk_panel} and the toy validation of Figure~\ref{fig:theory}. What varies from panel to panel is the size of the gap between the bands and how far each is pushed down.
+The ordering within each panel is the same in all six cases. The low band is driven lowest, the mid band trails, and the high band is resolved last and least. Every architecture and every regime obeys this ordering, which is the measured face of the NTK spectrum of Figure~\ref{fig:ntk_panel} and the probe of Figure~\ref{fig:theory}. What changes from panel to panel is the size of the gap between the bands and how far each is pushed down.
 
-We read the MLP panel (Figure~\ref{fig:sb_mlp}) first, because it isolates spectral bias most cleanly: with no physics term and no initial-condition term competing against the data fit, its ordering carries no confounders. The low band falls from $0.837$ at the first logged epoch to $0.015$ at the last, almost two orders of magnitude; the mid band falls from $1.004$ to $0.114$; and the high band moves only from $1.009$ to $0.704$. The low frequencies are resolved and the high frequencies are left almost untouched, the prediction of Section~\ref{subsec:spectral_bias} in its cleanest empirical form. Every other panel is a variation on it with data or physics added.
+We read the MLP panel (Figure~\ref{fig:sb_mlp}) first, since it shows spectral bias with nothing to obscure it. With no physics term and no initial-condition term competing against the data fit, its ordering carries no confounders. The low band falls from $0.837$ at the first logged epoch to $0.015$ at the last, almost two orders of magnitude. The mid band falls from $1.004$ to $0.114$. The high band moves only from $1.009$ to $0.704$. The low frequencies are resolved and the high frequencies are left almost untouched, which is the prediction of Section~\ref{subsec:spectral_bias} in its plainest empirical form. Every other panel is a variation on it, with data or physics added.
 
-The comparisons that are valid across panels hold the architecture and the reference sample fixed and change only the data term, comparing the two regimes at the same final iteration. For the PINN at $3.21$, adding data lowers the terminal low-band error from $0.60$ to $0.06$ and the mid band from $0.82$ to $0.18$; the high band also improves, from $0.92$ to $0.70$, though it remains the worst band by far. For the PINO at $0.1$ the effect is larger in the low and mid bands: the data term drives the low band from $0.09$ to $0.02$ and the mid band from $0.27$ to $0.05$, with a smaller gain in the high band, which falls from $0.83$ to $0.58$. In both families the supervised term is a strong lever on the low and mid bands and a weak one on the high band. The physics residual alone, in the two no-data panels, never brings any band near the levels reached with data; the PINN~(no~data) high band barely moves over the whole run, ending at $0.92$, and the PINO~(no~data) high band ends at $0.83$.
+The comparisons that are valid across panels hold the architecture and the reference sample fixed and change only the data term, reading the two regimes at the same final iteration. For the PINN at $3.21$, adding data lowers the terminal low-band error from $0.60$ to $0.06$ and the mid band from $0.82$ to $0.18$. The high band also improves, from $0.92$ to $0.70$, though it stays the worst band. For the PINO at $0.1$ the effect is larger in the low and mid bands: the data term drives the low band from $0.09$ to $0.02$ and the mid band from $0.27$ to $0.05$, with a smaller gain in the high band, which falls from $0.83$ to $0.58$. In both families the supervised term acts mainly on the low and mid bands and little on the high band. The physics residual alone, in the two no-data panels, does not bring any band near the levels reached with data. The PINN (no data) high band barely moves over the whole run, ending at $0.92$, and the PINO (no data) high band ends at $0.83$.
 
-The FNO panel, monitored at the same near-linear parameter as the PINO, reaches the lowest low- and mid-band errors in the figure ($0.013$ and $0.016$) and the lowest high-band error too ($0.151$). Even so, its high band sits an order of magnitude above its low band. Read across its panels, Figure~\ref{fig:spectral_bias} shows that operators compress spectral bias rather than remove it: the best model still leaves a high-frequency residual near $15\%$, and every other model leaves more.
+The FNO panel, monitored at the same near-linear parameter as the PINO, reaches the lowest low- and mid-band errors in the figure ($0.013$ and $0.016$) and the lowest high-band error too ($0.151$). Even so, its high band sits an order of magnitude above its low band. Read across its panels, Figure~\ref{fig:spectral_bias} shows that operators compress spectral bias rather than remove it. Even the lowest-error model still leaves a high-frequency residual near $15\%$, and every other model leaves more.
 
 % ===============================================================
 \section{Reproducing the Spectrum}
 \label{sec:r_spectrum}
 
-To compare the families on equal terms we fix $\alpha = \beta = 3.21$ and inspect the full spatial spectrum of the prediction at three times, $t = 0$, $t = T/2 = 15$, and $t = T = 30$. Figures~\ref{fig:spec_mlp}--\ref{fig:spec_pino_nodata} report the six models; in every panel the black curve is the reference spatial spectrum and the dashed orange curve is the prediction, with the relative-error curves and the time-averaged error at the foot of each figure.
+To compare the families on equal terms we fix $\alpha = \beta = 3.21$ and inspect the full spatial spectrum of the prediction at three times, $t = 0$, $t = T/2 = 15$, and $t = T = 30$. Figures~\ref{fig:spec_mlp}--\ref{fig:spec_pino_nodata} report the six models. In every panel the black curve is the reference spatial spectrum and the dashed orange curve is the prediction, with the relative-error curves and the time-averaged error at the foot of each figure.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/mlp_model2_spectral_panel_spectrum_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_spectrum_1.png}
         \caption{Spectrum, $t = 0$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/mlp_model2_spectral_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_relerr_1.png}
         \caption{Relative error, $t = 0$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/mlp_model2_spectral_panel_spectrum_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_spectrum_2.png}
         \caption{Spectrum, $t = 15$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/mlp_model2_spectral_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_relerr_2.png}
         \caption{Relative error, $t = 15$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/mlp_model2_spectral_panel_spectrum_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_spectrum_3.png}
         \caption{Spectrum, $t = 30$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/mlp_model2_spectral_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_relerr_3.png}
         \caption{Relative error, $t = 30$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{mlp/mlp_model2_spectral_panel_mean.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_mean.png}
         \caption{Mean relative spectral error over time.}
     \end{subfigure}
-    \caption{MLP (data only) spatial spectrum at $\alpha = \beta = 3.21$. Fitting the reference with no equation and no physics term, the network reproduces the low-wavenumber crests but undershoots the tail: the relative error climbs with wavenumber, the clearest picture of spectral bias among the six models.}
+    \caption{MLP (data only) spatial spectrum at $\alpha = \beta = 3.21$. Fitting the reference with no equation and no physics term, the network reproduces the low-wavenumber crests but undershoots the tail. The relative error climbs with wavenumber, the most pronounced case of spectral bias among the six models.}
     \label{fig:spec_mlp}
     \autoriapropria
 \end{figure}
@@ -224,49 +251,49 @@ To compare the families on equal terms we fix $\alpha = \beta = 3.21$ and inspec
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_spectrum_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_spectrum_1.png}
         \caption{Spectrum, $t = 0$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_relerr_1.png}
         \caption{Relative error, $t = 0$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_spectrum_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_spectrum_2.png}
         \caption{Spectrum, $t = 15$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_relerr_2.png}
         \caption{Relative error, $t = 15$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_spectrum_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_spectrum_3.png}
         \caption{Spectrum, $t = 30$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_relerr_3.png}
         \caption{Relative error, $t = 30$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/no_data/pinn_no_data_model2_spectral_panel_mean.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_mean.png}
         \caption{Mean relative spectral error over time.}
     \end{subfigure}
-    \caption{PINN (no data) spatial spectrum at $\alpha = \beta = 3.21$. The network cannot represent the $\sech^2$ tail even at $t = 0$, and the relative error rises monotonically with wavenumber; the mean spectral error grows from $0.18$ at $t = 0$ to $0.81$ at $t = 30$.}
+    \caption{PINN (no data) spatial spectrum at $\alpha = \beta = 3.21$. The network cannot represent the $\sech^2$ tail even at $t = 0$, and the relative error rises monotonically with wavenumber. The mean spectral error grows from $0.18$ at $t = 0$ to $0.81$ at $t = 30$.}
     \label{fig:spec_pinn_nodata}
     \autoriapropria
 \end{figure}
@@ -275,46 +302,46 @@ To compare the families on equal terms we fix $\alpha = \beta = 3.21$ and inspec
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_spectrum_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_spectrum_1.png}
         \caption{Spectrum, $t = 0$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_relerr_1.png}
         \caption{Relative error, $t = 0$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_spectrum_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_spectrum_2.png}
         \caption{Spectrum, $t = 15$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_relerr_2.png}
         \caption{Relative error, $t = 15$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_spectrum_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_spectrum_3.png}
         \caption{Spectrum, $t = 30$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_relerr_3.png}
         \caption{Relative error, $t = 30$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pinn/with_data/pinn_model2_spectral_panel_mean.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_mean.png}
         \caption{Mean relative spectral error over time.}
     \end{subfigure}
     \caption{PINN (with data) spatial spectrum at $\alpha = \beta = 3.21$. The low-wavenumber crests are tracked more tightly than in Figure~\ref{fig:spec_pinn_nodata}, but the high-wavenumber undershoot and the growth of the mean error in time ($0.17 \to 0.60 \to 0.70$) remain.}
@@ -322,52 +349,52 @@ To compare the families on equal terms we fix $\alpha = \beta = 3.21$ and inspec
     \autoriapropria
 \end{figure}
 
-The pointwise panels show the same failure, already present in the initial state. Both PINN regimes fail to represent the high-wavenumber content of the $\sech^2$ profile at $t = 0$, and the relative error climbs toward unity as the mode index grows. Without data (Figure~\ref{fig:spec_pinn_nodata}) the predicted spectrum has shed most of its mid- and high-frequency amplitude by $t = 30$, and the mean spectral error reaches $0.81$. Adding data (Figure~\ref{fig:spec_pinn_data}) tightens the low-wavenumber crests, in step with the low-band gain of Figure~\ref{fig:spectral_bias}, yet the aggregate mean improves only modestly ($0.17 \to 0.60 \to 0.70$), because the mid and high modes dominate it and the data term does not recover them at this hard parameter. The MLP (Figure~\ref{fig:spec_mlp}) tells the same story with the physics stripped away: it fits the reference where the frequencies are low and undershoots where they are high, its mean spectral error rising from $0.17$ at $t = 0$ to $0.53$ at $t = 15$ and $0.65$ at $t = 30$. Data helps the pointwise models where the kernel is favourable but not where it is adverse.
+The pointwise panels show the same failure, already present in the initial state. Both PINN regimes fail to represent the high-wavenumber content of the $\sech^2$ profile at $t = 0$, and the relative error climbs toward unity as the mode index grows. Without data (Figure~\ref{fig:spec_pinn_nodata}) the predicted spectrum has shed most of its mid- and high-frequency amplitude by $t = 30$, and the mean spectral error reaches $0.81$. Adding data (Figure~\ref{fig:spec_pinn_data}) tightens the low-wavenumber crests, in step with the low-band gain of Figure~\ref{fig:spectral_bias}, yet the aggregate mean improves only modestly ($0.17 \to 0.60 \to 0.70$). The mid and high modes account for most of that mean, and the data term does not recover them at this hard parameter. The MLP (Figure~\ref{fig:spec_mlp}) tells the same story with the physics stripped away. It fits the reference where the frequencies are low and undershoots where they are high, its mean spectral error rising from $0.17$ at $t = 0$ to $0.53$ at $t = 15$ and $0.65$ at $t = 30$. Data helps the pointwise models where the kernel is favourable, but not where it is adverse.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_spectrum_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_spectrum_1.png}
         \caption{Spectrum, $t = 0$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_relerr_1.png}
         \caption{Relative error, $t = 0$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_spectrum_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_spectrum_2.png}
         \caption{Spectrum, $t = 15$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_relerr_2.png}
         \caption{Relative error, $t = 15$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_spectrum_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_spectrum_3.png}
         \caption{Spectrum, $t = 30$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_relerr_3.png}
         \caption{Relative error, $t = 30$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_spectral_panel_mean.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_mean.png}
         \caption{Mean relative spectral error over time.}
     \end{subfigure}
     \caption{FNO spatial spectrum at $\alpha = \beta = 3.21$. Low and mid wavenumbers are tracked almost exactly (mean error $0.022$ at $t = 0$), but the error migrates to the high modes and grows in time, reaching a mean of $0.36$ at $t = 30$.}
@@ -379,49 +406,49 @@ The pointwise panels show the same failure, already present in the initial state
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_spectrum_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_spectrum_1.png}
         \caption{Spectrum, $t = 0$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_relerr_1.png}
         \caption{Relative error, $t = 0$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_spectrum_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_spectrum_2.png}
         \caption{Spectrum, $t = 15$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_relerr_2.png}
         \caption{Relative error, $t = 15$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_spectrum_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_spectrum_3.png}
         \caption{Spectrum, $t = 30$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_relerr_3.png}
         \caption{Relative error, $t = 30$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_spectral_panel_mean.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_mean.png}
         \caption{Mean relative spectral error over time.}
     \end{subfigure}
-    \caption{PINO (with data) spatial spectrum at $\alpha = \beta = 3.21$. The prediction tracks the reference across the band and, unlike the FNO, the mean error does not blow up at late time: it rises to $0.20$ at $t = 15$ and settles to $0.17$ at $t = 30$ ($0.09 \to 0.20 \to 0.17$). The physics residual steadies the temporal evolution.}
+    \caption{PINO (with data) spatial spectrum at $\alpha = \beta = 3.21$. The prediction tracks the reference across the band and, unlike the FNO, the mean error does not blow up at late time. It rises to $0.20$ at $t = 15$ and settles to $0.17$ at $t = 30$ ($0.09 \to 0.20 \to 0.17$). The physics residual steadies the temporal evolution.}
     \label{fig:spec_pino_data}
     \autoriapropria
 \end{figure}
@@ -430,46 +457,46 @@ The pointwise panels show the same failure, already present in the initial state
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_spectrum_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_spectrum_1.png}
         \caption{Spectrum, $t = 0$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_relerr_1.png}
         \caption{Relative error, $t = 0$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_spectrum_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_spectrum_2.png}
         \caption{Spectrum, $t = 15$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_relerr_2.png}
         \caption{Relative error, $t = 15$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_spectrum_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_spectrum_3.png}
         \caption{Spectrum, $t = 30$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_relerr_3.png}
         \caption{Relative error, $t = 30$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/no_data/pino_no_data_model2_spectral_panel_mean.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_mean.png}
         \caption{Mean relative spectral error over time.}
     \end{subfigure}
     \caption{PINO (no data) spatial spectrum at $\alpha = \beta = 3.21$. Without the supervised term the low- and mid-band undershoot returns (mean error $0.13 \to 0.23 \to 0.18$), confirming that the physics residual alone does not overcome spectral bias.}
@@ -477,61 +504,61 @@ The pointwise panels show the same failure, already present in the initial state
     \autoriapropria
 \end{figure}
 
-The operators, learning in the frequency domain, invert this picture at low and mid wavenumbers. The FNO (Figure~\ref{fig:spec_fno}) reproduces the low and mid spectrum almost exactly at early times, a mean error of $0.022$ at $t = 0$, well below the pointwise models, because those modes are what its spectral layers parametrize. Its weakness is in time: the error gathers in the high modes and grows, from a mean of $0.022$ at $t = 0$ to $0.36$ at $t = 30$. The PINO with data (Figure~\ref{fig:spec_pino_data}) inherits the operator's spectral accuracy without this late-time blow-up; its mean error rises to $0.20$ at $t = 15$ and settles to $0.17$ at $t = 30$, the steadiest of the six at the final time. The contrast is sharp at $t = 30$, where the PINO with data ($0.17$) clearly beats the FNO ($0.36$) even though the FNO was ahead at $t = 0$: the physics residual trades a slightly worse start for a steadier trajectory. The PINO without data (Figure~\ref{fig:spec_pino_nodata}) gives up the advantage, its low- and mid-band undershoot returning and its mean error running $0.13 \to 0.23 \to 0.18$, between the operators-with-data and the PINNs. The physics constraint by itself does not replace data.
+The operators, learning in the frequency domain, invert this picture at low and mid wavenumbers. The FNO (Figure~\ref{fig:spec_fno}) reproduces the low and mid spectrum almost exactly at early times, a mean error of $0.022$ at $t = 0$, below the pointwise models, because those modes are what its spectral layers parametrize. Its weakness is in time. The error gathers in the high modes and grows, from a mean of $0.022$ at $t = 0$ to $0.36$ at $t = 30$. The PINO with data (Figure~\ref{fig:spec_pino_data}) inherits the operator's spectral accuracy without this late-time blow-up. Its mean error rises to $0.20$ at $t = 15$ and settles to $0.17$ at $t = 30$, the smallest late-time value of the six. At $t = 30$ the PINO with data ($0.17$) is more accurate than the FNO ($0.36$), even though the FNO was ahead at $t = 0$. The physics residual trades a slightly worse start for a steadier trajectory. The PINO without data (Figure~\ref{fig:spec_pino_nodata}) gives up the advantage, its low- and mid-band undershoot returning and its mean error running $0.13 \to 0.23 \to 0.18$, between the operators-with-data and the PINNs. The physics constraint by itself does not replace data.
 
 % ===============================================================
 \section{Temporal Stability from the Physics Residual}
 \label{sec:r_gibbs}
 
-The temporal growth of the FNO error in Figure~\ref{fig:spec_fno} has a specific and instructive cause, and isolating it shows where the physics term makes the clearest difference. As Section~\ref{sec:m_fno} explains, the operator applies the Fourier transform along the temporal axis as well as the spatial one, implicitly assuming the trajectory is periodic in time. It is not: the field at $t = T$ does not match the field at $t = 0$, so the assumption manufactures an artificial discontinuity at the temporal boundary and excites the Gibbs phenomenon there \parencite{gibbs1899}. Figures~\ref{fig:ab_fno} and~\ref{fig:ab_pino} make the effect and its correction visible.
+The temporal growth of the FNO error in Figure~\ref{fig:spec_fno} has a specific and instructive cause, and isolating it shows where the physics term makes its most visible difference. As Section~\ref{sec:m_fno} explains, the operator applies the Fourier transform along the temporal axis as well as the spatial one, implicitly assuming the trajectory is periodic in time. It is not. The field at $t = T$ does not match the field at $t = 0$, so the assumption manufactures an artificial discontinuity at the temporal boundary and excites the Gibbs phenomenon there \parencite{gibbs1899}. Figures~\ref{fig:ab_fno} and~\ref{fig:ab_pino} make the effect and its correction visible.
 
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_surface_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_surface_1.png}
         \caption{Predicted $\eta(x,t)$, $\alpha=\beta=0.1$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_relerr_1.png}
         \caption{Relative error, $\alpha=\beta=0.1$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_surface_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_surface_2.png}
         \caption{Predicted $\eta(x,t)$, $\alpha=\beta=3.21$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_relerr_2.png}
         \caption{Relative error, $\alpha=\beta=3.21$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_surface_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_surface_3.png}
         \caption{Predicted $\eta(x,t)$, $\alpha=\beta=4.2$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_relerr_3.png}
         \caption{Relative error, $\alpha=\beta=4.2$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{fno/fno_model2_alpha_beta_panel_box.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_box.png}
         \caption{Relative error distribution vs.\ $\alpha=\beta$.}
     \end{subfigure}
-    \caption{FNO across the nonlinearity axis ($\alpha=\beta \in \{0.1, 3.21, 4.2\}$), evaluated at resolution $256$. The predicted surfaces (left) capture the two counter-propagating pulses, but the time-resolved relative error (right) spikes sharply at the final time $t = 30$: the temporal Gibbs artifact of treating time as a periodic axis.}
+    \caption{FNO across the nonlinearity axis ($\alpha=\beta \in \{0.1, 3.21, 4.2\}$), evaluated at resolution $256$. The predicted surfaces (left) capture the two counter-propagating pulses, but the time-resolved relative error (right) spikes at the final time $t = 30$, the temporal Gibbs artifact of treating time as a periodic axis.}
     \label{fig:ab_fno}
     \autoriapropria
 \end{figure}
@@ -540,46 +567,46 @@ The temporal growth of the FNO error in Figure~\ref{fig:spec_fno} has a specific
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_surface_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_surface_1.png}
         \caption{Predicted $\eta(x,t)$, $\alpha=\beta=0.1$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_relerr_1.png}
         \caption{Relative error, $\alpha=\beta=0.1$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_surface_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_surface_2.png}
         \caption{Predicted $\eta(x,t)$, $\alpha=\beta=3.21$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_relerr_2.png}
         \caption{Relative error, $\alpha=\beta=3.21$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_surface_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_surface_3.png}
         \caption{Predicted $\eta(x,t)$, $\alpha=\beta=4.2$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_relerr_3.png}
         \caption{Relative error, $\alpha=\beta=4.2$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_alpha_beta_panel_box.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_box.png}
         \caption{Relative error distribution vs.\ $\alpha=\beta$.}
     \end{subfigure}
     \caption{PINO (with data) across the same nonlinearity axis and resolution. The predicted surfaces are visually indistinguishable from the FNO, but the terminal-time spike of Figure~\ref{fig:ab_fno} is gone: the error rises only gently toward $t = 30$. The physics residual and the initial-condition term act as a temporal regularizer.}
@@ -587,7 +614,7 @@ The temporal growth of the FNO error in Figure~\ref{fig:spec_fno} has a specific
     \autoriapropria
 \end{figure}
 
-In the FNO panel (Figure~\ref{fig:ab_fno}) every parameter shows the same feature: after an initial transient the time-resolved error settles to a plateau and then jumps at $t = 30$ to two or three times that plateau. The spike appears at all three nonlinearities and is the dominant part of the FNO's late-time error. In the PINO panel (Figure~\ref{fig:ab_pino}) the predicted surfaces are visually identical, yet the spike is gone and the error rises only slightly toward the boundary. The PDE residual and the initial-condition term penalize the temporal inconsistency that a periodic transform would otherwise tolerate, damping the boundary oscillation. This is the clearest concrete benefit of the physics term in the study: it suppresses the FNO's Gibbs artifact. The effect is a suppression, since a small terminal rise remains, and it comes at the modelling cost of the residual machinery.
+In the FNO panel (Figure~\ref{fig:ab_fno}) every parameter shows the same feature. After an initial transient the time-resolved error settles to a plateau and then jumps at $t = 30$ to two or three times that plateau. The spike appears at all three nonlinearities and is the dominant part of the FNO's late-time error. In the PINO panel (Figure~\ref{fig:ab_pino}) the predicted surfaces are visually identical, yet the spike is gone and the error rises only slightly toward the boundary. The PDE residual and the initial-condition term penalize the temporal inconsistency that a periodic transform would otherwise tolerate, damping the boundary oscillation. Suppressing the FNO's Gibbs artifact is a concrete benefit of the physics term in this study. The correction is a suppression and not a cure, since a small terminal rise remains, and it comes at the modelling cost of the residual machinery.
 
 % ===============================================================
 \section{Two Stress Tests}
@@ -595,7 +622,7 @@ In the FNO panel (Figure~\ref{fig:ab_fno}) every parameter shows the same featur
 
 The comparisons so far held the operators on their training conditions. Two stress tests now push them off those conditions, one along the nonlinearity axis and one along the query resolution. Both concern the operators alone, since each pointwise MLP and PINN is trained at a single parameter and a single resolution and has nothing to say about either sweep.
 
-The first test sweeps the nonlinearity. The box plots at the foot of Figures~\ref{fig:ab_fno} and~\ref{fig:ab_pino} summarize the distribution of the time-resolved error~\eqref{eq:rel_time} over the whole trajectory at each of the three parameters, and the two operators order the parameters differently. For the FNO, the \emph{smallest} nonlinearity, $\alpha = \beta = 0.1$, carries the \emph{largest} median error, about $0.17$, against $0.12$ and $0.14$ at the more nonlinear $3.21$ and $4.2$. For the PINO with data the order reverses: the strongly nonlinear $4.2$ is the hardest, with a median near $0.08$, while $0.1$ and $3.21$ sit lower, near $0.07$ and $0.06$. Two effects plausibly combine to make the FNO's near-linear case its worst. First, $\alpha = \beta = 0.1$ sits at the extreme lower edge of the training grid~\eqref{eq:param_grid}, where the operator has the least surrounding data to interpolate from, so a boundary-of-range penalty is expected. Second, the relative metric~\eqref{eq:rel_time} divides by the instantaneous norm of the reference: in the near-linear regime the solution is dominated by the two clean, slowly deforming pulses of the wave-equation limit, whose energy is concentrated and whose norm is modest, so a fixed absolute error reads as a larger relative one. In the PINO with data, the physics residual holds the low and mid modes accurate across the range, and the residual error concentrates instead at the strongly nonlinear end, where the dynamics are genuinely hardest. The two panels agree only that the relative error is non-monotone in the parameter; which end is worst depends on the model.
+The first test sweeps the nonlinearity. The box plots at the foot of Figures~\ref{fig:ab_fno} and~\ref{fig:ab_pino} summarize the distribution of the time-resolved error~\eqref{eq:m_rel_time} over the whole trajectory at each of the three parameters, and the two operators order the parameters differently. For the FNO, the smallest nonlinearity, $\alpha = \beta = 0.1$, carries the largest median error, about $0.17$, against $0.12$ and $0.14$ at the more nonlinear $3.21$ and $4.2$. For the PINO with data the order reverses: the strongly nonlinear $4.2$ is the hardest, with a median near $0.08$, while $0.1$ and $3.21$ sit lower, near $0.07$ and $0.06$. Two effects plausibly combine to make the FNO's near-linear case its worst. First, $\alpha = \beta = 0.1$ sits at the extreme lower edge of the training grid~\eqref{eq:param_grid}, where the operator has the least surrounding data to interpolate from, so a boundary-of-range penalty is expected. Second, the relative metric~\eqref{eq:m_rel_time} divides by the instantaneous norm of the reference. In the near-linear regime the solution is dominated by the two clean, slowly deforming pulses of the wave-equation limit, whose energy is concentrated and whose norm is modest, so a fixed absolute error reads as a larger relative one. In the PINO with data, the physics residual holds the low and mid modes accurate across the range, and the residual error concentrates instead at the strongly nonlinear end, where the dynamics are hardest. The two panels agree only that the relative error is non-monotone in the parameter; which end is worst depends on the model.
 
 The second test queries the operator off its training resolution, probing the discretization invariance operators are meant to enjoy. Figure~\ref{fig:res_pino} takes the PINO with data, trained at resolution $128$, and evaluates it at $128$, $256$, and $512$ at the fixed parameter $\alpha = \beta = 3.21$ with no retraining.
 
@@ -603,46 +630,46 @@ The second test queries the operator off its training resolution, probing the di
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_surface_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_surface_1.png}
         \caption{Predicted $\eta(x,t)$, res.\ $128$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_relerr_1.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_relerr_1.png}
         \caption{Relative error, res.\ $128$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_surface_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_surface_2.png}
         \caption{Predicted $\eta(x,t)$, res.\ $256$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_relerr_2.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_relerr_2.png}
         \caption{Relative error, res.\ $256$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_surface_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_surface_3.png}
         \caption{Predicted $\eta(x,t)$, res.\ $512$.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_relerr_3.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_relerr_3.png}
         \caption{Relative error, res.\ $512$.}
     \end{subfigure}
 
     \vspace{0.6em}
     \begin{subfigure}[t]{0.68\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{pino/with_data/pino_model2_resolution_panel_box.png}
+        \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_box.png}
         \caption{Relative error distribution vs.\ resolution.}
     \end{subfigure}
     \caption{PINO (with data) queried zero-shot at resolutions $128$, $256$ and $512$ at $\alpha = \beta = 3.21$. The operator returns a coherent field at every resolution, and the relative error against the pseudospectral reference is lowest at resolution $256$ (median about $0.06$) and comparable at $128$ and $512$ (about $0.09$ and $0.08$): accuracy is best at the grid on which the physics residual was trained, not at the training-data grid.}
@@ -650,24 +677,24 @@ The second test queries the operator off its training resolution, probing the di
     \autoriapropria
 \end{figure}
 
-The geometric promise holds. At every resolution the operator returns a smooth, coherent surface with the correct pulse structure, with no retraining and no architectural change; the input is simply resampled on the finer grid. The accuracy behaviour is more revealing. The box plot shows the relative error lowest at resolution $256$, with a median near $0.06$, and higher and comparable at $128$ and $512$, near $0.09$ and $0.08$. The minimum at $256$ is not a coincidence: recall from Section~\ref{sec:m_pino} that the PINO evaluates its physics residual on a $256 \times 256$ grid during training, so $256$ is the resolution its strongest constraint actually saw. Queried at $128$ the operator loses that residual-resolved detail, and queried at $512$ it meets genuine high-wavenumber content that it never learned to produce, keeping only $16$ Fourier modes per axis. The plain FNO, whose only constraint is the data at resolution $128$, does degrade monotonically over the same sweep, its median error climbing from about $0.02$ at $128$ to $0.12$ at $256$ and $0.17$ at $512$. Zero-shot superresolution is thus a geometric property, since the operator accepts and returns fields at any resolution, but not an accuracy property: fidelity is anchored to the spectral band the training constraints resolved, and it is highest where those constraints were applied.
+The geometric promise holds. At every resolution the operator returns a smooth, coherent surface with the correct pulse structure, with no retraining and no architectural change, since the input is simply resampled on the finer grid. The accuracy behaviour is more revealing. The box plot shows the relative error lowest at resolution $256$, with a median near $0.06$, and higher and comparable at $128$ and $512$, near $0.09$ and $0.08$. The minimum at $256$ is not a coincidence. Recall from Section~\ref{sec:m_pino} that the PINO evaluates its physics residual on a $256 \times 256$ grid during training, so $256$ is the resolution its physics residual actually saw. Queried at $128$ the operator loses that residual-resolved detail, and queried at $512$ it meets genuine high-wavenumber content that it never learned to produce, keeping only $16$ Fourier modes per axis. The plain FNO, whose only constraint is the data at resolution $128$, does degrade monotonically over the same sweep, its median error climbing from about $0.02$ at $128$ to $0.12$ at $256$ and $0.17$ at $512$. Zero-shot superresolution is thus a geometric property, since the operator accepts and returns fields at any resolution, but not an accuracy property. Fidelity is anchored to the spectral band the training constraints resolved, and it is highest where those constraints were applied.
 
 % ===============================================================
 \section{What the Experiments Show}
 \label{sec:r_synthesis}
 
-Taken together, the experiments do not identify a single best method; they map where each one succeeds and where it fails.
+Taken together, the experiments do not identify a single best method. They map where each one succeeds and where it fails.
 
 \begin{itemize}
-    \item \textbf{Spectral bias is universal, and its mechanism is confirmed here.} The toy validation of Section~\ref{sec:r_bias} matches the predicted per-mode decay and iteration counts to numerical precision, the real PINN kernel shows the same eigenvalue disparity, and every architecture then obeys the same ordering: low wavenumbers first and best, high wavenumbers last and least (Figures~\ref{fig:ntk_panel}, \ref{fig:theory}, \ref{fig:spectral_bias}). The data-only MLP is the clearest instance, driving its low band by nearly two orders of magnitude while its high band barely moves. No method drives the high band below roughly $0.15$ relative error, and the best there is the plain FNO.
+    \item Spectral bias is universal, and its mechanism is measured here rather than assumed. On the Boussinesq probe of Section~\ref{sec:r_bias} the per-eigendirection decay follows the initial-kernel prediction over some five decades, the crossing times of three networks spanning $241$ to $789{,}505$ parameters fall on one diagonal against the closed form, and the kernel spectrum drops about thirteen orders of magnitude within a dozen modes. Every architecture then obeys the same ordering, with the low wavenumbers resolved first and the high wavenumbers last (Figures~\ref{fig:ntk_panel}, \ref{fig:theory}, \ref{fig:spectral_bias}). The probe also shows how severe the effect can be: asked for a single sharp profile, it recovers under $5\%$ of it at every width (Figure~\ref{fig:probe_fit}). The data-only MLP is the plainest instance among the full models, driving its low band by nearly two orders of magnitude while its high band barely moves. No method drives the high band below roughly $0.15$ relative error, and the lowest there is the plain FNO.
 
-    \item \textbf{Data is the decisive lever, and physics does not substitute for it.} Within both the PINN and the PINO families, adding the supervised term sharply cuts the low- and mid-band error, while the physics-only regimes stay close to the biased baseline (Figures~\ref{fig:spectral_bias}, \ref{fig:spec_pino_data}, \ref{fig:spec_pino_nodata}). Physics alone neither matches data nor removes the bias.
+    \item Data is the main factor, and physics does not substitute for it. Within both the PINN and the PINO families, adding the supervised term reduces the low- and mid-band error, while the physics-only regimes stay close to the biased baseline (Figures~\ref{fig:spectral_bias}, \ref{fig:spec_pino_data}, \ref{fig:spec_pino_nodata}). Physics alone neither matches data nor removes the bias.
 
-    \item \textbf{Operators dominate at low and mid wavenumbers.} At the common parameter $3.21$ the FNO and the PINO with data track the low and mid spectrum well below either PINN or the MLP (Section~\ref{sec:r_spectrum}), and they cover the whole family from one training, whereas each pointwise model is bound to a single parameter.
+    \item Operators are more accurate at low and mid wavenumbers. At the common parameter $3.21$ the FNO and the PINO with data track the low and mid spectrum below either PINN or the MLP (Section~\ref{sec:r_spectrum}), and they cover the whole family from one training, whereas each pointwise model is bound to a single parameter.
 
-    \item \textbf{Physics buys temporal stability.} The FNO's error grows in time and spikes at the temporal boundary through the Gibbs artifact of its periodic time axis, and the PINO's residual suppresses the spike and keeps the late-time error bounded (Section~\ref{sec:r_gibbs}). This is the clearest concrete benefit of the physics term in the study.
+    \item Physics provides temporal stability. The FNO's error grows in time and spikes at the temporal boundary through the Gibbs artifact of its periodic time axis, and the PINO's residual suppresses the spike and keeps the late-time error bounded (Section~\ref{sec:r_gibbs}). This was the main practical gain from the physics term in the study.
 
-    \item \textbf{The remaining limitations are real.} The relative error is non-monotone in nonlinearity, with the hardest parameter differing between the two operators (Section~\ref{sec:r_stress}); zero-shot accuracy is best at the resolution the physics residual saw and worse away from it, rather than invariant (Section~\ref{sec:r_stress}); and the high-frequency band is never fully resolved by any method. These are consistent features of the design, not artefacts of a single run.
+    \item The remaining limitations are real. The relative error is non-monotone in nonlinearity, with the hardest parameter differing between the two operators (Section~\ref{sec:r_stress}). Zero-shot accuracy is best at the resolution the physics residual saw and worse away from it, rather than invariant (Section~\ref{sec:r_stress}). And the high-frequency band is not fully resolved by any of the methods. These are consistent features of the design, not artefacts of a single run.
 \end{itemize}
 
 The picture matches the one anticipated in Chapter~\ref{chap:intro}: these methods complement the pseudospectral solver that sets the accuracy ceiling here rather than replacing it. Their value is in amortizing the cost of the parameter sweep and in the temporal regularization that physics supplies, and it is least of all at the high wavenumbers where the reference solver stays unchallenged.
