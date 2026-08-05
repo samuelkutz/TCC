@@ -122,6 +122,15 @@ def _fig_error_decay(res, n_iterations, outdir):
     return [int(k) + 1 for k in eig_idx]
 
 
+def _error_spectra(res):
+    """|ehat_k^{(n)}| of the measured and predicted error, rfft along space.
+
+    This is the error-field spectrum used by the frequency-principle decay panel;
+    the band metric of _band_curves instead uses the predicted-field spectrum.
+    """
+    return error_spectrum(res['e_meas']), error_spectrum(res['e_pred'])
+
+
 def _fig_spectral_decay(res, outdir):
     """Fixed wavenumbers, so the panel reads the frequency principle literally."""
     ehat_meas, ehat_pred = (_np(a) for a in _error_spectra(res))

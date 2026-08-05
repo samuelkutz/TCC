@@ -1,0 +1,185 @@
+{
+  "model": "MLP-NTK probe",
+  "label": "mlp_ntk",
+  "param_value": 3.21,
+  "t_slice": 15.0,
+  "n_x": 128,
+  "hidden_layers": 4,
+  "activation": "tanh",
+  "mu_frac": 0.2,
+  "mu_rule": "mu = mu_frac * 2 / lambda_max, per width",
+  "n_iterations": 500000,
+  "tolerance": 0.05,
+  "eig_floor_rel": 1e-15,
+  "reference_width": 512,
+  "n_error_snapshots": 471,
+  "n_kernel_rebuilds": 57,
+  "target_norm": 0.7558223619156608,
+  "seed": 37,
+  "widths": {
+    "8": {
+      "width": 8,
+      "hidden_layers": 4,
+      "num_params": 241,
+      "lambda_max": 258.6033930052608,
+      "mu": 0.0015467701152392182,
+      "mu_lambda_max": 0.4,
+      "tau_final": 773.385057619609,
+      "n_modes_above_floor": 11,
+      "eigenvalue_decades": 14.268308940233224,
+      "eps": 0.11002338766281693,
+      "n_modes_crossed": 2,
+      "iteration_count_log_corr": null,
+      "iteration_count_median_ratio": 1.1978227304015596,
+      "measured_crossings": [
+        7,
+        85
+      ],
+      "theoretical_crossings": [
+        5.864491000800571,
+        70.71423968525825
+      ],
+      "final_theta_rel": 0.1501165811263005,
+      "final_k_rel": 0.24719216567108032,
+      "initial_error_norm": 2.3601134071081655,
+      "final_error_norm": 0.7199463254537821,
+      "final_relative_error": 0.9525337721274223,
+      "band_error_first": [
+        1.642740794407433,
+        1.3974873287181724,
+        1.2709532820452212
+      ],
+      "band_error_final": [
+        0.8320295516910285,
+        0.9520578011559747,
+        0.9425745542545098
+      ]
+    },
+    "64": {
+      "width": 64,
+      "hidden_layers": 4,
+      "num_params": 12673,
+      "lambda_max": 478.19363226057317,
+      "mu": 0.0008364812348275592,
+      "mu_lambda_max": 0.4,
+      "tau_final": 418.2406174137796,
+      "n_modes_above_floor": 12,
+      "eigenvalue_decades": 14.22172402958637,
+      "eps": 0.012759716270224554,
+      "n_modes_crossed": 12,
+      "iteration_count_log_corr": 0.8642179954538209,
+      "iteration_count_median_ratio": 0.025171718429817726,
+      "measured_crossings": [
+        5,
+        50,
+        2364,
+        9768,
+        87802,
+        95032,
+        147027,
+        210539,
+        312722,
+        293653,
+        319619,
+        330599
+      ],
+      "theoretical_crossings": [
+        4.493430842415972,
+        48.75396789453313,
+        2370.36376696726,
+        8767.203513913193,
+        684815.9139998944,
+        1899677.6025459704,
+        462194537.2881083,
+        3596438963.4763665,
+        190860948828.2826,
+        1255783154567.1143,
+        57234567279861.63,
+        18500294957523.188
+      ],
+      "final_theta_rel": 0.5700694269530162,
+      "final_k_rel": 5.544810435043595,
+      "initial_error_norm": 0.7788869392560898,
+      "final_error_norm": 0.13434225056329424,
+      "final_relative_error": 0.17774315412261507,
+      "band_error_first": [
+        0.9137868894661918,
+        1.0797252758573221,
+        0.9182642367204518
+      ],
+      "band_error_final": [
+        0.570598130637074,
+        1.092199776545023,
+        1.0114593698814327
+      ]
+    },
+    "512": {
+      "width": 512,
+      "hidden_layers": 4,
+      "num_params": 789505,
+      "lambda_max": 1968.07066190509,
+      "mu": 0.00020324473492877563,
+      "mu_lambda_max": 0.4,
+      "tau_final": 101.6223674643878,
+      "n_modes_above_floor": 12,
+      "eigenvalue_decades": 14.003869816461192,
+      "eps": 0.015389731453731365,
+      "n_modes_crossed": 10,
+      "iteration_count_log_corr": 0.8874912533458763,
+      "iteration_count_median_ratio": 0.000306941341060093,
+      "measured_crossings": [
+        2,
+        32,
+        1579,
+        140954,
+        217251,
+        280227,
+        302802,
+        313677,
+        364529,
+        379311
+      ],
+      "theoretical_crossings": [
+        1.5133404940714905,
+        31.653115102842307,
+        1597.2319314087226,
+        494189.2297261012,
+        459949041.4521597,
+        1979765184.845446,
+        151022595238.11163,
+        828488504834.0608,
+        41296264723899.05,
+        101211850586734.89
+      ],
+      "final_theta_rel": 0.11167906962837215,
+      "final_k_rel": 5.105099827112059,
+      "initial_error_norm": 0.7977480604552719,
+      "final_error_norm": 0.24724361618754054,
+      "final_relative_error": 0.32711868376174014,
+      "band_error_first": [
+        0.9571915375333642,
+        1.209567404432283,
+        1.0664660890395674
+      ],
+      "band_error_final": [
+        0.3821288796324369,
+        0.9362989291536801,
+        0.852000345768487
+      ]
+    }
+  },
+  "displayed_eigenindices": [
+    1,
+    2,
+    3,
+    5
+  ],
+  "fit_evolution_checkpoints": [
+    0,
+    99,
+    993,
+    9906,
+    101027,
+    500000
+  ]
+}

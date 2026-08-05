@@ -195,7 +195,7 @@ so that $F(\hat{\eta},\hat{u}) = \bigl(\hat{\eta}_t,\, \hat{u}_t\bigr)$ as given
     y_{n+1}  &= y_n + \frac{\Delta t}{6}\,(\kappa_1 + 2\,\kappa_2 + 2\,\kappa_3 + \kappa_4).
     \label{eq:rk4}
 \end{align}
-At each stage, the intermediate state is decoded to physical space to assemble the nonlinear products, then encoded back to Fourier space to evaluate the spectral derivatives. This split between physical-space products and Fourier-space derivatives is the defining operation of the pseudospectral method.
+At each stage, the intermediate state is decoded to physical space to assemble the nonlinear products, then encoded back to Fourier space to evaluate the spectral derivatives. This split between physical-space products and Fourier-space derivatives is what characterizes the pseudospectral method.
 
 % ---------------------------------------------------------------
 \subsection{Training Dataset}
@@ -381,7 +381,7 @@ This is the inner product in $\mathbb{R}^{N_\theta}$ of the parameter gradients 
 
 The spectral bias (or frequency principle) is the empirical observation that neural networks trained by gradient-based methods reduce the low-frequency components of the error faster than the high-frequency ones \parencite{rahaman2019}. This section derives that phenomenon directly from the NTK dynamics established above. When the training points lie on a regular grid and the target function is periodic, the error admits a discrete Fourier representation, and one can ask how its frequency content is approximated along the training iterations. We first establish the decay in the eigenbasis of the NTK and then, by transforming to Fourier space, show that it is precisely the low frequencies that are resolved first.
 
-For a network with a sufficiently large number of parameters, the Jacobian $J(\theta)$ changes negligibly during training \parencite{jacot2018, wang2022ntk}. Writing $J_0 = J(\theta(0))$ and $K_0 = J_0 J_0^T$, the approximation $K(\theta(\tau)) \approx K_0$ turns equation~\eqref{eq:ntk_dynamics} into a linear ODE with constant coefficients:
+For a network with a sufficiently large number of parameters, the Jacobian $J(\theta)$ changes negligibly during training, a regime known as lazy training \parencite{jacot2018, chizat2019, wang2022ntk}. Writing $J_0 = J(\theta(0))$ and $K_0 = J_0 J_0^T$, the approximation $K(\theta(\tau)) \approx K_0$ turns equation~\eqref{eq:ntk_dynamics} into a linear ODE with constant coefficients:
 \begin{equation}\label{eq:error_linear_ode}
     \frac{de}{d\tau} = -K_0\,e(\tau), \qquad e(0) = e_0.
 \end{equation}
@@ -656,7 +656,7 @@ Different choices of kernel parametrization for each $\mathcal{K}_\ell$ give ris
 \subsection{Fourier Neural Operators}
 \label{subsec:fno}
 
-Presented by \textcite{li2020fourier}, the Fourier Neural Operator (FNO) is the neural operator~\eqref{eq:no_arch} in which each $\mathcal{K}_\ell$ uses a shift-invariant kernel: $\kappa_\ell(x, y) = \kappa_\ell(x - y)$. This assumption turns each integral operator into a convolution, which by the convolution theorem can be evaluated efficiently in the frequency domain.
+Presented by \textcite{li2021}, the Fourier Neural Operator (FNO) is the neural operator~\eqref{eq:no_arch} in which each $\mathcal{K}_\ell$ uses a shift-invariant kernel: $\kappa_\ell(x, y) = \kappa_\ell(x - y)$. This assumption turns each integral operator into a convolution, which by the convolution theorem can be evaluated efficiently in the frequency domain.
 
 Each spectral layer updates the channel representation via:
 \begin{equation}
@@ -704,7 +704,7 @@ When the solution is also assumed to be periodic in time with period $T$ (so tha
 \end{equation}
 and the FNO parametrizes the two-dimensional Fourier modes $(k_x, k_t)$ with $|k_x| \le k_{x,\max}$ and $|k_t| \le k_{t,\max}$, both hyperparameters.
 
-For problems that are not time-periodic, however, applying the Fourier transform along the temporal axis implicitly extends the signal periodically, potentially introducing a jump discontinuity at the temporal boundary. This can trigger the Gibbs phenomenon \parencite{gibbs1899}, producing oscillatory artifacts near the boundary that persist regardless of how many temporal modes are retained. Standard signal-processing techniques such as zero-padding and window functions (e.g.\ Hann, Hamming windows) can partially mitigate these effects, at the cost of altering the temporal structure of the signal. \textcite{li2020fourier} acknowledge this limitation and provide an alternative formulation in which the Fourier layers operate only along the spatial axis while the model advances forward in time, avoiding the periodicity assumption in the temporal direction entirely. In this work we deliberately retain the two-dimensional space-time formulation, in which the Fourier layers act on both the spatial and the temporal axes, so that a single operator emits the entire trajectory in one forward pass. This keeps the architecture simple and uniform across space and time, but, as just noted, it reintroduces the temporal-periodicity assumption for a Boussinesq solution that is not time-periodic, and therefore admits a Gibbs artifact at the temporal boundary $t = T$. Rather than suppress this artifact with windowing, we retain the plain formulation and examine the boundary behaviour directly in Chapter~\ref{chap:results}, where it turns out to distinguish the purely data-driven operator from its physics-informed variant.
+For problems that are not time-periodic, however, applying the Fourier transform along the temporal axis implicitly extends the signal periodically, potentially introducing a jump discontinuity at the temporal boundary. This can trigger the Gibbs phenomenon \parencite{gibbs1899}, producing oscillatory artifacts near the boundary that persist regardless of how many temporal modes are retained. Standard signal-processing techniques such as zero-padding and window functions (e.g.\ Hann, Hamming windows) can partially mitigate these effects, at the cost of altering the temporal structure of the signal. \textcite{li2021} acknowledge this limitation and provide an alternative formulation in which the Fourier layers operate only along the spatial axis while the model advances forward in time, avoiding the periodicity assumption in the temporal direction entirely. In this work we deliberately retain the two-dimensional space-time formulation, in which the Fourier layers act on both the spatial and the temporal axes, so that a single operator emits the entire trajectory in one forward pass. This keeps the architecture simple and uniform across space and time, but, as just noted, it reintroduces the temporal-periodicity assumption for a Boussinesq solution that is not time-periodic, and therefore admits a Gibbs artifact at the temporal boundary $t = T$. Rather than suppress this artifact with windowing, we retain the plain formulation and examine the boundary behaviour directly in Chapter~\ref{chap:results}, where it turns out to distinguish the purely data-driven operator from its physics-informed variant.
 
 \subsection{Physics-Informed Neural Operators}
 \label{subsec:pino}

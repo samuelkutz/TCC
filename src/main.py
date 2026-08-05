@@ -29,7 +29,7 @@ from experiments.dataset import run_dataset
 from experiments.evaluate import load_stage_metadata
 from experiments.plots.figures import plot_soliton_profile, plot_spectral_bias_panel
 from experiments.plots.fno import eval_fno, gif_fno
-from experiments.plots.mlp import eval_mlp
+from experiments.plots.mlp import eval_mlp, gif_mlp
 from experiments.plots.ntk import plot_ntk
 from experiments.plots.pinn import eval_pinn, gif_pinn
 from experiments.plots.pino import eval_pino, gif_pino
@@ -150,10 +150,16 @@ def plot_all(cfg, meta):
         outdir=cfg.img_subdir(SCIML, 'comparison'),
     )
 
-    # gifs: eta(x, t) evolving in time against the reference. The operators are
-    # shown at the median and the largest evaluation parameter; the pointwise
-    # models are trained at the median alone, so they only get that one.
+    # gifs: eta(x, t) evolving in time against the reference. Every model is shown
+    # at the same two parameters, the median and the largest evaluation parameter.
+    # The pointwise MLP and PINN are fixed to alpha = beta = median, so their
+    # largest-parameter gif shows the fixed prediction against the shifted reference,
+    # i.e. their lack of generalization across the parameter axis.
     gif_params = [cfg.median_param, sorted(cfg.eval_params)[-1]]
+
+    _stage('mlp gifs')
+    gif_mlp(meta['mlp'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
+            params=[gif_params[0]], resolution=cfg.dataset_res, outdir=cfg.gif_dir)
 
     _stage('fno gifs')
     gif_fno(meta['fno'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
@@ -167,9 +173,9 @@ def plot_all(cfg, meta):
 
     _stage('pinn gifs (data and physics + pure physics)')
     gif_pinn('data_and_physics', meta['pinn_data'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
-             params=[cfg.median_param], resolution=cfg.dataset_res, outdir=cfg.gif_dir)
+             params=[gif_params[0]], resolution=cfg.dataset_res, outdir=cfg.gif_dir)
     gif_pinn('pure_physics', meta['pinn_no_data'], x_limit=cfg.x_limit, t_limit=cfg.t_limit,
-             params=[cfg.median_param], resolution=cfg.dataset_res, outdir=cfg.gif_dir)
+             params=[gif_params[0]], resolution=cfg.dataset_res, outdir=cfg.gif_dir)
 
 
 def main(plots_only=False):

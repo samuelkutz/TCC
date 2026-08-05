@@ -90,7 +90,7 @@ Following standard practices of deep learning, we map every channel to a common 
     \tilde f = \frac{f - f_{\min}}{f_{\max} - f_{\min} + \varepsilon},
     \qquad \varepsilon = 10^{-12}.
 \end{equation}
-The operators train and predict in this normalized space, and every prediction is sent back to physical units by inverting~\eqref{eq:m_minmax} before any metric or residual is formed. Because the constants are set from the initial amplitude and the sampling range, both of which the physics-only regimes of Section~\ref{sec:m_pino} already know, the transform carries no information about the reference solutions, and the no-data models remain data-free in the output scale as well.
+The operators train and predict in this normalized space, and every prediction is sent back to physical units by inverting~\eqref{eq:m_minmax} before any metric or residual is formed. Because the constants are set from the initial amplitude and the sampling range, both of which the physics-only regimes of Section~\ref{sec:m_ladder} already know, the transform carries no information about the reference solutions, and the no-data models remain data-free in the output scale as well.
 
 % ===============================================================
 \section{Error Metrics}
@@ -210,7 +210,7 @@ Table~\ref{tab:m_config} gathers the configuration of every experiment. The four
         \textbf{Setting} & \textbf{MLP} & \textbf{PINN} & \textbf{FNO} & \textbf{PINO} & \textbf{Bias probe} \\
         \hline
         Input $\to$ output        & $\mathbb{R}^2 \to \mathbb{R}$ & $\mathbb{R}^2 \to \mathbb{R}^2$ & operator & operator & $\mathbb{R} \to \mathbb{R}$ \\
-        Trainable parameters      & $198{,}401$ & $198{,}658$ & $2{,}106{,}146$ & $2{,}106{,}146$ & by width \\
+        Trainable parameters      & $198{,}401$ & $198{,}658$ & $2{,}106{,}146$ & $2{,}106{,}146$ & $241,\ 12{,}673,\ 789{,}505$ \\
         Hidden layers             & $4$         & $4$         & $4$ Fourier     & $4$ Fourier     & $4$ \\
         Width / channels          & $256$       & $256$       & $32$            & $32$            & $8, 64, 512$ \\
         Fourier modes (per axis)  & ---         & ---         & $16$            & $16$            & --- \\
@@ -223,7 +223,7 @@ Table~\ref{tab:m_config} gathers the configuration of every experiment. The four
         Physics-residual grid     & ---         & $5{,}000$ pts & ---            & $256 \times 256$ & --- \\
         Target                    & $\eta(x,t)$ & $\eta, u$     & family         & family           & $\eta(x, 15)$ \\
         Data regimes              & data only   & with / without & supervised   & with / without & data only \\
-        Training wall-clock       & $\approx 143$\,s & $\approx 880$\,s & $\approx 1104$\,s & $\approx 4200$--$5200$\,s & --- \\
+        Training wall-clock       & $\approx 143$\,s & $\approx 880$\,s & $\approx 1101$\,s & $\approx 4200$--$5200$\,s & --- \\
         \hline
     \end{tabular}
     \\[0.4em]
