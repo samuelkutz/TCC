@@ -34,14 +34,10 @@ def train_mlp(x_limit, t_limit, train_resolution, param_value, epochs, neurons,
     device = resolve_device()
     weights_dir, metadata_dir = stage_paths(results_dir, LABEL)
 
-    # NOTE: PseudoSpectralBoussinesq takes Nt as the number of RK4 *steps* and returns
-    # Nt+1 time levels. Passing Nt=train_resolution here yields train_resolution+1
-    # levels, one more than the FNO/PINO dataset (which passes Nt=res-1). This is the
-    # single-solve reference the pointwise models fit; the committed weights were
-    # trained on it. To align the pointwise grid with the dataset's 127-step /
-    # 128-level convention (Table 3.1), pass Nt=train_resolution-1 and retrain.
+    # Nt is the number of RK4 steps, so nt=res-1 gives exactly res time levels: the
+    # 127-step / 128-level convention of Table 3.1, shared with the operator dataset
     x_sol, t_sol, eta_sol, _ = reference_solution(
-        param_value, x_limit, t_limit, nx=train_resolution, nt=train_resolution,
+        param_value, x_limit, t_limit, nx=train_resolution, nt=train_resolution - 1,
         device=device, amplitude=amplitude)
 
     # supervised (x, t) -> eta pairs over the full grid, inputs mapped to [-1, 1]^2.

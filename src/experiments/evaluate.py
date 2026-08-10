@@ -12,7 +12,6 @@ with both fields shaped (Nx, Nt).
 
 import os
 
-import numpy as np
 import torch
 
 from experiments.common import (
@@ -32,13 +31,6 @@ def plot_stage_training_statistics(metadata, label, outdir):
         final_loss=metadata.get('final_loss'),
         num_params=metadata.get('num_params'),
     )
-
-
-def _uniform_grid(x_limit, t_limit, resolution):
-    """Query grid for the pointwise models: the closed domain, unlike the solver's
-    periodic grid, which drops the right endpoint."""
-    return (np.linspace(-x_limit, x_limit, resolution, dtype=np.float32),
-            np.linspace(0.0, t_limit, resolution, dtype=np.float32))
 
 
 def operator_predictor(model, norm_stats, device):
@@ -64,8 +56,9 @@ def pointwise_predictor(predict_eta_grid, device=None):
     def predict(param_value, x_limit, t_limit, resolution):
         x, t, eta_true, _ = reference_solution(
             param_value, x_limit, t_limit, nx=resolution, nt=resolution - 1, device=device)
-        x_query, t_query = _uniform_grid(x_limit, t_limit, resolution)
-        return x, t, eta_true.T, predict_eta_grid(x_query, t_query)
+        # query on the solver's own grid, not a rebuilt one, so prediction and
+        # reference are compared at the same points
+        return x, t, eta_true.T, predict_eta_grid(x, t)
 
     return predict
 
@@ -96,8 +89,8 @@ def evaluate_operator_model(predict, label, x_limit, t_limit, eval_params, resol
                           outdir=outdir, filename=f'{label}_model2_resolution_panel.png')
 
     print(f'  {label}: spectral panel at resolution {int(spectral_panel_res)}')
-    _, _, eta_true, eta_pred = predict(median_param, x_limit, t_limit, int(spectral_panel_res))
-    x_pred, t_pred = _uniform_grid(x_limit, t_limit, int(spectral_panel_res))
+    x_pred, t_pred, eta_true, eta_pred = predict(
+        median_param, x_limit, t_limit, int(spectral_panel_res))
     plot_spectral_panel(x_pred, t_pred, eta_true, eta_pred,
                         outdir=outdir, filename=f'{label}_model2_spectral_panel.png')
 
@@ -119,8 +112,8 @@ def evaluate_pointwise_model(predict, label, x_limit, t_limit, eval_params, reso
                           outdir=outdir, filename=f'{label}_model2_resolution_panel.png')
 
     print(f'  {label}: spectral panel at resolution {int(spectral_panel_res)}')
-    _, _, eta_true, eta_pred = predict(median_param, x_limit, t_limit, int(spectral_panel_res))
-    x_pred, t_pred = _uniform_grid(x_limit, t_limit, int(spectral_panel_res))
+    x_pred, t_pred, eta_true, eta_pred = predict(
+        median_param, x_limit, t_limit, int(spectral_panel_res))
     plot_spectral_panel(x_pred, t_pred, eta_true, eta_pred,
                         outdir=outdir, filename=f'{label}_model2_spectral_panel.png')
 

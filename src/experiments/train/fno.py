@@ -12,8 +12,7 @@ from torch.optim import Adam
 
 from methods.fno import FNO2d
 from tools import (
-    compute_norm_stats, is_log_epoch, load_dataset, log_epoch, normalize_dataset,
-    save_model, set_seed,
+    is_log_epoch, load_dataset, log_epoch, normalize_dataset, save_model, set_seed,
 )
 from experiments.common import (
     BandTracker, StageTimer, resolve_device, stage_paths, write_stage_metadata,
@@ -32,7 +31,9 @@ def load_operator_dataset(dataset_file):
     x_train, y_train, norm_stats = load_dataset(dataset_file)
     print(f'  loaded dataset from {dataset_file}')
     if norm_stats is None:
-        norm_stats = compute_norm_stats(x_train, y_train)
+        raise RuntimeError(
+            f'{dataset_file} carries no normalization envelopes; it predates the '
+            'shared [-1, 1] convention. Regenerate it with the dataset stage.')
     return x_train, y_train, norm_stats
 
 

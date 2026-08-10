@@ -27,7 +27,7 @@ import torch
 from methods.mlp import MLP
 from tools import (
     atomic_torch_save, band_relative_error, error_spectrum, save_metadata_json,
-    save_model, set_seed,
+    save_model, set_seed, to_symmetric,
 )
 from experiments.common import reference_solution, resolve_device, stage_paths
 
@@ -44,21 +44,23 @@ def _log_schedule(n_iterations, count):
 
 
 def _reference_slice(x_limit, t_limit, param_value, n_x, t_slice, device, amplitude=1.0):
-    """eta(x, t_slice) on n_x points; inputs rescaled to [-1, 1] as in train.mlp.
+    """eta(x, t_slice) on n_x points, under the shared [-1, 1] convention.
 
-    The target is scaled by the initial amplitude A, the same data-free field
-    normalization the operators use, so the probe fits eta / A. The spectral-bias
-    quantities are invariant to this scaling (the NTK is set by the network, and
-    the crossing threshold eps scales with the target), and the fit figures undo
-    it to display physical eta.
+    Both the coordinate and the target go through `tools.to_symmetric`: the
+    coordinate on the domain envelope [-L, L], the target on the amplitude
+    envelope [-A, A], exactly as the MLP and the operators use them. The
+    spectral-bias quantities are invariant to the target scaling (the NTK is set
+    by the network, and the crossing threshold eps scales with the target), and
+    the fit figures undo it to display physical eta.
     """
     x_sol, t_sol, eta_sol, _ = reference_solution(
         param_value, x_limit, t_limit, nx=n_x, nt=n_x, device=device, amplitude=amplitude)
     t_all = torch.as_tensor(t_sol, dtype=torch.float64, device=device)
     j = int(torch.argmin((t_all - t_slice).abs()))
-    target = torch.as_tensor(eta_sol, dtype=torch.float64, device=device)[j] / float(amplitude)
+    a = float(amplitude)
+    target = to_symmetric(torch.as_tensor(eta_sol, dtype=torch.float64, device=device)[j], -a, a)
     x = torch.as_tensor(x_sol, dtype=torch.float64, device=device)
-    return (x / x_limit).reshape(-1, 1), target, x, float(t_all[j])
+    return to_symmetric(x, -x_limit, x_limit).reshape(-1, 1), target, x, float(t_all[j])
 
 
 def _empirical_ntk(model, inputs):

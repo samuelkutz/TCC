@@ -5,7 +5,7 @@ import torch.optim as optim
 from timeit import default_timer
 
 from methods.mlp import MLP
-from tools import is_log_epoch, log_epoch
+from tools import is_log_epoch, log_epoch, to_symmetric
 
 
 class PINN(nn.Module):
@@ -33,11 +33,18 @@ class PINN(nn.Module):
         self.data = data
         self.data_weight = data_weight
 
-        # same Linear/Tanh sequence as the data-only MLP, so the two models differ
-        # only in training signal
+        # same Linear/Tanh sequence as the data-only MLP, and, since `forward`
+        # rescales the coordinates the same way, the same input scale too, so the
+        # two models differ only in training signal
         self.net = MLP(input_size, output_size, neurons, hidden_layers,
                        activation='tanh', device=self.device)
         self.to(self.device)
+
+        # envelopes for the coordinate map, read once from the problem domain
+        self._x_min = float(Boussinesq.domain['x_min'])
+        self._x_max = float(Boussinesq.domain['x_max'])
+        self._t_min = float(Boussinesq.domain['t_min'])
+        self._t_max = float(Boussinesq.domain['t_max'])
 
         # pre-converted once to avoid a host-to-device copy every epoch
         self._x_flat = self._t_flat = self._eta_flat = self._u_flat = None
@@ -59,13 +66,24 @@ class PINN(nn.Module):
         return optim.Adam(self.parameters(), lr=self.lr)
 
     def forward(self, x, t):
-        """(x, t) -> (eta, u), each (N, 1)."""
+        """(x, t) in physical units -> (eta, u), each (N, 1).
+
+        The coordinates are carried onto [-1, 1]^2 here, inside the forward pass,
+        by the same map the MLP uses, so the two share an input scale and can be
+        read against each other. Doing it here rather than at the call sites also
+        keeps the residual honest: `Boussinesq.residual` differentiates with
+        respect to the physical x and t it passes in, and autograd carries the
+        chain rule through this rescaling on its own, so the residual stays the
+        residual of the Boussinesq system and not of a rescaled surrogate.
+        """
         if x.ndim == 1:
             x = x.unsqueeze(-1)
         if t.ndim == 1:
             t = t.unsqueeze(-1)
 
-        xt = torch.cat([x, t], dim=-1).to(self.device)
+        x_hat = to_symmetric(x, self._x_min, self._x_max)
+        t_hat = to_symmetric(t, self._t_min, self._t_max)
+        xt = torch.cat([x_hat, t_hat], dim=-1).to(self.device)
         output = self.net(xt)
         return output[..., 0:1], output[..., 1:2]
 

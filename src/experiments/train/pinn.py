@@ -36,8 +36,9 @@ def train_pinn(mode, x_limit, t_limit, train_resolution, param_value, epochs, ne
     weights_dir, metadata_dir = stage_paths(results_dir, 'pinn', mode)
 
     bsq = boussinesq_at(param_value, x_limit, t_limit, amplitude)
+    # nt=res-1 steps give exactly res time levels, the convention of Table 3.1
     x_sol, t_sol, eta_sol, u_sol = reference_solution(
-        param_value, x_limit, t_limit, nx=train_resolution, nt=train_resolution,
+        param_value, x_limit, t_limit, nx=train_resolution, nt=train_resolution - 1,
         device=device, amplitude=amplitude)
     data = {'x': x_sol, 't': t_sol, 'eta': eta_sol, 'u': u_sol} if data_weight > 0 else None
 

@@ -126,10 +126,8 @@ def operator_input_tensor(eta_true, u_true, param_value, nx, nt, device=None):
 
 
 def device_norm_stats(norm_stats, device):
-    """Move the min/max normalization tensors onto `device`, leaving eps scalar."""
+    """Move the channel envelopes onto `device`."""
     if norm_stats is None:
         raise RuntimeError('model metadata must carry norm_stats for evaluation')
-    moved = {k: (v.to(device) if isinstance(v, torch.Tensor) else v)
-             for k, v in norm_stats.items()}
-    moved['eps'] = norm_stats.get('eps', 1e-12)
-    return moved
+    return {k: (v.to(device) if isinstance(v, torch.Tensor) else v)
+            for k, v in norm_stats.items()}

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from methods.fno import FNO2d
-from tools import unnormalize_tensor
+from tools import from_symmetric
 
 
 class PINO2d(FNO2d):
@@ -128,11 +128,10 @@ def pde_residual_boussinesq(eta, u, dx, dt, alpha, beta, dealias=False):
 
 
 def _unnorm_channel(t, norm_stats, key_min, key_max, ch):
-    return unnormalize_tensor(
+    return from_symmetric(
         t,
         norm_stats[key_min][:, ch:ch + 1, :, :],
         norm_stats[key_max][:, ch:ch + 1, :, :],
-        norm_stats['eps'],
     )
 
 
@@ -156,10 +155,11 @@ def pino_loss(model, batch_x, batch_y, dx, dt, norm_stats,
     if pred_data is not None and pred_data.shape[1] != 2:
         raise ValueError('PINO models must output two channels: [eta, u].')
     if need_data:
-        batch_y_phys = unnormalize_tensor(batch_y, norm_stats['output_min'], norm_stats['output_max'], norm_stats['eps'])
-        eta_d = _unnorm_channel(pred_data[:, 0:1], norm_stats, 'output_min', 'output_max', 0)
-        u_d = _unnorm_channel(pred_data[:, 1:2], norm_stats, 'output_min', 'output_max', 1)
-        diff = torch.cat((eta_d, u_d), dim=1) - batch_y_phys
+        # in normalized units, the same space the FNO's supervised loss uses, so
+        # the pure-data and data-and-physics models are fit against the same
+        # objective scale and the comparison between them is not carrying a
+        # hidden factor of (f_max - f_min)^2
+        diff = pred_data - batch_y
         loss_data = torch.mean(diff * diff)
     else:
         loss_data = torch.zeros((), device=batch_x.device)

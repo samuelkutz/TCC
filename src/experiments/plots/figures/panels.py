@@ -15,7 +15,7 @@ from experiments.plots.figures.metrics import (
     time_relative_error_norm,
 )
 from experiments.plots.figures.style import (
-    THESIS_BAND_COLORS, THESIS_ERROR_COLOR, THESIS_LEGEND_BELOW, THESIS_PALETTE,
+    THESIS_BAND_COLORS, THESIS_ERROR_COLOR, THESIS_LEGEND_ABOVE, THESIS_PALETTE,
     THESIS_PREDICTION_COLOR, THESIS_REFERENCE_COLOR,
     autocrop_white, ensure_outdir, panel_stem, save_thesis_fig, slugify,
     thesis_px_sizes,
@@ -62,7 +62,7 @@ def plot_training_statistics(histories, labels, outdir, filename, log_scale=True
         template='plotly_white',
         width=1000, height=500,
         showlegend=len(labels) > 1,
-        legend=THESIS_LEGEND_BELOW,
+        legend=THESIS_LEGEND_ABOVE,
     )
     if annotation_lines:
         fig.add_annotation(
@@ -316,8 +316,8 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
         save_thesis_fig(
             fig, os.path.join(outdir, f'{stem}_spectrum_{i}.png'),
             _PAIR_W, _PAIR_H, _PAIR_FRAC,
-            extra_layout=dict(margin=dict(t=15, b=82, l=70, r=20),
-                              showlegend=True, legend=THESIS_LEGEND_BELOW),
+            extra_layout=dict(margin=dict(t=42, b=55, l=70, r=20),
+                              showlegend=True, legend=THESIS_LEGEND_ABOVE),
         )
 
         # ---- relative spectral error, with time-mean annotation ----
@@ -360,13 +360,14 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
     print(f'spectral figures saved to {outdir} ({stem}_*)')
 
 
-_BAND_LABELS = ['Low (k < N<sub>k</sub>/4)',
-                'Mid (N<sub>k</sub>/4 &#8804; k < N<sub>k</sub>/2)',
-                'High (k &#8805; N<sub>k</sub>/2)']
+# the index ranges are defined once in eq:m_bands and restated in every caption
+# that uses these curves, so the legend carries only the band name; spelling the
+# ranges out here wraps the legend onto three rows and costs a third of the panel
+_BAND_LABELS = ['Low', 'Mid', 'High']
 _BAND_KEYS = ['low_band', 'mid_band', 'high_band']
 
 # frac raised above the 0.48 subfigure width so the in-figure text prints at ~7 pt
-BAND_W, BAND_H, BAND_FRAC = 820, 520, 1.1
+BAND_W, BAND_H, BAND_FRAC = 820, 470, 0.48   # match the SciML pair panels
 
 
 def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolution.png'):
@@ -391,9 +392,8 @@ def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolut
             BAND_W, BAND_H, BAND_FRAC,
             extra_layout=dict(
                 xaxis_title='Epoch', yaxis_title='Rel. spectral error', yaxis_type='log',
-                margin=dict(t=12, b=78, l=64, r=16), showlegend=True,
-                legend=dict(orientation='h', xanchor='center', x=0.5,
-                            yanchor='top', y=-0.22),
+                margin=dict(t=40, b=62, l=86, r=20), showlegend=True,
+                legend=THESIS_LEGEND_ABOVE,
             ),
         )
         metrics[slugify(label)] = {

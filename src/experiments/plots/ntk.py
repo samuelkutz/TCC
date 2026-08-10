@@ -28,9 +28,9 @@ _PALETTE = THESIS_PALETTE
 
 # included at \linewidth inside 0.48\textwidth subfigures; frac is raised so the
 # printed in-figure text stays around 7 pt
-_W, _H, _FRAC = 820, 520, 1.1
-_LEGEND_BELOW = dict(orientation='h', xanchor='center', x=0.5, yanchor='top', y=-0.22)
-_MARGIN = dict(t=12, b=80, l=66, r=16)
+_W, _H, _FRAC = 820, 470, 0.48   # match the SciML pair panels: same printed font size
+_LEGEND_ABOVE = dict(orientation='h', xanchor='center', x=0.5, yanchor='bottom', y=1.02)
+_MARGIN = dict(t=46, b=62, l=96, r=20)   # margins scale with the print font size
 
 
 def _np(t):
@@ -94,11 +94,15 @@ def _decay_figure(res, series, ylabel, outpath, y_range=None):
         color = color or _PALETTE[j % len(_PALETTE)]
         fig.add_trace(go.Scatter(
             x=iters.tolist(), y=np.asarray(measured).tolist(),
-            mode='lines', name=f'{name} measured', line=dict(color=color, width=2.4),
+            mode='lines', name=name, line=dict(color=color, width=2.4),
         ))
+        # the prediction is kept out of the legend: it shares the band's colour and
+        # is told apart by being open markers rather than a line, which every
+        # caption using these panels already states. Listing it doubles the legend
+        # onto three rows and takes a third of the panel height.
         fig.add_trace(go.Scatter(
             x=iters[marks].tolist(), y=np.asarray(predicted)[marks].tolist(),
-            mode='markers', name=f'{name} theory',
+            mode='markers', name=f'{name} theory', showlegend=False,
             marker=dict(color=color, size=5, symbol='circle-open', line=dict(width=1.4)),
         ))
     fig.update_xaxes(title_text='Iteration n  (&#964; = n&#956;)', type='log')
@@ -106,7 +110,7 @@ def _decay_figure(res, series, ylabel, outpath, y_range=None):
                      **({'range': y_range} if y_range else {}))
     save_thesis_fig(fig, outpath, _W, _H, _FRAC,
                     extra_layout=dict(margin=_MARGIN, showlegend=True,
-                                      legend=_LEGEND_BELOW))
+                                      legend=_LEGEND_ABOVE))
 
 
 def _fig_error_decay(res, n_iterations, outdir):
@@ -144,12 +148,12 @@ def _fig_spectral_decay(res, outdir):
 def _fig_band_decay(res, target, outdir):
     """Every mode averaged into the low/mid/high split of eq:m_bands."""
     meas, pred = _band_curves(res, target)
-    labels = ['Low (k &lt; N<sub>k</sub>/4)',
-              'Mid (N<sub>k</sub>/4 &#8804; k &lt; N<sub>k</sub>/2)',
-              'High (k &#8805; N<sub>k</sub>/2)']
+    # band names only; the index ranges are eq:m_bands and are restated in the
+    # caption, and spelling them out here doubles the legend onto three rows
+    labels = ['Low', 'Mid', 'High']
     series = [(lab, _np(m), _np(p), color)
               for color, lab, m, p in zip(THESIS_BAND_COLORS, labels, meas, pred)]
-    _decay_figure(res, series, 'Mean rel. spectral error in band',
+    _decay_figure(res, series, 'Rel. spectral error',
                   os.path.join(outdir, 'ntk_band_decay.png'))
 
 
@@ -173,7 +177,7 @@ def _fig_fit(results, widths, x, target, t_used, outdir, amplitude=1.0):
     fig.update_yaxes(title_text=f'&#951;(x, {t_used:g})')
     save_thesis_fig(fig, os.path.join(outdir, 'ntk_fit.png'), _W, _H, _FRAC,
                     extra_layout=dict(margin=_MARGIN, showlegend=True,
-                                      legend=_LEGEND_BELOW))
+                                      legend=_LEGEND_ABOVE))
 
 
 def _fig_fit_evolution(res, x, target, t_used, n_iterations, outdir, amplitude=1.0,
@@ -209,8 +213,8 @@ def _fig_fit_evolution(res, x, target, t_used, n_iterations, outdir, amplitude=1
     fig.update_xaxes(title_text='x')
     fig.update_yaxes(title_text=f'&#951;(x, {t_used:g})')
     save_thesis_fig(fig, os.path.join(outdir, 'ntk_fit_evolution.png'), _W, _H, _FRAC,
-                    extra_layout=dict(margin=dict(t=12, b=92, l=66, r=16),
-                                      showlegend=True, legend=_LEGEND_BELOW))
+                    extra_layout=dict(margin=dict(t=49, b=62, l=96, r=20),
+                                      showlegend=True, legend=_LEGEND_ABOVE))
     return [int(sample_iters[j]) for j in picked]
 
 
@@ -257,10 +261,10 @@ def _fig_iteration_count(results, widths, n_iterations, outdir):
     fig.update_xaxes(
         title_text='Theoretical n<sub>k</sub> = ln(|c<sub>k</sub>(0)|/&#949;) / (&#956; &#955;<sub>k</sub>)',
         type='log')
-    fig.update_yaxes(title_text='Measured iterations to |c<sub>k</sub>| &lt; &#949;', type='log')
+    fig.update_yaxes(title_text='Measured n<sub>k</sub>', type='log')
     save_thesis_fig(fig, os.path.join(outdir, 'ntk_iteration_count.png'), _W, _H, _FRAC,
-                    extra_layout=dict(margin=dict(t=12, b=58, l=72, r=16), showlegend=True,
-                                      legend=_LEGEND_BELOW))
+                    extra_layout=dict(margin=dict(t=40, b=62, l=104, r=20), showlegend=True,
+                                      legend=_LEGEND_ABOVE))
 
 
 def _fig_drift_panels(results, widths, outdir, filename):
@@ -276,7 +280,7 @@ def _fig_drift_panels(results, widths, outdir, filename):
             fig, os.path.join(outdir, f'{base}_{suffix}.{ext}'), _W, _H, _FRAC,
             extra_layout=dict(
                 xaxis_title=xlab, yaxis_title=ylab,
-                margin=dict(t=12, b=82 if legend else 52, l=64, r=16),
+                margin=dict(t=42 if legend else 14, b=62, l=96, r=20),
                 showlegend=legend,
                 **({'xaxis_type': 'log'} if logx else {}),
                 **({'yaxis_type': 'log'} if logy else {}),

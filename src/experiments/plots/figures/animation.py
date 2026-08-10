@@ -5,7 +5,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from experiments.plots.figures.style import ensure_outdir, mpl_legend_below
+from experiments.plots.figures.style import ensure_outdir, mpl_legend_above
 
 
 def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title_prefix, fps=20):
@@ -36,7 +36,7 @@ def save_solution_gif(x, t, eta_true, eta_pred, outdir, filename, title_prefix, 
     ax.set_ylim(y_min, y_max)
     ax.set_xlabel('x')
     ax.set_ylabel(r'$\eta(x,t)$')
-    mpl_legend_below(ax)
+    mpl_legend_above(ax)
     # reserve room at the top so the per-frame title is never clipped
     fig.subplots_adjust(left=0.11, right=0.97, top=0.86, bottom=0.13)
     title = ax.set_title(f'{title_prefix},   t = {t[0]:.2f}', color='black')

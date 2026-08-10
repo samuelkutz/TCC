@@ -19,12 +19,12 @@ from experiments.plots.figures.panels import (
     plot_spectral_bias_panel, plot_spectral_panel, plot_training_statistics,
 )
 from experiments.plots.figures.style import (
-    THESIS_BAND_COLORS, THESIS_LEGEND_BELOW, THESIS_PALETTE,
+    THESIS_BAND_COLORS, THESIS_LEGEND_ABOVE, THESIS_PALETTE,
     ensure_outdir, log_marker_iters, panel_stem, save_thesis_fig, slugify,
 )
 
 __all__ = [
-    'THESIS_BAND_COLORS', 'THESIS_LEGEND_BELOW', 'THESIS_PALETTE',
+    'THESIS_BAND_COLORS', 'THESIS_LEGEND_ABOVE', 'THESIS_PALETTE',
     'band_slices', 'compute_relative_error', 'distribution_summary',
     'ensure_outdir', 'log_marker_iters', 'panel_stem', 'plot_alpha_beta_panel',
     'plot_resolution_panel', 'plot_soliton_profile', 'plot_spectral_bias_panel',

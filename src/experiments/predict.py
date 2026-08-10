@@ -7,11 +7,14 @@ The MLP is a plain regressor on (x, t), so its coordinates are rescaled to
 import numpy as np
 import torch
 
+from tools import to_symmetric
+
 
 def to_unit_square(x_np, t_np, x_limit, t_limit):
-    """x in [-x_limit, x_limit] -> [-1, 1];  t in [0, t_limit] -> [-1, 1]."""
-    x_u = np.asarray(x_np, dtype=np.float32) / x_limit
-    t_u = 2.0 * np.asarray(t_np, dtype=np.float32) / t_limit - 1.0
+    """The shared map of `tools.to_symmetric`, with the domain as the envelope:
+    x in [-x_limit, x_limit] -> [-1, 1];  t in [0, t_limit] -> [-1, 1]."""
+    x_u = to_symmetric(np.asarray(x_np, dtype=np.float32), -x_limit, x_limit)
+    t_u = to_symmetric(np.asarray(t_np, dtype=np.float32), 0.0, t_limit)
     return x_u, t_u
 
 

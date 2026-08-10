@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from tools import normalize_tensor, unnormalize_tensor
+from tools import from_symmetric, to_symmetric
 
 
 class SpectralConv2d(nn.Module):
@@ -83,8 +83,15 @@ class FNO2d(nn.Module):
         )
 
     def get_grid(self, shape, device):
+        # the two coordinate channels, on the same [-1, 1] as every other input.
+        # Space follows the solver's periodic grid, linspace(-L, L, Nx+1) with the
+        # right endpoint dropped, so the last sample sits at 1 - 2/Nx rather than
+        # at 1; taking the endpoint-inclusive grid instead would shift where the
+        # channel puts a given physical x as the resolution changes, which is the
+        # one thing a resolution-transfer test cannot afford. Time keeps all Nt
+        # levels from 0 to T, so it is endpoint-inclusive.
         batchsize, size_x, size_y = shape[0], shape[2], shape[3]
-        gridx = torch.linspace(-1, 1, size_x, dtype=torch.float, device=device)
+        gridx = torch.linspace(-1, 1, size_x + 1, dtype=torch.float, device=device)[:-1]
         gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, size_y])
         gridy = torch.linspace(-1, 1, size_y, dtype=torch.float, device=device)
         gridy = gridy.reshape(1, 1, size_y).repeat([batchsize, size_x, 1])
@@ -136,9 +143,9 @@ class FNO2d(nn.Module):
         """
         model_dev = next(self.parameters()).device
         stats_dev = norm_stats['input_min'].device
-        x = normalize_tensor(input_raw, norm_stats['input_min'], norm_stats['input_max'], norm_stats['eps'])
+        x = to_symmetric(input_raw, norm_stats['input_min'], norm_stats['input_max'])
         self.eval()
         with torch.no_grad():
             pred = self(x.to(model_dev))
         pred = pred.to(stats_dev)
-        return unnormalize_tensor(pred, norm_stats['output_min'], norm_stats['output_max'], norm_stats['eps'])
+        return from_symmetric(pred, norm_stats['output_min'], norm_stats['output_max'])

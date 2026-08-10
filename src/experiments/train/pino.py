@@ -13,8 +13,8 @@ from torch.optim import Adam
 
 from methods.pino import PINO2d, pino_loss
 from tools import (
-    is_log_epoch, log_epoch, normalize_dataset, normalize_tensor, save_model,
-    set_seed, unnormalize_tensor,
+    from_symmetric, is_log_epoch, log_epoch, normalize_dataset, save_model,
+    set_seed, to_symmetric,
 )
 from experiments.common import (
     BandTracker, StageTimer, resolve_device, stage_paths, write_stage_metadata,
@@ -96,10 +96,10 @@ def train_pino(mode, dataset_file, x_limit, t_limit, epochs, batch_size, lr, phy
             log_epoch(epoch + 1, epochs, timer.elapsed, **totals)
             model.eval()
             with torch.no_grad():
-                ref_norm = normalize_tensor(ref_x_raw.to(device), norm_stats['input_min'],
-                                            norm_stats['input_max'], norm_stats['eps'])
-                pred = unnormalize_tensor(model(ref_norm), norm_stats['output_min'],
-                                          norm_stats['output_max'], norm_stats['eps'])
+                ref_norm = to_symmetric(ref_x_raw.to(device), norm_stats['input_min'],
+                                        norm_stats['input_max'])
+                pred = from_symmetric(model(ref_norm), norm_stats['output_min'],
+                                      norm_stats['output_max'])
             model.train()
             bands.record(epoch + 1, pred[0, 0].cpu().numpy())
 

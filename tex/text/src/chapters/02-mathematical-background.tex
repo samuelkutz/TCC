@@ -440,49 +440,101 @@ The error decomposes into $N$ independent eigendirections. Each eigenvector $v_k
 
 Equation~\eqref{eq:error_evolution} is the continuous flow; gradient descent takes finite steps, and its error evolution inherits the same eigenstructure in discrete form. The link between the two is the training-time stamp of~\eqref{eq:tau_k}: iterate $n$ sits at continuous time $\tau^{(n)} = n\mu$, so the iteration count and the training time are read off one another through
 \begin{equation}\label{eq:tau_n_dictionary}
-    \tau = n\mu, \qquad n = \tau/\mu,
+    \tau = n\mu, \qquad n = \tau/\mu.
 \end{equation}
-and one gradient-descent step of size $\mu$ is one forward-Euler step of length $\mu$ along the flow.
 
-Two routes lead to the discrete law, and they agree. The first linearizes the update~\eqref{eq:gd_discrete} about the initial Jacobian $J_0$: a single step moves the parameters by $\theta^{(n+1)} - \theta^{(n)} = -\mu\,J_0^T e^{(n)}$, and to first order the error responds as $e^{(n+1)} - e^{(n)} = J_0\,(\theta^{(n+1)} - \theta^{(n)})$. The second applies the forward (explicit) Euler scheme \parencite{suli2003, leveque2007} directly to the linear ODE~\eqref{eq:error_linear_ode}, replacing the derivative by the forward difference $(e^{(n+1)} - e^{(n)})/\mu$ and evaluating the right-hand side at the current iterate, $(e^{(n+1)} - e^{(n)})/\mu = -K_0\,e^{(n)}$. Both give
+Section~\ref{subsec:grad_flow} read the update~\eqref{eq:gd_discrete} as forward Euler applied to the gradient flow in the parameters. The same statement is needed for the error, since that is what the analysis follows. There are two ways to obtain it: discretize the parameter update and then linearize, or linearize first, into the error equation~\eqref{eq:error_linear_ode}, and discretize that. Both give the same law.
+
+Take the first. Gradient descent on the loss is
+\[
+    \theta^{(n+1)} = \theta^{(n)} - \mu\,\nabla_\theta\mathcal{L}\bigl(\theta^{(n)}\bigr).
+\]
+Under lazy training the Jacobian is frozen at $J_0$, so~\eqref{eq:loss_grad} gives $\nabla_\theta\mathcal{L}(\theta^{(n)}) = J_0^T e^{(n)}$ and the step is
+\[
+    \Delta\theta^{(n)} := \theta^{(n+1)} - \theta^{(n)} = -\mu\,J_0^T e^{(n)}.
+\]
+Expanding the error to first order in that displacement,
+\[
+    e^{(n+1)} = e^{(n)} + J_0\,\Delta\theta^{(n)} + O\bigl(\|\Delta\theta^{(n)}\|^2\bigr),
+\]
+and substituting the step,
+\[
+    e^{(n+1)} = e^{(n)} - \mu\,J_0 J_0^T e^{(n)}.
+\]
+
+Now the second. Equation~\eqref{eq:error_linear_ode} is already linear in $e$. The forward, or explicit, Euler scheme \parencite{suli2003, leveque2007} replaces its derivative at $\tau^{(n)}$ by a forward difference over one step of length $\mu$,
+\[
+    \left.\frac{de}{d\tau}\right|_{\tau^{(n)}} \approx \frac{e^{(n+1)} - e^{(n)}}{\mu},
+\]
+and evaluates the right-hand side at the current iterate,
+\[
+    \frac{e^{(n+1)} - e^{(n)}}{\mu} = -K_0\,e^{(n)}.
+\]
+Multiplying through by $\mu$,
+\[
+    e^{(n+1)} = e^{(n)} - \mu\,K_0\,e^{(n)}.
+\]
+
+Since $K_0 = J_0 J_0^T$, the two results are the same equation. Collecting terms gives the single-step law
 \begin{equation}\label{eq:error_discrete_step}
-    e^{(n+1)} = e^{(n)} - \mu\,J_0 J_0^T e^{(n)} = (I - \mu K_0)\,e^{(n)},
+    e^{(n+1)} = (I - \mu K_0)\,e^{(n)}.
 \end{equation}
-in keeping with the reading of gradient descent as the forward-Euler discretization of the gradient flow~\eqref{eq:grad_flow}. Iterating from $e^{(0)} = e_0$ and diagonalizing with $K_0 = V\Lambda V^T$,
+One gradient-descent step of size $\mu$ is one forward-Euler step of length $\mu$ on the error. Iterating from $e^{(0)} = e_0$ and diagonalizing with $K_0 = V\Lambda V^T$,
 \begin{equation}\label{eq:error_discrete}
     e^{(n)} = (I - \mu K_0)^n e_0 = \sum_{k=1}^N \bigl(v_k^T e_0\bigr)\,(1 - \mu\lambda_k)^n\,v_k.
 \end{equation}
-The same expression follows from the continuous solution~\eqref{eq:error_evolution} by discretizing each mode on its own. Evaluating the decay factor at $\tau = n\mu$ and splitting it across the $n$ steps gives $e^{-\lambda_k\tau} = \bigl(e^{-\lambda_k\mu}\bigr)^n$; truncating the exponential at first order in the step by its Taylor expansion \parencite{burden2011},
+The continuous solution reaches the same expression, one mode at a time. Evaluate the decay factor of~\eqref{eq:error_evolution} at $\tau = n\mu$ and split it across the $n$ steps,
+\[
+    e^{-\lambda_k\tau} = e^{-\lambda_k n\mu} = \bigl(e^{-\lambda_k\mu}\bigr)^n,
+\]
+then expand the per-step factor and truncate at first order in $\mu\lambda_k$ \parencite{burden2011},
 \begin{equation}\label{eq:euler_truncation}
-    e^{-\lambda_k\mu} = 1 - \mu\lambda_k + O\bigl((\mu\lambda_k)^2\bigr) \approx 1 - \mu\lambda_k,
+    e^{-\lambda_k\mu} = 1 - \mu\lambda_k + O\bigl((\mu\lambda_k)^2\bigr) \approx 1 - \mu\lambda_k.
 \end{equation}
-replaces $e^{-\lambda_k\tau}$ by $(1-\mu\lambda_k)^n$ and carries~\eqref{eq:error_evolution} into~\eqref{eq:error_discrete} term by term. The discrete factor $(1-\mu\lambda_k)^n$ is therefore the forward-Euler counterpart of the continuous $e^{-\lambda_k\tau}$, and the two coincide as $\mu\to0$ with $\tau = n\mu$ held fixed, since $(1-\mu\lambda_k)^{\tau/\mu} \to e^{-\lambda_k\tau}$.
+Substituting term by term carries~\eqref{eq:error_evolution} into~\eqref{eq:error_discrete}, so $(1-\mu\lambda_k)^n$ is the forward-Euler counterpart of $e^{-\lambda_k\tau}$. The two agree as the step vanishes with $\tau = n\mu$ held fixed,
+\[
+    \lim_{\mu \to 0}\, \bigl(1 - \mu\lambda_k\bigr)^{\tau/\mu} = e^{-\lambda_k\tau}.
+\]
 
-The same truncation is what constrains the step. Under the continuous flow every mode with $\lambda_k > 0$ decays for any $\mu > 0$, but the forward-Euler mode contracts only when its amplification factor $1 - \mu\lambda_k$ is smaller than one in magnitude, $|1 - \mu\lambda_k| < 1$, that is
+The same truncation constrains the step. Under the continuous flow every mode with $\lambda_k > 0$ decays for any $\mu > 0$. The discrete mode contracts only when its amplification factor is smaller than one in magnitude,
 \begin{equation}\label{eq:euler_stability}
-    0 < \mu\lambda_k < 2.
+    \bigl| 1 - \mu\lambda_k \bigr| < 1
+    \qquad\Longleftrightarrow\qquad
+    0 < \mu\lambda_k < 2,
 \end{equation}
-This is the absolute-stability condition of the explicit Euler method \parencite{leveque2007, suli2003}, and the product $\mu\lambda_k$ alone fixes how the $k$-th mode behaves. When $0 < \mu\lambda_k < 1$ the factor $1-\mu\lambda_k$ lies in $(0,1)$ and the mode decays monotonically toward zero; at $\mu\lambda_k = 1$ the factor vanishes and the mode is removed in a single step; for $1 < \mu\lambda_k < 2$ the factor lies in $(-1,0)$, so the mode still decays but flips sign at every step; and once $\mu\lambda_k > 2$ the factor exceeds one in magnitude and the mode grows without bound. Since $\lambda_1 = \lambda_{\max}$ is the largest eigenvalue, every mode stays stable only when the largest one does, which caps the learning rate at
+which is the absolute-stability condition of the explicit Euler method \parencite{leveque2007, suli2003}. The product $\mu\lambda_k$ alone fixes how the $k$-th mode behaves, and it does so in four regimes. Below one, the factor lies in $(0,1)$ and the mode decays monotonically toward zero; at exactly one it vanishes and the mode is removed in a single step. Between one and two the factor is negative, so the mode still decays but flips sign at every step. Past two it exceeds one in magnitude and the mode grows without bound. A single step size therefore acts differently on every eigendirection of $K_0$.
+
+Since $\lambda_1 = \lambda_{\max}$ is the largest eigenvalue, every mode stays stable only when the largest one does, which caps the learning rate at
 \begin{equation}\label{eq:euler_bound}
     \mu < \frac{2}{\lambda_{\max}}.
 \end{equation}
-The spectral-bias probe of Section~\ref{sec:m_probe} sets its step from this limit: rather than a nominal value, $\mu$ is fixed at a constant fraction of $2/\lambda_{\max}$ at every width, small enough to keep every mode in the monotone regime $\mu\lambda_k < 1$ while staying comparable across widths whose $\lambda_{\max}$ differ.
+The minimal experiment of Section~\ref{sec:m_minimal} sets its step from this limit: rather than a nominal value, $\mu$ is fixed at a constant fraction of $2/\lambda_{\max}$ at every width, small enough to keep every mode in the monotone regime $\mu\lambda_k < 1$ while staying comparable across widths whose $\lambda_{\max}$ differ.
 
-From~\eqref{eq:error_mode}, the amplitude of the $k$-th eigenvector at time $\tau$ satisfies $|c_k(\tau)| = |v_k^T e_0|\,e^{-\lambda_k\tau}$. To reduce this amplitude below a target precision $\varepsilon > 0$:
-\begin{equation}
-    |v_k^T e_0|\,e^{-\lambda_k\tau} < \varepsilon
-    \;\implies\;
-    e^{-\lambda_k\tau} < \frac{\varepsilon}{|v_k^T e_0|}
-    \;\implies\;
-    -\lambda_k\,\tau < \ln\frac{\varepsilon}{|v_k^T e_0|}
-    \;\implies\;
-    \tau > \frac{1}{\lambda_k}\ln\frac{|v_k^T e_0|}{\varepsilon}.
+The same argument gives the time each mode needs. From~\eqref{eq:error_mode}, the amplitude of the $k$-th eigendirection at time $\tau$ is
+\begin{equation}\label{eq:mode_amplitude}
+    \bigl| c_k(\tau) \bigr| = \bigl| v_k^T e_0 \bigr|\, e^{-\lambda_k\tau}.
 \end{equation}
-The minimum training time to resolve the $k$-th eigenvector to precision $\varepsilon$ is therefore
+Require it to fall below a target precision $\varepsilon > 0$,
+\[
+    \bigl| v_k^T e_0 \bigr|\, e^{-\lambda_k\tau} < \varepsilon,
+\]
+and divide by $\bigl| v_k^T e_0 \bigr| > 0$,
+\[
+    e^{-\lambda_k\tau} < \frac{\varepsilon}{\bigl| v_k^T e_0 \bigr|}.
+\]
+Taking logarithms preserves the inequality,
+\[
+    -\lambda_k\,\tau < \ln \frac{\varepsilon}{\bigl| v_k^T e_0 \bigr|},
+\]
+and dividing by $-\lambda_k < 0$ reverses it,
+\[
+    \tau > \frac{1}{\lambda_k}\,\ln \frac{\bigl| v_k^T e_0 \bigr|}{\varepsilon}.
+\]
+The minimum training time to resolve the $k$-th eigendirection to precision $\varepsilon$ is therefore
 \begin{equation}\label{eq:training_time}
-    \tau_k = \frac{1}{\lambda_k}\ln\frac{|v_k^T e_0|}{\varepsilon}.
+    \tau_k = \frac{1}{\lambda_k}\,\ln \frac{\bigl| v_k^T e_0 \bigr|}{\varepsilon}.
 \end{equation}
-Since $\lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_{N} \geq 0$, equation~\eqref{eq:training_time} gives $\tau_1 \leq \tau_2 \leq \cdots \leq \tau_{N}$: higher-indexed eigenvectors require more training time. \textcite{arora2019} reached similar conclusions from a discrete-time analysis of gradient descent, showing that the convergence speed of each eigenvector is governed by its eigenvalue and by the projection of the target onto that eigenvector.
+The projection enters~\eqref{eq:training_time} through a logarithm and the eigenvalue through $1/\lambda_k$, so $\lambda_k$ sets the scale of $\tau_k$ while the projection only shifts it. Since $\lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_{N} \geq 0$, the times are ordered $\tau_1 \leq \tau_2 \leq \cdots \leq \tau_{N}$: higher-indexed eigendirections require more training time, in inverse proportion to their eigenvalue. \textcite{arora2019} reached similar conclusions from a discrete-time analysis of gradient descent, showing that the convergence speed of each eigenvector is governed by its eigenvalue and by the projection of the target onto that eigenvector.
 
 The decomposition~\eqref{eq:error_evolution} is expressed in the eigenbasis $\{v_k\}_{k=1}^{N}$ of the NTK, which need not coincide with any physically meaningful basis. When the $N$ training points lie on a regular grid and the target is periodic, however, the natural basis is the Fourier one, and recasting the dynamics there shows that the decay is genuinely organized by frequency. Let $F \in \mathbb{C}^{N \times N}$ be the Fourier matrix, that is, the discrete Fourier transform (DFT) matrix with entries
 \begin{equation}\label{eq:dft_matrix}
@@ -524,7 +576,7 @@ To close, note that when the network is initialized at small scale its output $u
     \approx -\,\hat u
     = -\begin{bmatrix} \hat u(0) \\ \vdots \\ \hat u(N-1) \end{bmatrix}.
 \end{equation}
-Substituting~\eqref{eq:init_spectrum} into~\eqref{eq:fourier_evolution} casts the dynamics as a reconstruction of the target frequency by frequency: each Fourier mode of $u$ is acquired at a rate set by the NTK eigenvalues, the smooth low-frequency content emerging first and the fine high-frequency detail last. This is exactly the regime anticipated at the start of the section --- a periodic target on a regular grid --- in which the quality of the approximation can be tracked mode by mode along the training iterations.
+Substituting~\eqref{eq:init_spectrum} into~\eqref{eq:fourier_evolution} casts the dynamics as a reconstruction of the target frequency by frequency: each Fourier mode of $u$ is acquired at a rate set by the NTK eigenvalues, the smooth low-frequency content emerging first and the fine high-frequency detail last. This is the regime anticipated at the start of the section, a periodic target on a regular grid, in which the quality of the approximation can be tracked mode by mode along the training iterations.
 
 This last observation can be made quantitative. Taking the modulus of the modal amplitude~\eqref{eq:fourier_mode} isolates the magnitude of the $k$-th component along training,
 \begin{equation}\label{eq:fourier_amplitude}
@@ -543,7 +595,7 @@ gives an estimate of the number of gradient-descent iterations needed to resolve
     n_k = \left\lceil \frac{1}{\mu\,\lambda_k}\,\ln\frac{|(F v_k)^{*}\hat u|}{\varepsilon}\right\rceil.
 \end{equation}
 
-The same count follows directly from the discrete recursion, without passing through the continuous flow. The discrete counterpart of~\eqref{eq:fourier_amplitude} is the modal amplitude read off~\eqref{eq:error_discrete}, $|\tilde c_k^{(n)}| = |\tilde c_k(0)|\,|1 - \mu\lambda_k|^n$, and requiring it below $\varepsilon$ gives
+The count follows just as directly from the discrete recursion, without passing through the continuous flow. The discrete counterpart of~\eqref{eq:fourier_amplitude} is the modal amplitude read off~\eqref{eq:error_discrete}, $|\tilde c_k^{(n)}| = |\tilde c_k(0)|\,|1 - \mu\lambda_k|^n$, and requiring it below $\varepsilon$ gives
 \begin{equation}\label{eq:iteration_bound_discrete}
     |\tilde c_k(0)|\,|1 - \mu\lambda_k|^n < \varepsilon
     \;\implies\;
