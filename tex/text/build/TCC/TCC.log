@@ -1034,8 +1034,12 @@ Package biblatex Warning: Attempt to redefine deprecated '\mkbibnamelast'.
 (biblatex)                Using '\mkbibnamefamily'.
 
 (TCC.aux (chapters/01-introduction.aux)
-(chapters/02-mathematical-background.aux) (chapters/03-metodology.aux)
-(chapters/04-numerical-results.aux) (chapters/05-conclusions.aux))
+(chapters/02-mathematical-background.aux
+
+LaTeX Warning: Label `eq:boussinesq' multiply defined.
+
+) (chapters/03-metodology.aux) (chapters/04-numerical-results.aux)
+(chapters/05-conclusions.aux))
 \openout1 = `TCC.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 1.
@@ -1064,12 +1068,12 @@ LaTeX Font Info:    ... okay on input line 1.
 LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 1.
 LaTeX Font Info:    ... okay on input line 1.
 Package hyperref Info: Link coloring OFF on input line 1.
-
-(nameref.sty
+ (nameref.sty
 Package: nameref 2021-04-02 v2.47 Cross-referencing by name of section
  (refcount.sty
 Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
-) (gettitlestring.sty
+)
+(gettitlestring.sty
 Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
 \c@section@level=\count483
@@ -1083,8 +1087,7 @@ LaTeX Info: Redefining \nameref on input line 1.
 
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: longtable package is loaded.
-
-(ltcaption.sty
+ (ltcaption.sty
 Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
 )
 Package caption Info: supertabular package is loaded.
@@ -1095,7 +1098,8 @@ Package biblatex Info: ... file 'english-abnt.lbx' found.
 File: english-abnt.lbx 2018-11-17 v3.4 ABNT BibLaTeX citation style
 Package biblatex Info: Trying to load language 'english'...
 Package biblatex Info: ... file 'english.lbx' found.
- (english.lbx
+
+(english.lbx
 File: english.lbx 2022/02/02 v3.17 biblatex localization (PK/MW)
 )
 Package biblatex Info: Trying to load language 'english'...
@@ -1116,8 +1120,7 @@ Package biblatex Info: Automatic encoding selection.
 
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'TCC.bbl' found.
-
-(TCC.bbl)
+ (TCC.bbl)
 Package biblatex Info: Reference section=0 on input line 1.
 Package biblatex Info: Reference segment=0 on input line 1.
 
@@ -1170,392 +1173,440 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 58.
 
  (umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-) [2] [3] [4]
+) [2] [3] [4] [5] [6]
 File: ../imgs//CNPq.png Graphic file (type bmp)
 <../imgs//CNPq.png>
 File: ../imgs//LabFluidLogo.png Graphic file (type bmp)
 <../imgs//LabFluidLogo.png>
 File: ../imgs//ufpr_logo.jpg Graphic file (type bmp)
 <../imgs//ufpr_logo.jpg>
- [5] (TCC.toc [6
+ [7] (TCC.toc [8
 
 ])
 \tf@toc=\write6
 \openout6 = `TCC.toc'.
 
- (TCC.lof [7] [8])
+ (TCC.lof [9]
+[10])
 \tf@lof=\write7
 \openout7 = `TCC.lof'.
 
-
-[9] [10] [11] [12]
+ [11] [12] [13] [14]
 \openout2 = `chapters/01-introduction.aux'.
 
  (chapters/01-introduction.tex
 Chapter 1.
 
-Overfull \hbox (8.01456pt too wide) in paragraph at lines 13--13
+Overfull \hbox (8.01456pt too wide) in paragraph at lines 15--15
 |[]\T1/lmr/bx/n/14.4 Literature Overview on Sci-en-tific Ma-chine Learn-ing for
  PDEs| 
  []
 
-[13
+[15
 
 
-] [14] [15] [16] [17] [18]) [19]
+] [16] [17] [18] [19] [20]) [21]
 \openout2 = `chapters/02-mathematical-background.aux'.
 
  (chapters/02-mathematical-background.tex
 Chapter 2.
-File: ../imgs//soliton_profile.png Graphic file (type bmp)
-<../imgs//soliton_profile.png>
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-[20
-
-
-
-
-] [21] [22] [23] [24] [25] [26] [27] [28] [29] [30] [31] [32] [33] [34]
-[35] [36] [37] [38] [39] [40]) [41]
-\openout2 = `chapters/03-metodology.aux'.
-
- (chapters/03-metodology.tex
-Chapter 3.
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-1.
-(t1lmtt.fd
-File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [42
-
-
-
-
-] [43] [44] [45] [46] [47] [48] [49] [50] [51]) [52] [53]
-\openout2 = `chapters/04-numerical-results.aux'.
-
-
-(chapters/04-numerical-results.tex
-Chapter 4.
-[54
+[22
 
 
 
 
 ]
-File: ../../../results/imgs//mlp/ntk_error_decay.png Graphic file (type bmp)
-<../../../results/imgs//mlp/ntk_error_decay.png>
-File: ../../../results/imgs//mlp/ntk_spectral_decay.png Graphic file (type bmp)
+File: ../../../results/imgs//setup/soliton_profile.png Graphic file (type bmp)
+<../../../results/imgs//setup/soliton_profile.png>
+ [23] [24] [25] [26] [27] [28] [29] [30] [31] [32]
+Overfull \hbox (4.70096pt too wide) in paragraph at lines 419--420
+[]\T1/lmr/m/n/12 Each equa-tion in [] is a first-order lin-ear ODE with con-sta
+nt co-ef-fi-cient ([][]BOYCE
+ []
 
-<../../../results/imgs//mlp/ntk_spectral_decay.png>
-File: ../../../results/imgs//mlp/ntk_band_decay.png Graphic file (type bmp)
-<../../../results/imgs//mlp/ntk_band_decay.png>
-File: ../../../results/imgs//mlp/ntk_iteration_count.png Graphic file (type bmp
-)
-<../../../results/imgs//mlp/ntk_iteration_count.png>
- [55] [56]
-File: ../../../results/imgs//mlp/ntk_fit.png Graphic file (type bmp)
-<../../../results/imgs//mlp/ntk_fit.png>
- [57] [58]
-File: ../../../results/imgs//mlp/ntk/mlp_ntk_panel_param.png Graphic file (type
- bmp)
-<../../../results/imgs//mlp/ntk/mlp_ntk_panel_param.png>
-File: ../../../results/imgs//mlp/ntk/mlp_ntk_panel_kernel.png Graphic file (typ
-e bmp)
-<../../../results/imgs//mlp/ntk/mlp_ntk_panel_kernel.png>
-File: ../../../results/imgs//mlp/ntk/mlp_ntk_panel_spectrum.png Graphic file (t
-ype bmp)
-<../../../results/imgs//mlp/ntk/mlp_ntk_panel_spectrum.png>
- [59]
-File: ../../../results/imgs//spectral_bias_evolution_mlp_data_only.png Graphic 
-file (type bmp)
-<../../../results/imgs//spectral_bias_evolution_mlp_data_only.png>
-File: ../../../results/imgs//spectral_bias_evolution_pinn_no_data.png Graphic f
-ile (type bmp)
-<../../../results/imgs//spectral_bias_evolution_pinn_no_data.png>
-File: ../../../results/imgs//spectral_bias_evolution_pinn_with_data.png Graphic
- file (type bmp)
-<../../../results/imgs//spectral_bias_evolution_pinn_with_data.png>
-File: ../../../results/imgs//spectral_bias_evolution_fno.png Graphic file (type
- bmp)
-<../../../results/imgs//spectral_bias_evolution_fno.png>
-File: ../../../results/imgs//spectral_bias_evolution_pino_no_data.png Graphic f
-ile (type bmp)
-<../../../results/imgs//spectral_bias_evolution_pino_no_data.png>
-File: ../../../results/imgs//spectral_bias_evolution_pino_with_data.png Graphic
- file (type bmp)
-<../../../results/imgs//spectral_bias_evolution_pino_with_data.png>
- [60] [61]
-File: ../../../results/imgs//mlp/mlp_model2_spectral_panel_spectrum_1.png Graph
-ic file (type bmp)
-<../../../results/imgs//mlp/mlp_model2_spectral_panel_spectrum_1.png>
-File: ../../../results/imgs//mlp/mlp_model2_spectral_panel_relerr_1.png Graphic
- file (type bmp)
-<../../../results/imgs//mlp/mlp_model2_spectral_panel_relerr_1.png>
-File: ../../../results/imgs//mlp/mlp_model2_spectral_panel_spectrum_2.png Graph
-ic file (type bmp)
-<../../../results/imgs//mlp/mlp_model2_spectral_panel_spectrum_2.png>
-File: ../../../results/imgs//mlp/mlp_model2_spectral_panel_relerr_2.png Graphic
- file (type bmp)
-<../../../results/imgs//mlp/mlp_model2_spectral_panel_relerr_2.png>
-File: ../../../results/imgs//mlp/mlp_model2_spectral_panel_spectrum_3.png Graph
-ic file (type bmp)
-<../../../results/imgs//mlp/mlp_model2_spectral_panel_spectrum_3.png>
-File: ../../../results/imgs//mlp/mlp_model2_spectral_panel_relerr_3.png Graphic
- file (type bmp)
-<../../../results/imgs//mlp/mlp_model2_spectral_panel_relerr_3.png>
-File: ../../../results/imgs//mlp/mlp_model2_spectral_panel_mean.png Graphic fil
-e (type bmp)
-<../../../results/imgs//mlp/mlp_model2_spectral_panel_mean.png>
+[33] [34] [35] [36] [37] [38] [39] [40] [41] [42] [43] [44] [45]) [46]
+\openout2 = `chapters/03-metodology.aux'.
 
 
-LaTeX Warning: Float too large for page by 0.88867pt on input line 250.
-
-File: ../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_sp
-ectrum_1.png Graphic file (type bmp)
-<../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_spectru
-m_1.png>
-File: ../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_re
-lerr_1.png Graphic file (type bmp)
-<../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_
-1.png>
-File: ../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_sp
-ectrum_2.png Graphic file (type bmp)
-<../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_spectru
-m_2.png>
-File: ../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_re
-lerr_2.png Graphic file (type bmp)
-<../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_
-2.png>
-File: ../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_sp
-ectrum_3.png Graphic file (type bmp)
-<../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_spectru
-m_3.png>
-File: ../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_re
-lerr_3.png Graphic file (type bmp)
-<../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_relerr_
-3.png>
-File: ../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_me
-an.png Graphic file (type bmp)
-<../../../results/imgs//pinn/no_data/pinn_no_data_model2_spectral_panel_mean.pn
-g>
-File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_spectrum
-_1.png Graphic file (type bmp)
-<../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_spectrum_1.pn
-g>
-File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_relerr_1
-.png Graphic file (type bmp)
-<../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_relerr_1.png>
-
-File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_spectrum
-_2.png Graphic file (type bmp)
-<../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_spectrum_2.pn
-g>
-File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_relerr_2
-.png Graphic file (type bmp)
-<../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_relerr_2.png>
-
-File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_spectrum
-_3.png Graphic file (type bmp)
-<../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_spectrum_3.pn
-g>
-File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_relerr_3
-.png Graphic file (type bmp)
-<../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_relerr_3.png>
-
-File: ../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_mean.png
- Graphic file (type bmp)
-<../../../results/imgs//pinn/with_data/pinn_model2_spectral_panel_mean.png>
-[62] [63] [64] [65]
-File: ../../../results/imgs//fno/fno_model2_spectral_panel_spectrum_1.png Graph
-ic file (type bmp)
-<../../../results/imgs//fno/fno_model2_spectral_panel_spectrum_1.png>
-File: ../../../results/imgs//fno/fno_model2_spectral_panel_relerr_1.png Graphic
- file (type bmp)
-<../../../results/imgs//fno/fno_model2_spectral_panel_relerr_1.png>
-File: ../../../results/imgs//fno/fno_model2_spectral_panel_spectrum_2.png Graph
-ic file (type bmp)
-<../../../results/imgs//fno/fno_model2_spectral_panel_spectrum_2.png>
-File: ../../../results/imgs//fno/fno_model2_spectral_panel_relerr_2.png Graphic
- file (type bmp)
-<../../../results/imgs//fno/fno_model2_spectral_panel_relerr_2.png>
-File: ../../../results/imgs//fno/fno_model2_spectral_panel_spectrum_3.png Graph
-ic file (type bmp)
-<../../../results/imgs//fno/fno_model2_spectral_panel_spectrum_3.png>
-File: ../../../results/imgs//fno/fno_model2_spectral_panel_relerr_3.png Graphic
- file (type bmp)
-<../../../results/imgs//fno/fno_model2_spectral_panel_relerr_3.png>
-File: ../../../results/imgs//fno/fno_model2_spectral_panel_mean.png Graphic fil
-e (type bmp)
-<../../../results/imgs//fno/fno_model2_spectral_panel_mean.png>
-File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_spectrum
-_1.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_spectral_panel_spectrum_1.pn
-g>
-File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_relerr_1
-.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_spectral_panel_relerr_1.png>
-
-File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_spectrum
-_2.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_spectral_panel_spectrum_2.pn
-g>
-File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_relerr_2
-.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_spectral_panel_relerr_2.png>
-
-File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_spectrum
-_3.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_spectral_panel_spectrum_3.pn
-g>
-File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_relerr_3
-.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_spectral_panel_relerr_3.png>
-
-File: ../../../results/imgs//pino/with_data/pino_model2_spectral_panel_mean.png
- Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_spectral_panel_mean.png>
+(chapters/03-metodology.tex
+Chapter 3.
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
+1.
+(t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+) [47
 
 
-LaTeX Warning: Float too large for page by 0.88867pt on input line 456.
 
-File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_sp
-ectrum_1.png Graphic file (type bmp)
-<../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_spectru
-m_1.png>
-File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_re
-lerr_1.png Graphic file (type bmp)
-<../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_relerr_
-1.png>
-File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_sp
-ectrum_2.png Graphic file (type bmp)
-<../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_spectru
-m_2.png>
-File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_re
-lerr_2.png Graphic file (type bmp)
-<../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_relerr_
-2.png>
-File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_sp
-ectrum_3.png Graphic file (type bmp)
-<../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_spectru
-m_3.png>
-File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_re
-lerr_3.png Graphic file (type bmp)
-<../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_relerr_
-3.png>
-File: ../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_me
-an.png Graphic file (type bmp)
-<../../../results/imgs//pino/no_data/pino_no_data_model2_spectral_panel_mean.pn
-g>
-File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_surface_1.png Grap
-hic file (type bmp)
-<../../../results/imgs//fno/fno_model2_alpha_beta_panel_surface_1.png>
-File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_relerr_1.png Graph
-ic file (type bmp)
-<../../../results/imgs//fno/fno_model2_alpha_beta_panel_relerr_1.png>
-File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_surface_2.png Grap
-hic file (type bmp)
-<../../../results/imgs//fno/fno_model2_alpha_beta_panel_surface_2.png>
-File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_relerr_2.png Graph
-ic file (type bmp)
-<../../../results/imgs//fno/fno_model2_alpha_beta_panel_relerr_2.png>
-File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_surface_3.png Grap
-hic file (type bmp)
-<../../../results/imgs//fno/fno_model2_alpha_beta_panel_surface_3.png>
-File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_relerr_3.png Graph
-ic file (type bmp)
-<../../../results/imgs//fno/fno_model2_alpha_beta_panel_relerr_3.png>
-File: ../../../results/imgs//fno/fno_model2_alpha_beta_panel_box.png Graphic fi
-le (type bmp)
-<../../../results/imgs//fno/fno_model2_alpha_beta_panel_box.png>
 
-LaTeX Warning: Float too large for page by 15.74928pt on input line 566.
+] [48] [49] [50] [51] [52] [53] [54] [55] [56]) [57] [58]
+\openout2 = `chapters/04-numerical-results.aux'.
 
-File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_surfac
-e_1.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_surface_1.p
-ng>
-File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_relerr
-_1.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_relerr_1.pn
-g>
-File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_surfac
-e_2.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_surface_2.p
-ng>
-File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_relerr
-_2.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_relerr_2.pn
-g>
-File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_surfac
-e_3.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_surface_3.p
-ng>
-File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_relerr
-_3.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_relerr_3.pn
-g>
-File: ../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_box.pn
+
+(chapters/04-numerical-results.tex
+Chapter 4.
+[59
+
+
+
+
+]
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_bet
+a_panel_surface_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_pan
+el_surface_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_bet
+a_panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_pan
+el_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_bet
+a_panel_surface_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_pan
+el_surface_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_bet
+a_panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_pan
+el_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_bet
+a_panel_surface_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_pan
+el_surface_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_bet
+a_panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_pan
+el_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_bet
+a_panel_box.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_pan
+el_box.png>
+
+
+LaTeX Warning: Float too large for page by 15.74928pt on input line 90.
+
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_a
+lpha_beta_panel_surface_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_alpha_
+beta_panel_surface_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_a
+lpha_beta_panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_alpha_
+beta_panel_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_a
+lpha_beta_panel_surface_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_alpha_
+beta_panel_surface_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_a
+lpha_beta_panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_alpha_
+beta_panel_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_a
+lpha_beta_panel_surface_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_alpha_
+beta_panel_surface_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_a
+lpha_beta_panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_alpha_
+beta_panel_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_a
+lpha_beta_panel_box.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_alpha_
+beta_panel_box.png>
+
+LaTeX Warning: Float too large for page by 29.9345pt on input line 141.
+
+[60] [61] [62]
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_r
+esolution_panel_surface_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_resolu
+tion_panel_surface_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_r
+esolution_panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_resolu
+tion_panel_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_r
+esolution_panel_surface_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_resolu
+tion_panel_surface_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_r
+esolution_panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_resolu
+tion_panel_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_r
+esolution_panel_surface_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_resolu
+tion_panel_surface_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_r
+esolution_panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_resolu
+tion_panel_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_r
+esolution_panel_box.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_resolu
+tion_panel_box.png>
+
+
+LaTeX Warning: Float too large for page by 43.8271pt on input line 202.
+
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_resolutio
+n_panel_box.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_resolution_pan
+el_box.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_
+panel_spectrum_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel
+_spectrum_1.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_
+panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel
+_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_
+panel_spectrum_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel
+_spectrum_2.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_
+panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel
+_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_
+panel_spectrum_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel
+_spectrum_3.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_
+panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel
+_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_
+panel_mean.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel
+_mean.png>
+
+LaTeX Warning: Float too large for page by 0.88867pt on input line 269.
+
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spect
+ral_panel_spectrum_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_p
+anel_spectrum_1.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spect
+ral_panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_p
+anel_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spect
+ral_panel_spectrum_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_p
+anel_spectrum_2.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spect
+ral_panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_p
+anel_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spect
+ral_panel_spectrum_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_p
+anel_spectrum_3.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spect
+ral_panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_p
+anel_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spect
+ral_panel_mean.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_p
+anel_mean.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_s
+pectral_panel_spectrum_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_spectr
+al_panel_spectrum_1.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_s
+pectral_panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_spectr
+al_panel_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_s
+pectral_panel_spectrum_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_spectr
+al_panel_spectrum_2.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_s
+pectral_panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_spectr
+al_panel_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_s
+pectral_panel_spectrum_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_spectr
+al_panel_spectrum_3.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_s
+pectral_panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_spectr
+al_panel_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_s
+pectral_panel_mean.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/nn/data_and_physics/pinn_model2_spectr
+al_panel_mean.png>
+[63] [64]
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_
+panel_spectrum_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_panel
+_spectrum_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_
+panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_panel
+_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_
+panel_spectrum_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_panel
+_spectrum_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_
+panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_panel
+_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_
+panel_spectrum_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_panel
+_spectrum_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_
+panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_panel
+_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_
+panel_mean.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_data/fno_model2_spectral_panel
+_mean.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_s
+pectral_panel_spectrum_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_spectr
+al_panel_spectrum_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_s
+pectral_panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_spectr
+al_panel_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_s
+pectral_panel_spectrum_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_spectr
+al_panel_spectrum_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_s
+pectral_panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_spectr
+al_panel_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_s
+pectral_panel_spectrum_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_spectr
+al_panel_spectrum_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_s
+pectral_panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_spectr
+al_panel_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_s
+pectral_panel_mean.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/data_and_physics/pino_model2_spectr
+al_panel_mean.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spect
+ral_panel_spectrum_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spectral_p
+anel_spectrum_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spect
+ral_panel_relerr_1.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spectral_p
+anel_relerr_1.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spect
+ral_panel_spectrum_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spectral_p
+anel_spectrum_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spect
+ral_panel_relerr_2.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spectral_p
+anel_relerr_2.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spect
+ral_panel_spectrum_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spectral_p
+anel_spectrum_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spect
+ral_panel_relerr_3.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spectral_p
+anel_relerr_3.png>
+File: ../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spect
+ral_panel_mean.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/no/pure_physics/pino_model2_spectral_p
+anel_mean.png>
+ [65] [66] [67] [68] [69] [70] [71]
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_error_decay.png G
+raphic file (type bmp)
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_error_decay.png>
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_spectral_decay.pn
 g Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_alpha_beta_panel_box.png>
-
-LaTeX Warning: Float too large for page by 15.74928pt on input line 617.
-
-[66] [67] [68] [69] [70] [71]
-File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surfac
-e_1.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surface_1.p
-ng>
-File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_relerr
-_1.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_resolution_panel_relerr_1.pn
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_spectral_decay.png>
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_band_decay.png Gr
+aphic file (type bmp)
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_band_decay.png>
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_iteration_count.p
+ng Graphic file (type bmp)
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_iteration_count.png>
+ [72] [73]
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_fit.png Graphic f
+ile (type bmp)
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_fit.png>
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_fit_evolution.png
+ Graphic file (type bmp)
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk_fit_evolution.png>
+ [74]
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_par
+am.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_param.pn
 g>
-File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surfac
-e_2.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surface_2.p
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_ker
+nel.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_kernel.p
 ng>
-File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_relerr
-_2.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_resolution_panel_relerr_2.pn
-g>
-File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surfac
-e_3.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_resolution_panel_surface_3.p
-ng>
-File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_relerr
-_3.png Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_resolution_panel_relerr_3.pn
-g>
-File: ../../../results/imgs//pino/with_data/pino_model2_resolution_panel_box.pn
-g Graphic file (type bmp)
-<../../../results/imgs//pino/with_data/pino_model2_resolution_panel_box.png>
-
-
-LaTeX Warning: Float too large for page by 43.2419pt on input line 680.
-
-[72] [73] [74]) [75]
+File: ../../../results/imgs//boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_spe
+ctrum.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_spectrum
+.png>
+ [75]
+File: ../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolutio
+n_mlp_pure_data.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolution_mlp
+_pure_data.png>
+File: ../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolutio
+n_pinn_pure_physics.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolution_pin
+n_pure_physics.png>
+File: ../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolutio
+n_pinn_data_and_physics.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolution_pin
+n_data_and_physics.png>
+File: ../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolutio
+n_fno_pure_data.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolution_fno
+_pure_data.png>
+File: ../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolutio
+n_pino_pure_physics.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolution_pin
+o_pure_physics.png>
+File: ../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolutio
+n_pino_data_and_physics.png Graphic file (type bmp)
+<../../../results/imgs//boussinesq_sciml/comparison/spectral_bias_evolution_pin
+o_data_and_physics.png>
+ [76] [77]
+[78]) [79] [80]
 \openout2 = `chapters/05-conclusions.aux'.
 
  (chapters/05-conclusions.tex
 Chapter 5.
-[76
+[81
 
 
 
 
-] [77] [78]) [79] [80
+] [82] [83]) [84] [85] [86
 
 
 
-] [81] [82] [83] [84] [85] [86] [87] (TCC.aux
+] [87] [88] [89] [90] [91] [92] [93] (TCC.aux
 (chapters/01-introduction.aux) (chapters/02-mathematical-background.aux)
 (chapters/03-metodology.aux) (chapters/04-numerical-results.aux)
 (chapters/05-conclusions.aux))
+
+LaTeX Warning: There were multiply-defined labels.
+
 Package rerunfilecheck Info: File `TCC.out' has not changed.
-(rerunfilecheck)             Checksum: C77BABA36E53A6D9D02ADB268C7818E1;10038.
+(rerunfilecheck)             Checksum: 9DA9891D91F12DB96222C42E2B462C17;9475.
 Package logreq Info: Writing requests to 'TCC.run.xml'.
 \openout1 = `TCC.run.xml'.
 
  ) )
-Output written on TCC.xdv (87 pages, 444136 bytes).
+Output written on TCC.xdv (93 pages, 466076 bytes).

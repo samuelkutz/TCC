@@ -23,6 +23,11 @@
 \usepackage{enumitem}
 \usepackage{xcolor}
 \usepackage{mathtools, amssymb}
+% hyperref is loaded above, before amsmath, so its subequations patch never
+% applies and sub-numbered equations collide on the same PDF anchor. Deriving
+% the anchor from \theequation restores uniqueness (it already carries the
+% chapter prefix and the a/b suffix).
+\renewcommand{\theHequation}{\theequation}
 \usepackage{csquotes}
 
 % Estilo de bibliografia
