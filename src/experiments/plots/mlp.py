@@ -4,7 +4,7 @@ import os
 
 from methods.mlp import MLP
 from tools import load_model
-from experiments.common import resolve_device
+from experiments.common import BAND_METRIC, resolve_device
 from experiments.evaluate import (
     evaluate_pointwise_model, load_stage_metadata, plot_stage_training_statistics,
     pointwise_predictor, render_solution_gifs,
@@ -48,6 +48,10 @@ def eval_mlp(model_metadata_file, x_limit, t_limit, eval_params, resolutions,
     # to its panels, because Section 4.3 discusses it before the six-model figure
     spectral_history = metadata.get('spectral_history')
     if spectral_history and spectral_history.get('epochs'):
+        if spectral_history.get('metric') != BAND_METRIC:
+            print(f'  WARNING: mlp band history was recorded under '
+                  f'{spectral_history.get("metric", "an earlier measure")!r}, not '
+                  f'{BAND_METRIC!r}; the panel is stale until the model is retrained')
         plot_spectral_bias_panel([('MLP (pure data)', spectral_history)],
                                  outdir=outdir, filename=f'{LABEL}_spectral_bias_panel.png')
     else:

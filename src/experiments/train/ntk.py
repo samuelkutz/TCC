@@ -26,7 +26,7 @@ import torch
 
 from methods.mlp import MLP
 from tools import (
-    atomic_torch_save, band_relative_error, error_spectrum, save_metadata_json,
+    atomic_torch_save, band_spectral_error, error_spectrum, save_metadata_json,
     save_model, set_seed, to_symmetric,
 )
 from experiments.common import reference_solution, resolve_device, stage_paths
@@ -269,7 +269,7 @@ def train_ntk(x_limit, t_limit, param_value, results_dir, n_x=128, t_slice=15.0,
 
         ref_w = reference_width if reference_width in results else widths[-1]
         target_norm = float(target.norm())
-        target_spectrum = torch.fft.rfft(target).abs()
+        target_spectrum = torch.fft.rfft(target).abs() / target.numel()
 
         metrics = {
             'model': 'MLP-NTK probe',
@@ -297,7 +297,7 @@ def train_ntk(x_limit, t_limit, param_value, results_dir, n_x=128, t_slice=15.0,
             r = results[w]
             t_arr = np.asarray(r['theo_n'], dtype=np.float64)
             m_arr = np.maximum(np.asarray(r['meas_n'], dtype=np.float64), 1.0)
-            band_meas = band_relative_error(error_spectrum(r['e_meas'] + target), target_spectrum)
+            band_meas = band_spectral_error(error_spectrum(r['e_meas'] + target), target_spectrum)
             metrics['widths'][str(w)] = {
                 'width': int(w),
                 'hidden_layers': int(hidden_layers),

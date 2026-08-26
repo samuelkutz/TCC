@@ -6,38 +6,35 @@ re-exported here so figure code has one import for the measures it draws.
 
 import numpy as np
 
-from tools import SPECTRAL_FLOOR, band_slices  # noqa: F401  (re-exported for figure modules)
+from tools import band_slices, spectral_amplitude  # noqa: F401  (re-exported for figure modules)
 
 
-def compute_relative_error(eta_true, eta_pred, delta=SPECTRAL_FLOOR):
-    """Per-mode relative spectral error of eq:m_rel_spec, with a relative floor.
+def compute_spectral_error(true_spec, pred_spec):
+    """Per-mode absolute spectral error of eq:m_abs_spec.
 
-    The denominator is |eta_true| + delta * max_k |eta_true|, the maximum taken
-    over modes at each time level (axis 0), so the floor tracks the amplitude the
-    spectrum actually carries at that instant. An absolute floor cannot do this
-    job: the reference spectrum passes through near-nulls whose amplitude is many
-    orders above any fixed epsilon but negligible against the spectrum, and
-    dividing a small absolute error by one of those produces a spike that is an
-    artefact of the metric rather than a property of the model.
+    Both arguments are amplitude spectra already normalized by N_x (see
+    `tools.spectral_amplitude`), so the difference is read in the units of eta
+    and does not change when the grid is refined. There is no denominator and
+    therefore no floor: the reference spectrum passes through near-nulls, and
+    dividing by one of those turns an unremarkable amplitude error into a spike
+    that says nothing about the model.
     """
-    eta_true = np.asarray(eta_true, dtype=float)
-    eta_pred = np.asarray(eta_pred, dtype=float)
-    mag = np.abs(eta_true)
-    floor = delta * mag.max(axis=0, keepdims=True)
-    return np.abs(eta_true - eta_pred) / (mag + floor)
+    true_spec = np.asarray(true_spec, dtype=float)
+    pred_spec = np.asarray(pred_spec, dtype=float)
+    return np.abs(true_spec - pred_spec)
 
 
-def time_relative_error_norm(eta_true, eta_pred, eps=1e-12):
-    """||e(.,t)||_2 / (||eta_true(.,t)||_2 + eps) at each instant; fields are (Nx, Nt).
+def time_relative_error_norm(eta_true, eta_pred):
+    """||e(.,t)||_2 / ||eta_true(.,t)||_2 at each instant; fields are (Nx, Nt).
 
-    `eps` keeps the quotient defined for a reference that vanishes at some instant.
-    It does not bias the reported numbers: for these solutions the reference norm
-    stays of order one over the horizon, so the shift is a relative 1e-12.
+    The reference is a travelling wave of fixed amplitude on a periodic domain,
+    so its spatial norm stays of order one over the whole horizon and the
+    quotient needs no regularization.
     """
     eta_true = np.asarray(eta_true, dtype=float)
     eta_pred = np.asarray(eta_pred, dtype=float)
     return (np.linalg.norm(eta_true - eta_pred, axis=0)
-            / (np.linalg.norm(eta_true, axis=0) + eps))
+            / np.linalg.norm(eta_true, axis=0))
 
 
 def _half_width(x):

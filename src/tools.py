@@ -159,16 +159,17 @@ def save_metadata_json(metadata, filepath):
     return filepath
 
 
-# Relative floor under the denominator of the per-mode spectral error
-# (eq:m_rel_spec), as a fraction of the largest reference amplitude at the same
-# instant. Defined once here because the figures and the training-time band
-# tracking both form that quotient and must floor it identically.
-SPECTRAL_FLOOR = 1e-3
+# The spatial spectrum is taken with the plain DFT of eq:dft and divided by N_x,
+# so |eta_hat| carries the units of eta and does not scale with the grid size.
+# Defined once here because the figures and the training-time band tracking both
+# form it, and an absolute error is only comparable across grids if the amplitude
+# it measures is normalized the same way everywhere.
 
 
-def spectral_floor(reference_magnitude, delta=SPECTRAL_FLOOR, axis=0):
-    """delta * max |eta_hat_true| along `axis`, keeping dims for broadcasting."""
-    return delta * reference_magnitude.max(axis=axis, keepdims=True)
+def spectral_amplitude(field, axis=0):
+    """|DFT(field)| / N along `axis`: amplitudes in the units of the field."""
+    field = np.asarray(field, dtype=float)
+    return np.abs(np.fft.rfft(field, axis=axis)) / field.shape[axis]
 
 
 def band_slices(n_k):
@@ -181,40 +182,42 @@ def band_slices(n_k):
     return (slice(0, n_k // 4), slice(n_k // 4, n_k // 2), slice(n_k // 2, n_k))
 
 
-def compute_spectral_band_errors(eta_pred, eta_true, delta=SPECTRAL_FLOOR):
-    """Band-averaged relative spectral error (eq:m_band_err), the time-average of
-    the per-mode E_spec of eq:m_rel_spec.
+def compute_spectral_band_errors(eta_pred, eta_true):
+    """Band-averaged absolute spectral error (eq:m_band_err), the time-average of
+    the per-mode E_spec of eq:m_abs_spec.
 
     Fields are (Nx, Nt); the rfft runs over axis 0 (space). For every mode and
-    time level the relative spectral error of eq:m_rel_spec is formed, averaged
-    over the time levels, then averaged within each of the three bands of
-    eq:m_bands. Returns (low, mid, high). The denominator carries the relative
-    floor `delta * max_k |eta_true_hat|` at each time level, so a near-null mode
-    cannot dominate the band average.
+    time level the absolute difference of amplitudes of eq:m_abs_spec is formed,
+    averaged over the time levels, then averaged within each of the three bands
+    of eq:m_bands. Returns (low, mid, high). The measure carries no denominator,
+    so a mode whose reference amplitude passes through a near-null contributes
+    what it is worth in amplitude and cannot dominate the band average.
     """
-    pred_hat = np.abs(np.fft.rfft(eta_pred, axis=0))    # (Nk, Nt)
-    true_hat = np.abs(np.fft.rfft(eta_true, axis=0))    # (Nk, Nt)
-    e_spec = np.abs(pred_hat - true_hat) / (true_hat + spectral_floor(true_hat, delta))
-    rel_per_mode = e_spec.mean(axis=1)                   # average E_spec over time
-    return tuple(float(rel_per_mode[s].mean())
-                 for s in band_slices(rel_per_mode.shape[0]))
+    pred_hat = spectral_amplitude(eta_pred, axis=0)      # (Nk, Nt)
+    true_hat = spectral_amplitude(eta_true, axis=0)      # (Nk, Nt)
+    e_spec = np.abs(pred_hat - true_hat)
+    abs_per_mode = e_spec.mean(axis=1)                   # average E_spec over time
+    return tuple(float(abs_per_mode[s].mean())
+                 for s in band_slices(abs_per_mode.shape[0]))
 
 
 def error_spectrum(e):
-    """|ehat_k| of a stack of error vectors; `e` is (n_samples, N_x), rfft over x."""
-    return torch.fft.rfft(e, dim=1).abs()
+    """|ehat_k| / N_x of a stack of error vectors; `e` is (n_samples, N_x).
+
+    The torch counterpart of `spectral_amplitude`, normalized the same way so the
+    probe and the trained models report amplitudes on one scale.
+    """
+    return torch.fft.rfft(e, dim=1).abs() / e.shape[1]
 
 
-def band_relative_error(pred_spectrum, reference_spectrum, delta=SPECTRAL_FLOOR):
-    """Band-averaged E_spec (eq:m_rel_spec), one curve per band.
+def band_spectral_error(pred_spectrum, reference_spectrum):
+    """Band-averaged E_spec (eq:m_abs_spec), one curve per band.
 
-    `pred_spectrum` is (n_samples, N_k) = |rfft(predicted field)| and
-    `reference_spectrum` is (N_k,) = |rfft(reference field)|. Each band is the
-    mean over its modes of the relative spectral error of eq:m_rel_spec, whose
-    denominator carries the relative floor `delta * max_k |ref_hat|`. The
-    reference here is a single profile, so the maximum runs over its modes.
+    `pred_spectrum` is (n_samples, N_k) = |rfft(predicted field)| / N_x and
+    `reference_spectrum` is (N_k,), the same amplitude of the reference. Each
+    band is the mean over its modes of the absolute spectral error of
+    eq:m_abs_spec.
     """
     ref = reference_spectrum.unsqueeze(0)
-    floor = delta * reference_spectrum.max()
-    e_spec = (pred_spectrum - ref).abs() / (ref + floor)
+    e_spec = (pred_spectrum - ref).abs()
     return [e_spec[:, s].mean(dim=1) for s in band_slices(pred_spectrum.shape[1])]

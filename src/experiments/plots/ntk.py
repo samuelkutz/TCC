@@ -20,7 +20,7 @@ import os
 import numpy as np
 import torch
 
-from tools import band_relative_error, error_spectrum, save_metadata_json
+from tools import band_spectral_error, error_spectrum, save_metadata_json
 from experiments.plots.figures import THESIS_BAND_COLORS, THESIS_PALETTE
 from experiments.plots.figures.style import ensure_outdir, save_thesis_fig
 
@@ -73,13 +73,13 @@ def _log_range(curves, decades=9.0, pad_hi=0.35):
 
 
 def _band_curves(res, target):
-    """Band-averaged E_spec (eq:m_rel_spec) of the measured and the frozen-kernel
+    """Band-averaged E_spec (eq:m_abs_spec) of the measured and the frozen-kernel
     predicted field, each against the reference. The fields are the errors put
     back on the target, e + target, so the metric matches the six-model bands."""
-    ref = torch.fft.rfft(target).abs()
-    pred_meas = error_spectrum(res['e_meas'] + target)   # |rfft(measured field)|
-    pred_theo = error_spectrum(res['e_pred'] + target)   # |rfft(frozen-kernel field)|
-    return band_relative_error(pred_meas, ref), band_relative_error(pred_theo, ref)
+    ref = torch.fft.rfft(target).abs() / target.numel()
+    pred_meas = error_spectrum(res['e_meas'] + target)   # |rfft(measured field)| / N_x
+    pred_theo = error_spectrum(res['e_pred'] + target)   # |rfft(frozen-kernel field)| / N_x
+    return band_spectral_error(pred_meas, ref), band_spectral_error(pred_theo, ref)
 
 
 def _decay_figure(res, series, ylabel, outpath, y_range=None):
@@ -153,7 +153,7 @@ def _fig_band_decay(res, target, outdir):
     labels = ['Low', 'Mid', 'High']
     series = [(lab, _np(m), _np(p), color)
               for color, lab, m, p in zip(THESIS_BAND_COLORS, labels, meas, pred)]
-    _decay_figure(res, series, 'Rel. spectral error',
+    _decay_figure(res, series, 'Abs. spectral error',
                   os.path.join(outdir, 'ntk_band_decay.png'))
 
 

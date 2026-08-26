@@ -54,15 +54,21 @@ def reference_solution(param_value, x_limit, t_limit, nx, nt, device, amplitude=
     return solver.solve()
 
 
+# stamped into every history so a figure drawn from an older run, recorded under
+# a different measure, is caught instead of being plotted under the current label
+BAND_METRIC = 'absolute_spectral_error'
+
+
 class BandTracker:
-    """Low/mid/high relative spectral error (eq:m_band_err), sampled during training.
+    """Low/mid/high absolute spectral error (eq:m_band_err), sampled during training.
 
     `eta_true` is (Nx, Nt): the spatial axis comes first so the FFT runs over space.
     """
 
     def __init__(self, eta_true):
         self.eta_true = np.asarray(eta_true, dtype=np.float64)
-        self.history = {'epochs': [], 'low_band': [], 'mid_band': [], 'high_band': []}
+        self.history = {'metric': BAND_METRIC,
+                        'epochs': [], 'low_band': [], 'mid_band': [], 'high_band': []}
 
     def record(self, epoch, eta_pred):
         low, mid, high = compute_spectral_band_errors(

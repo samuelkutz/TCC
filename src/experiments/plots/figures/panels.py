@@ -11,8 +11,8 @@ import os
 import numpy as np
 
 from experiments.plots.figures.metrics import (
-    compute_relative_error, distribution_summary, spectral_mode_index,
-    time_relative_error_norm,
+    compute_spectral_error, distribution_summary, spectral_amplitude,
+    spectral_mode_index, time_relative_error_norm,
 )
 from experiments.plots.figures.style import (
     THESIS_BAND_COLORS, THESIS_ERROR_COLOR, THESIS_LEGEND_ABOVE, THESIS_PALETTE,
@@ -270,10 +270,10 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
     eta_pred = np.asarray(eta_pred, dtype=float)
 
     kx = spectral_mode_index(x)
-    true_spec = np.abs(np.fft.rfft(eta_true, axis=0))
-    pred_spec = np.abs(np.fft.rfft(eta_pred, axis=0))
-    rel_err = compute_relative_error(true_spec, pred_spec)
-    mean_rel_err_over_time = np.mean(rel_err, axis=0)
+    true_spec = spectral_amplitude(eta_true, axis=0)
+    pred_spec = spectral_amplitude(eta_pred, axis=0)
+    abs_err = compute_spectral_error(true_spec, pred_spec)
+    mean_abs_err_over_time = np.mean(abs_err, axis=0)
 
     if len(t) < n_times:
         indices = list(np.arange(len(t), dtype=int))
@@ -287,9 +287,9 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
 
     _write_metrics(outdir, stem, {
         'time': t.tolist(),
-        'mean_rel_spectral_error_over_time': mean_rel_err_over_time.tolist(),
+        'mean_abs_spectral_error_over_time': mean_abs_err_over_time.tolist(),
         'snapshots': [
-            {'t': float(t[idx]), 'mean_rel_spectral_error': float(mean_rel_err_over_time[idx])}
+            {'t': float(t[idx]), 'mean_abs_spectral_error': float(mean_abs_err_over_time[idx])}
             for idx in indices
         ],
     })
@@ -312,7 +312,11 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
             marker=dict(size=3, symbol='diamond'),
         ))
         fig.update_xaxes(title_text='Spectral index n')
-        fig.update_yaxes(title_text='Amplitude')
+        # log amplitude: the reference spectrum spans several decades between the
+        # crest and the tail, and it is in the tail that the fit is decided. On a
+        # linear axis every mode past the first few sits on the zero line and the
+        # panel shows nothing the error panel beside it does not already show.
+        fig.update_yaxes(title_text='Amplitude', type='log')
         save_thesis_fig(
             fig, os.path.join(outdir, f'{stem}_spectrum_{i}.png'),
             _PAIR_W, _PAIR_H, _PAIR_FRAC,
@@ -320,22 +324,25 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
                               showlegend=True, legend=THESIS_LEGEND_ABOVE),
         )
 
-        # ---- relative spectral error, with time-mean annotation ----
+        # ---- absolute spectral error, with mode-mean annotation ----
         fig = go.Figure(go.Scatter(
-            x=kxl, y=rel_err[:, idx].tolist(),
+            x=kxl, y=abs_err[:, idx].tolist(),
             mode='lines+markers', showlegend=False,
             line=dict(color=THESIS_ERROR_COLOR, width=1.8),
             marker=dict(size=3, symbol='circle'),
         ))
         fig.update_xaxes(title_text='Spectral index n')
-        fig.update_yaxes(title_text='Relative error')
+        # same decades as the spectrum panel beside it, so the two are read
+        # together: a mode is reproduced when its error lies well under the
+        # amplitude the reference carries there, and lost when the two meet
+        fig.update_yaxes(title_text='Absolute error', type='log')
         save_thesis_fig(
             fig, os.path.join(outdir, f'{stem}_relerr_{i}.png'),
             _PAIR_W, _PAIR_H, _PAIR_FRAC,
             extra_layout=dict(
                 margin=dict(t=15, b=55, l=70, r=20),
                 annotations=[dict(
-                    text=f'Mean: {float(mean_rel_err_over_time[idx]):.2e}',
+                    text=f'Mean: {float(mean_abs_err_over_time[idx]):.2e}',
                     xref='paper', yref='paper', x=0.97, y=0.97,
                     xanchor='right', yanchor='top', showarrow=False,
                     font=dict(size=annot_px),
@@ -344,14 +351,14 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
             ),
         )
 
-    # ---- mean relative spectral error over time ----
+    # ---- mean absolute spectral error over time ----
     fig = go.Figure(go.Scatter(
-        x=t.tolist(), y=mean_rel_err_over_time.tolist(),
+        x=t.tolist(), y=mean_abs_err_over_time.tolist(),
         mode='lines+markers', showlegend=False,
         line=dict(color='#c28b00', width=2.0), marker=dict(size=5),
     ))
     fig.update_xaxes(title_text='Time (t)')
-    fig.update_yaxes(title_text='Mean relative error')
+    fig.update_yaxes(title_text='Mean absolute error', type='log')
     save_thesis_fig(
         fig, os.path.join(outdir, f'{stem}_mean.png'),
         _MEAN_W, _MEAN_H, _MEAN_FRAC,
@@ -371,7 +378,7 @@ BAND_W, BAND_H, BAND_FRAC = 820, 470, 0.48   # match the SciML pair panels
 
 
 def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolution.png'):
-    """Low/mid/high band relative spectral error vs epoch, one PNG per model."""
+    """Low/mid/high band absolute spectral error vs epoch, one PNG per model."""
     import plotly.graph_objects as go
 
     ensure_outdir(outdir)
@@ -391,7 +398,7 @@ def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolut
             fig, os.path.join(outdir, f'{stem}_{slugify(label)}.png'),
             BAND_W, BAND_H, BAND_FRAC,
             extra_layout=dict(
-                xaxis_title='Epoch', yaxis_title='Rel. spectral error', yaxis_type='log',
+                xaxis_title='Epoch', yaxis_title='Abs. spectral error', yaxis_type='log',
                 margin=dict(t=40, b=62, l=86, r=20), showlegend=True,
                 legend=THESIS_LEGEND_ABOVE,
             ),

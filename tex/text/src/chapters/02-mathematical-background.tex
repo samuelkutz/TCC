@@ -83,7 +83,7 @@ Any deviation from this wave-equation baseline in the full system~\eqref{eq:bous
 \section{Pseudospectral Method}
 \label{sec:pseudospectral}
 
-The pseudospectral method is applied here to the Boussinesq system~\eqref{eq:boussinesq} on the periodic spatial domain $\Omega = [-L, L]$. It transforms the two fields in space alone and leaves time as a separate evolution direction, which is the treatment an evolution equation asks for: taking the DFT along $x$ turns each spatial derivative into an algebraic multiplication, so the PDE collapses into a system of ordinary differential equations in time, one for every spatial frequency. The nonlinearity is what keeps the method from being purely spectral. A product of two fields is not the product of their spectra, so each nonlinear term is instead assembled by returning to the grid, multiplying pointwise there and transforming back. Alternating between the two representations in this way preserves the accuracy of the spatial derivatives while keeping the nonlinear coupling cheap to evaluate.
+The pseudospectral method is applied here to the Boussinesq system~\eqref{eq:boussinesq} on the periodic spatial domain $\Omega = [-L, L]$. It transforms the two fields in space alone and leaves time as a separate evolution direction, which is the treatment an evolution equation asks for: taking the DFT along $x$ turns each spatial derivative into an algebraic multiplication, so the PDE collapses into a system of ordinary differential equations in time, one for every spatial frequency.
 
 \subsection{Spatial Discretization and the Discrete Fourier Transform}
 \label{subsec:dft}
@@ -103,11 +103,11 @@ with its inverse, the Inverse Discrete Fourier Transform (IDFT), recovering the 
     f(x_j) = \frac{1}{N_x} \sum_{k} \hat{f}(k)\, e^{2\pi i k j / N_x}.
 \end{equation}
 The fundamental identity of the DFT with respect to differentiation is that, for a periodic function, the spatial derivative transforms into a pointwise multiplication \parencite{trefethen2000, engsigkarup2012}:
-\begin{equation}\label{eq:dft_deriv_raw}
+\begin{equation*}
     \widehat{(f_x)}(k) = i \frac{\pi k}{L}\, \hat{f}(k), \quad
     \widehat{(f_{xx})}(k) = -\frac{\pi^2 k^2}{L^2}\, \hat{f}(k).
-\end{equation}
-This is in contrast to finite-difference methods, where the derivative carries a truncation error that shrinks with the grid spacing. Here the error enters at a different point. The identity~\eqref{eq:dft_deriv_raw} is an exact statement about the trigonometric interpolant of the sampled values, so what remains is the discrepancy between that interpolant and the function itself. For a smooth periodic function this discrepancy decays faster than any fixed power of $\Delta x$, which is the spectral accuracy the method is named for \parencite{trefethen2000}.
+\end{equation*}
+This is in contrast to finite-difference methods, where the derivative carries a truncation error that shrinks with the grid spacing.
 
 We define the wavenumber of mode $k$ on $[-L,L]$ as:
 \begin{equation}\label{eq:xi_def}
@@ -146,7 +146,7 @@ Collecting the $\hat{u}_t(k,t)$ terms on the left and solving algebraically:
         1 + \dfrac{\beta\,\xi_k^2}{3}
     }.
 \end{equation}
-The division in~\eqref{eq:u_t_spectral} is where the transform pays off. Isolating $u_t$ in~\eqref{eq:bous2} means inverting the operator $1 - \frac{\beta}{3}\frac{\partial^2}{\partial x^2}$, and on the grid that operator couples neighbouring nodes, so inverting it amounts to solving a linear system for all $N_x$ nodal values at every evaluation of the right-hand side. Under the DFT the same operator is diagonal, acting on mode $k$ as multiplication by $1 + \frac{\beta\,\xi_k^2}{3}$, and the inversion reduces to one division per mode.
+The division in~\eqref{eq:u_t_spectral} is where the transform pays off. Isolating $\hat{u}_t$ means inverting the operator $1 - \frac{\beta}{3}\frac{\partial^2}{\partial x^2}$, which on the grid couples neighbouring nodes; under the DFT it is diagonal, acting on mode $k$ as multiplication by $1 + \frac{\beta\,\xi_k^2}{3}$, so the inversion reduces to one division per mode.
 
 Equations~\eqref{eq:eta_t_spectral} and~\eqref{eq:u_t_spectral} can be written jointly as a first-order ODE system in time for each fixed wavenumber $k \in \mathbb{Z}$:
 \begin{equation}\label{eq:fourier_ode_k}
@@ -170,26 +170,32 @@ The nonlinear term of~\eqref{eq:bous2} fits this procedure only in the form it w
 \subsection{Time Evolution via Runge-Kutta 4}
 \label{subsec:rk4}
 
-Collecting the two spectral fields into a single state vector $\hat{Y}(t) = \bigl(\hat{\eta}(k,t),\, \hat{u}(k,t)\bigr)$, the system~\eqref{eq:fourier_ode_k} takes the standard form of an initial value problem for a system of ordinary differential equations,
+Collecting the two spectral fields into a single state vector at each wavenumber $k$,
+\begin{equation*}
+    \hat{Y}(k,t) = \bigl(\hat{\eta}(k,t),\, \hat{u}(k,t)\bigr),
+\end{equation*}
+the system~\eqref{eq:fourier_ode_k} takes the standard form of an initial value problem for a system of ordinary differential equations,
 \begin{equation}\label{eq:ode_form}
-    \hat{Y}_t(t) = F\bigl(\hat{Y}(t)\bigr),
+    \hat{Y}_t(k, t) = F\bigl(\hat{Y}(k,t)\bigr),
 \end{equation}
 where the pseudospectral right-hand side operator $F$ is the map
 \begin{equation*}
-    F\!\left(\hat{\eta},\hat{u}\right)(k)
+    F\!\left(\hat{Y}(k, t)\right) = F\!\left(\hat{\eta},\hat{u}\right)(k,t)
     \;=\;
     \begin{pmatrix}
-        -i\,\xi_k\,\hat{u}(k)
-        - \alpha\,i\,\xi_k\,\widehat{(\eta u)}(k) \\[6pt]
+        -i\,\xi_k\,\hat{u}(k, t)
+        - \alpha\,i\,\xi_k\,\widehat{(\eta u)}(k, t) \\[6pt]
         \dfrac{
-            -i\,\xi_k\,\hat{\eta}(k)
-            - \alpha\,i\,\xi_k\,\widehat{\!\left(\tfrac{1}{2}u^2\right)}\!(k)
+            -i\,\xi_k\,\hat{\eta}(k, t)
+            - \alpha\,i\,\xi_k\,\widehat{\!\left(\tfrac{1}{2}u^2\right)}\!(k, t)
         }{
             1 + \dfrac{\beta\,\xi_k^2}{3}
         }
     \end{pmatrix},
 \end{equation*}
-whose two components are $\hat{\eta}_t$ and $\hat{u}_t$ as given by equations~\eqref{eq:eta_t_spectral}--\eqref{eq:u_t_spectral}, with the nonlinear terms assembled by the pseudospectral procedure above. In the form~\eqref{eq:ode_form} the problem is what any explicit one-step integrator expects, and time evolution uses the classical fourth-order Runge-Kutta (RK4) scheme \parencite{suli2003, burden2011}. Given the state $\hat{Y}_n = (\hat{\eta}^n, \hat{u}^n)$ at time $t_n$, the four stage evaluations $\kappa_1, \kappa_2, \kappa_3, \kappa_4$ and the update to $t_{n+1} = t_n + \Delta t$ are:
+whose two components are $\hat{\eta}_t$ and $\hat{u}_t$ as given by equations~\eqref{eq:eta_t_spectral}--\eqref{eq:u_t_spectral}, with the nonlinear terms assembled by the pseudospectral procedure above.
+
+In the form~\eqref{eq:ode_form} the problem is what any explicit one-step integrator expects, and time evolution uses the classical fourth-order Runge-Kutta (RK4) scheme \parencite{suli2003, burden2011}. Discretizing~\eqref{eq:ode_form} in time, write $\hat{Y}_n = (\hat{\eta}^n, \hat{u}^n)$ for the spectral state at time $t_n$ and fixed wavenumber $k$. The four stage evaluations $\kappa_1, \kappa_2, \kappa_3, \kappa_4$ and the update to $t_{n+1} = t_n + \Delta t$ are:
 \begin{align*}
     \kappa_1 &= F(\hat{Y}_n), \\
     \kappa_2 &= F\!\left(\hat{Y}_n + \tfrac{\Delta t}{2}\, \kappa_1\right), \\
@@ -197,13 +203,13 @@ whose two components are $\hat{\eta}_t$ and $\hat{u}_t$ as given by equations~\e
     \kappa_4 &= F\!\left(\hat{Y}_n + \Delta t\, \kappa_3\right), \\
     \hat{Y}_{n+1}  &= \hat{Y}_n + \frac{\Delta t}{6}\,(\kappa_1 + 2\,\kappa_2 + 2\,\kappa_3 + \kappa_4).
 \end{align*}
-At each stage, the intermediate state is decoded to physical space to assemble the nonlinear products, then encoded back to Fourier space to evaluate the spectral derivatives. This split between physical-space products and Fourier-space derivatives is what characterizes the pseudospectral method.
+At each stage, the intermediate state is decoded to physical space to assemble the nonlinear products, then encoded back to Fourier space to evaluate the spectral derivatives. This combination of physical-space products, Fourier-space derivatives, and time evolution by a separate marching scheme is what characterizes a pseudospectral method.
 
 % ---------------------------------------------------------------
 \subsection{Training Dataset}
 \label{sec:dataset}
 
-The numerical experiments in this work vary only the PDE parameters $(\alpha,\beta)$ while keeping the initial condition fixed at~\eqref{eq:initial_condition}. The models are therefore trained and evaluated on the dataset
+The numerical experiments in this work vary only the PDE parameters $(\alpha,\beta)$ while keeping the initial condition fixed at~\eqref{eq:initial_condition}. The methods are therefore trained and evaluated on the dataset
 \begin{equation}\label{eq:dataset}
     \mathcal{S} = \bigl\{\bigl((\alpha_i,\beta_i),\,(\eta_i,u_i)\bigr)\bigr\}_{i=1}^{M},
 \end{equation}
@@ -213,7 +219,7 @@ where $(\alpha_i,\beta_i)$ are the nonlinearity and dispersion parameters for th
 \section{Neural Networks}
 \label{sec:neural_networks}
 
-This section introduces the neural network architectures central to this work, together with the theory that explains how they train. We begin with the Multilayer Perceptron, the base model underlying every architecture studied here. We then develop the Neural Tangent Kernel. That kernel is the tool we use to analyse the spectral bias a network produces when it is fitted to data sampled on a regular grid. Finally we turn to Physics-Informed Neural Networks. There we show that the same kernel analysis carries over to the physics-informed setting, where spectral bias is a well-documented obstacle.
+This section introduces the neural network architectures used in this work, together with the Neural Tangent Kernel theory that describes how such networks train. We begin with the Multilayer Perceptron, the building block underlying every architecture studied here. We then develop the Neural Tangent Kernel, the tool we use to analyse the spectral bias a network produces when it is fitted to data sampled on a regular grid. Finally we turn to Physics-Informed Neural Networks, where the same kernel analysis carries over and spectral bias is a well-documented obstacle.
 
 \subsection{Multilayer Perceptrons}
 \label{subsec:mlp}
@@ -225,12 +231,12 @@ Given a labeled dataset ${\{(x_i, u_i)\}}_{i=1}^{N}$, the objective is to fit th
     \mathcal{L}_{\text{MLP}}(\theta) = \frac{1}{N} \sum_{i=1}^{N} \| u_{\theta}(x_i) - u_i \|^2. \label{eq:data_loss_nn}
 \end{equation}
 The MLP $u_\theta: \mathbb{R}^{d_{\mathrm{in}}} \to \mathbb{R}^{d_{\mathrm{out}}}$ is defined by the composition:
-\begin{align}
-    h^{(0)}       &= x \in \mathbb{R}^{d_{\mathrm{in}}}, \label{eq:input}                                                                 \\
+\begin{align*}
+    h^{(0)}       &= x \in \mathbb{R}^{d_{\mathrm{in}}},                                                                  \\
     h^{(l)}       &= \sigma \left( W^{(l)} h^{(l-1)} + b^{(l)} \right) \in \mathbb{R}^{N_{\mathrm{MLP}}},
-                   \quad l = 1, \dots, L_{\mathrm{MLP}}-1, \label{eq:hidden} \\
-    u_{\theta}(x) &= W^{(L_{\mathrm{MLP}})} h^{(L_{\mathrm{MLP}}-1)} + b^{(L_{\mathrm{MLP}})} \in \mathbb{R}^{d_{\mathrm{out}}}. \label{eq:output}
-\end{align}
+                   \quad l = 1, \dots, L_{\mathrm{MLP}}-1,  \\
+    u_{\theta}(x) &= W^{(L_{\mathrm{MLP}})} h^{(L_{\mathrm{MLP}}-1)} + b^{(L_{\mathrm{MLP}})} \in \mathbb{R}^{d_{\mathrm{out}}}.
+\end{align*}
 \noindent where:
 \begin{itemize}
     \item $L_{\mathrm{MLP}} \in \mathbb{N}$ is the number of layers and $N_{\mathrm{MLP}} \in \mathbb{N}$ the number of neurons per hidden layer;
@@ -299,9 +305,9 @@ where $\theta^{(k)}$ denotes the parameter vector after $k$ steps. Rearranging~\
 The left-hand side of~\eqref{eq:gd_quotient} already has the shape of a derivative: a difference of two parameter vectors divided by a spacing. It is not one yet. The index $k$ counts iterations and carries no unit of time, so there is nothing for the difference to be taken with respect to. Reading~\eqref{eq:gd_quotient} as the discretization of an ordinary differential equation therefore requires a new, continuous parameter along which the iterates can be laid out.
 
 The idea is to regard the discrete sequence $\{\theta^{(k)}\}_{k=0}^{\infty}$ as samples of a smooth curve $\theta(\tau)$, read at a set of instants $\tau^{(k)}$,
-\begin{equation}\label{eq:sampling}
+\begin{equation*}
     \theta^{(k)} = \theta(\tau^{(k)}),
-\end{equation}
+\end{equation*}
 so that the recursion becomes a statement about $\theta(\tau)$ rather than about the index $k$. What remains is to fix the instants. The step size $\mu$ supplies their spacing: we assign to the $k$-th iterate the training-time stamp
 \begin{equation}\label{eq:tau_k}
     \tau^{(k)} = k\mu, \qquad \text{so that} \qquad \tau^{(k+1)} - \tau^{(k)} = \mu,
@@ -335,17 +341,17 @@ Up to the constant factor $1/N$, the loss~\eqref{eq:data_loss_nn} is the squared
 \end{equation}
 where $e_i(\theta) = u_\theta(x_i) - u_i$ is the $i$-th component of the error vector~\eqref{eq:error_vector}.
 Define the Jacobian of the error vector with respect to the parameters:
-\begin{equation}\label{eq:jacobian}
+\begin{equation*}
     J(\theta) = \frac{\partial e}{\partial\theta} \in \mathbb{R}^{N \times N_\theta},
     \qquad J_{ij} = \frac{\partial e_i}{\partial\theta_j},\quad i = 1,\ldots,N,\; j = 1,\ldots,N_\theta,
-\end{equation}
+\end{equation*}
 where $N_\theta$ is the total number of trainable parameters. Each row $J_i = (J_{i1},\ldots,J_{iN_\theta}) \in \mathbb{R}^{N_\theta}$ is the parameter-gradient of the $i$-th residual. Since $\mathcal{L}$ is the quadratic form~\eqref{eq:loss_quadratic}, the $j$-th component of the loss gradient is:
-\begin{equation}
+\begin{equation*}
     \frac{\partial \mathcal{L}}{\partial \theta_j}
     = \sum_{i=1}^{N} e_i(\theta)\,\frac{\partial e_i}{\partial \theta_j}
     = \sum_{i=1}^{N} J_{ij}\,e_i(\theta)
     = \bigl(J(\theta)^T e(\theta)\bigr)_j.
-\end{equation}
+\end{equation*}
 Collecting all $j = 1,\ldots,N_\theta$ into a column vector:
 \begin{equation}\label{eq:loss_grad}
     \nabla_\theta\mathcal{L} = J(\theta)^T\,e(\theta) \in \mathbb{R}^{N_\theta}.
@@ -356,15 +362,15 @@ Substituting~\eqref{eq:loss_grad} into the gradient flow~\eqref{eq:grad_flow}:
 \end{equation}
 The error is written here as a function of $\tau$ rather than of $\theta$. The two notations denote the same object: along the flow the parameters are themselves a function of training time, so $e(\tau) := e(\theta(\tau))$, and it is this composition whose evolution we now track.
 To find how the error vector itself evolves, differentiate each component $e_i(\theta(\tau))$ with respect to $\tau$ by the chain rule:
-\begin{equation}
+\begin{equation*}
     \frac{de_i}{d\tau}
     = \sum_{j=1}^{N_\theta} \frac{\partial e_i}{\partial \theta_j}\,\frac{d\theta_j}{d\tau}
     = J_i(\theta)\cdot\frac{d\theta}{d\tau}.
-\end{equation}
+\end{equation*}
 Stacking this identity for all $i = 1,\ldots,N$ into a matrix equation:
-\begin{equation}
+\begin{equation*}
     \frac{de}{d\tau} = J(\theta)\,\frac{d\theta}{d\tau}.
-\end{equation}
+\end{equation*}
 Substituting~\eqref{eq:param_dynamics}:
 \begin{equation}\label{eq:ntk_dynamics}
     \frac{de}{d\tau}
@@ -372,16 +378,16 @@ Substituting~\eqref{eq:param_dynamics}:
     = -\underbrace{J(\theta)\,J(\theta)^T}_{K(\theta)\;\in\;\mathbb{R}^{N\times N}}\,e(\tau).
 \end{equation}
 The matrix $K(\theta) = J(\theta)J(\theta)^T$ is the empirical Neural Tangent Kernel (NTK) \parencite{jacot2018}. It is symmetric positive semi-definite by construction: for any $v \in \mathbb{R}^{N}$,
-\begin{equation}
+\begin{equation*}
     v^T K(\theta)\, v = v^T J(\theta)\,J(\theta)^T v = \bigl\|J(\theta)^T v\bigr\|^2 \geq 0.
-\end{equation}
+\end{equation*}
 The $(i,j)$ entry of $K(\theta)$ follows directly from expanding the matrix product $J(\theta)J(\theta)^T$:
-\begin{equation}\label{eq:ntk_entry}
+\begin{equation*}
     K_{ij}(\theta)
     = \sum_{l=1}^{N_\theta} J_{il}(\theta)\,J_{jl}(\theta)
     = \sum_{l=1}^{N_\theta} \frac{\partial e_i}{\partial\theta_l}(\theta)\,\frac{\partial e_j}{\partial\theta_l}(\theta)
     = \nabla_\theta e_i(\theta)^T\,\nabla_\theta e_j(\theta).
-\end{equation}
+\end{equation*}
 This is the inner product in $\mathbb{R}^{N_\theta}$ of the parameter gradients of the network output at the $i$-th and $j$-th training points, where $e_i = u_\theta(x_i) - u_i$. Hence $K(\theta) \in \mathbb{R}^{N \times N}$ is the Gram matrix of the network's sensitivities across the whole dataset, and equation~\eqref{eq:ntk_dynamics} shows that it alone governs how the fitting error evolves under gradient flow.
 
 \subsection{Spectral Bias}
@@ -394,9 +400,9 @@ For a network with a sufficiently large number of parameters, the Jacobian $J(\t
     \frac{de}{d\tau} = -K_0\,e(\tau), \qquad e(0) = e_0.
 \end{equation}
 Written component-wise, the $i$-th row of this system is
-\begin{equation}\label{eq:ntk_component}
+\begin{equation*}
     \frac{de_i}{d\tau} = -\sum_{j=1}^{N} K_0^{ij}\,e_j(\tau), \qquad i = 1,\ldots,N,
-\end{equation}
+\end{equation*}
 where $K_0^{ij} = \nabla_{\theta_0} e_i^T\,\nabla_{\theta_0} e_j$ is the inner product, at initialization, of the parameter gradients of the network output at training points $x_i$ and $x_j$. The rate of change of the error at point $i$ is therefore a weighted sum of all current errors, with weights given by these pairwise kernel values. Through this coupling, the geometry of the sample grid and the architecture of the network jointly determine the convergence of every component.
 
 Since $K_0 \in \mathbb{R}^{N \times N}$ is symmetric and positive semi-definite, the spectral theorem for symmetric matrices \parencite{strang2006, golub2013} guarantees a decomposition
@@ -404,36 +410,36 @@ Since $K_0 \in \mathbb{R}^{N \times N}$ is symmetric and positive semi-definite,
     K_0 = V\,\Lambda\,V^T,
 \end{equation}
 where $V = [v_1 \mid \cdots \mid v_{N}]$ is an orthogonal matrix ($V^T V = I$) and
-\begin{equation}
+\begin{equation*}
     \Lambda = \mathrm{diag}(\lambda_1,\ldots,\lambda_{N}), \qquad \lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_{N} \geq 0.
-\end{equation}
+\end{equation*}
 Introduce the change of coordinates
 \begin{equation}\label{eq:change_of_basis}
     c(\tau) = V^T e(\tau),
 \end{equation}
 so that, since $V$ is orthogonal, $e(\tau) = V c(\tau)$. Differentiating~\eqref{eq:change_of_basis} with respect to $\tau$ and substituting the ODE~\eqref{eq:error_linear_ode}:
-\begin{equation}
+\begin{equation*}
     \frac{dc}{d\tau} = V^T \frac{de}{d\tau} = -V^T K_0\,e(\tau).
-\end{equation}
+\end{equation*}
 Inserting $K_0 = V\Lambda V^T$ and $e(\tau) = Vc(\tau)$:
-\begin{equation}
+\begin{equation*}
     \frac{dc}{d\tau}
     = -V^T\,(V\Lambda V^T)\,(Vc(\tau))
     = -(V^T V)\,\Lambda\,(V^T V)\,c(\tau)
     = -\Lambda\,c(\tau),
-\end{equation}
+\end{equation*}
 using $V^T V = I$ at each step. Since $\Lambda$ is diagonal, this decouples into $N$ independent scalar equations:
 \begin{equation}\label{eq:decoupled_ode}
     \frac{dc_k}{d\tau} = -\lambda_k\,c_k(\tau), \qquad k = 1,\ldots,N.
 \end{equation}
 
 Each equation in~\eqref{eq:decoupled_ode} is a first-order linear ODE with constant coefficient \parencite{boyce2012}. Separating the variables and integrating both sides from the initial state at $\tau = 0$ up to time $\tau$, with $s$ and $r$ as integration variables for the amplitude and the time,
-\begin{equation}
+\begin{equation*}
     \int_{c_k(0)}^{c_k(\tau)} \frac{ds}{s}
     = -\lambda_k \int_0^{\tau} dr
     \qquad\Longrightarrow\qquad
     \ln\frac{|c_k(\tau)|}{|c_k(0)|} = -\lambda_k\,\tau.
-\end{equation}
+\end{equation*}
 Exponentiating both sides yields the solution
 \begin{equation}\label{eq:error_mode}
     c_k(\tau) = c_k(0)\,e^{-\lambda_k\tau},
@@ -447,9 +453,9 @@ Returning to the original coordinates via $e(\tau) = Vc(\tau)$:
 The error decomposes into $N$ independent eigendirections. Each eigenvector $v_k$ carries initial amplitude $v_k^T e_0$ and decays exponentially at rate $\lambda_k$: eigenvectors with large $\lambda_k$ are suppressed quickly, while those with small $\lambda_k$ persist throughout training. This per-eigendirection decay, each at the rate set by its eigenvalue, is the rigorous statement of spectral bias established by \textcite{cao2019}; the same spectral ordering governs generalization as the training set grows \parencite{bordelon2020}.
 
 Equation~\eqref{eq:error_evolution} is the continuous flow; gradient descent takes finite steps, and its error evolution inherits the same eigenstructure in discrete form. The link between the two is the training-time stamp of~\eqref{eq:tau_k}: iterate $n$ sits at continuous time $\tau^{(n)} = n\mu$, so the iteration count and the training time are read off one another through
-\begin{equation}\label{eq:tau_n_dictionary}
+\begin{equation*}
     \tau = n\mu, \qquad n = \tau/\mu.
-\end{equation}
+\end{equation*}
 
 Section~\ref{subsec:grad_flow} read the update~\eqref{eq:gd_discrete} as forward Euler applied to the gradient flow in the parameters. The same statement is needed for the error, since that is what the analysis follows. There are two ways to obtain it: discretize the parameter update and then linearize, or linearize first, into the error equation~\eqref{eq:error_linear_ode}, and discretize that. Both give the same law.
 
@@ -505,23 +511,23 @@ Substituting term by term carries~\eqref{eq:error_evolution} into~\eqref{eq:erro
 \]
 
 The same truncation constrains the step. Under the continuous flow every mode with $\lambda_k > 0$ decays for any $\mu > 0$. The discrete mode contracts only when its amplification factor is smaller than one in magnitude,
-\begin{equation}\label{eq:euler_stability}
+\begin{equation*}
     \bigl| 1 - \mu\lambda_k \bigr| < 1
     \qquad\Longleftrightarrow\qquad
     0 < \mu\lambda_k < 2,
-\end{equation}
+\end{equation*}
 which is the absolute-stability condition of the explicit Euler method \parencite{leveque2007, suli2003}. The product $\mu\lambda_k$ alone fixes how the $k$-th mode behaves, and it does so in four regimes. Below one, the factor lies in $(0,1)$ and the mode decays monotonically toward zero; at exactly one it vanishes and the mode is removed in a single step. Between one and two the factor is negative, so the mode still decays but flips sign at every step. Past two it exceeds one in magnitude and the mode grows without bound. A single step size therefore acts differently on every eigendirection of $K_0$.
 
 Since $\lambda_1 = \lambda_{\max}$ is the largest eigenvalue, every mode stays stable only when the largest one does, which caps the learning rate at
-\begin{equation}\label{eq:euler_bound}
+\begin{equation*}
     \mu < \frac{2}{\lambda_{\max}}.
-\end{equation}
+\end{equation*}
 The minimal experiment of Section~\ref{sec:m_minimal} sets its step from this limit: rather than a nominal value, $\mu$ is fixed at a constant fraction of $2/\lambda_{\max}$ at every width, small enough to keep every mode in the monotone regime $\mu\lambda_k < 1$ while staying comparable across widths whose $\lambda_{\max}$ differ.
 
 The same argument gives the time each mode needs. From~\eqref{eq:error_mode}, the amplitude of the $k$-th eigendirection at time $\tau$ is
-\begin{equation}\label{eq:mode_amplitude}
+\begin{equation*}
     \bigl| c_k(\tau) \bigr| = \bigl| v_k^T e_0 \bigr|\, e^{-\lambda_k\tau}.
-\end{equation}
+\end{equation*}
 Require it to fall below a target precision $\varepsilon > 0$,
 \[
     \bigl| v_k^T e_0 \bigr|\, e^{-\lambda_k\tau} < \varepsilon,
@@ -545,27 +551,27 @@ The minimum training time to resolve the $k$-th eigendirection to precision $\va
 The projection enters~\eqref{eq:training_time} through a logarithm and the eigenvalue through $1/\lambda_k$, so $\lambda_k$ sets the scale of $\tau_k$ while the projection only shifts it. Since $\lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_{N} \geq 0$, the times are ordered $\tau_1 \leq \tau_2 \leq \cdots \leq \tau_{N}$: higher-indexed eigendirections require more training time, in inverse proportion to their eigenvalue. \textcite{arora2019} reached similar conclusions from a discrete-time analysis of gradient descent, showing that the convergence speed of each eigenvector is governed by its eigenvalue and by the projection of the target onto that eigenvector.
 
 The decomposition~\eqref{eq:error_evolution} is expressed in the eigenbasis $\{v_k\}_{k=1}^{N}$ of the NTK, which need not coincide with any physically meaningful basis. When the $N$ training points lie on a regular grid and the target is periodic, however, the natural basis is the Fourier one, and recasting the dynamics there shows that the decay is genuinely organized by frequency. Let $F \in \mathbb{C}^{N \times N}$ be the Fourier matrix, that is, the discrete Fourier transform (DFT) matrix with entries
-\begin{equation}\label{eq:dft_matrix}
+\begin{equation*}
     F_{jl} = \frac{1}{\sqrt{N}}\,\omega^{jl}, \qquad \omega = e^{-2\pi \mathrm{i}/N}, \qquad j,l = 0,\ldots,N-1.
-\end{equation}
+\end{equation*}
 With this normalization $F$ is unitary, $F^{*}F = I$, so that $F^{-1} = F^{*}$, where $F^{*}$ is the conjugate transpose \parencite{golub2013, strang2006}. Applying $F$ to the error vector yields its spectrum, with inverse transform $F^{-1}$:
 \begin{equation}\label{eq:dft_error}
     \hat e(\tau) = F\,e(\tau), \qquad e(\tau) = F^{-1}\hat e(\tau) = F^{*}\hat e(\tau).
 \end{equation}
 In particular $\hat e_0 = F e_0$ is the spectrum of the initial error, the difference between the spectra of the initial network output and the target. Since $F$ is constant in $\tau$, applying it to the linearized dynamics~\eqref{eq:error_linear_ode} carries the error evolution into the frequency domain:
-\begin{equation}\label{eq:fourier_dynamics}
+\begin{equation*}
     \frac{d\hat e}{d\tau}
     = F\,\frac{de}{d\tau}
     = -F K_0\,e(\tau)
     = -F K_0 F^{-1}\,\hat e(\tau).
-\end{equation}
+\end{equation*}
 Inserting the eigendecomposition $K_0 = V\Lambda V^T$ from~\eqref{eq:spectral_decomp},
-\begin{equation}\label{eq:fourier_diag}
+\begin{equation*}
     F K_0 F^{-1}
     = F V\,\Lambda\,V^T F^{-1}
     = (FV)\,\Lambda\,(FV)^{*}
     = (FV)\,\Lambda\,(FV)^{-1},
-\end{equation}
+\end{equation*}
 where $V^T F^{-1} = V^{*} F^{*} = (FV)^{*}$ uses that $V$ is real orthogonal, and $(FV)^{*} = (FV)^{-1}$ uses that a product of unitary matrices is unitary. The columns of $FV$, namely the Fourier transforms $\{F v_k\}_{k=1}^{N}$ of the NTK eigenvectors, therefore diagonalize the frequency-domain dynamics. Defining the modal amplitudes $\tilde c(\tau) = (FV)^{-1}\hat e(\tau)$ and repeating the steps~\eqref{eq:change_of_basis}--\eqref{eq:error_mode} gives
 \begin{equation}\label{eq:fourier_mode}
     \frac{d\tilde c_k}{d\tau} = -\lambda_k\,\tilde c_k(\tau)
@@ -593,11 +599,11 @@ This last observation can be made quantitative. Taking the modulus of the modal 
     |\tilde c_k(0)| = |(F v_k)^{*}\hat e_0| \approx |(F v_k)^{*}\hat u|,
 \end{equation}
 where the last estimate uses the small-scale initialization~\eqref{eq:init_spectrum}, so that $|(F v_k)^{*}\hat u|$ measures how strongly the target overlaps with the $k$-th eigen-mode. Training, however, advances in discrete steps: by the construction of the gradient flow~\eqref{eq:tau_k}, the continuous time and the iteration count $n$ are related by $\tau = n\mu$, with $\mu$ the learning rate. Substituting $\tau = n\mu$ into~\eqref{eq:fourier_amplitude} and requiring the amplitude to fall below a target precision $\varepsilon > 0$,
-\begin{equation}\label{eq:iteration_bound}
+\begin{equation*}
     |(F v_k)^{*}\hat u|\,e^{-\lambda_k n\mu} < \varepsilon
     \;\implies\;
     n > \frac{1}{\mu\,\lambda_k}\,\ln\frac{|(F v_k)^{*}\hat u|}{\varepsilon},
-\end{equation}
+\end{equation*}
 gives an estimate of the number of gradient-descent iterations needed to resolve the $k$-th frequency:
 \begin{equation}\label{eq:iteration_count}
     n_k = \left\lceil \frac{1}{\mu\,\lambda_k}\,\ln\frac{|(F v_k)^{*}\hat u|}{\varepsilon}\right\rceil.
@@ -630,34 +636,34 @@ Consider the general PDE Initial Value Problem:
 \noindent where $\mathcal{D}$ is a differential operator on $u$, $\Omega \times (0,T]$ is the spatio-temporal domain, and $u_0$ is the initial condition.
 
 The PDE residual loss penalizes violation of the governing equation at collocation points $\{(x_i,t_i)\}_{i=1}^{N_\mathcal{D}} \subset \Omega \times (0,T]$:
-\begin{equation}
+\begin{equation*}
     \mathcal{L}_{\text{pde}}(\theta) = \frac{1}{N_\mathcal{D}}\sum_{i=1}^{N_\mathcal{D}}
     \left\| \mathcal{D}[u_\theta](x_i,t_i)\right\|^2.
-\end{equation}
+\end{equation*}
 The initial condition is enforced at collocation points $\{x_i\}_{i=1}^{N_0} \subset \Omega$:
-\begin{equation}
+\begin{equation*}
     \mathcal{L}_{\text{ic}}(\theta) = \frac{1}{N_0}\sum_{i=1}^{N_0}
     \left\| u_\theta(x_i,0) - u_0(x_i) \right\|^2.
-\end{equation}
+\end{equation*}
 The combined PINN loss is:
 \begin{equation}\label{eq:loss_pinn}
     \mathcal{L}_{\text{PINN}}(\theta) = \mathcal{L}_{\text{pde}}(\theta) + \mathcal{L}_{\text{ic}}(\theta).
 \end{equation}
 
-Due to the compositional structure of MLPs, PINN implementations evaluate PDE residuals via Automatic Differentiation (AD) \parencite{linnainmaa1970, paszke2019pytorch}, using ADAM \parencite{kingma2014adam} or L-BFGS \parencite{nocedal1980lbfgs} as the optimizer.
+Due to the compositional structure of MLPs, PINN implementations evaluate PDE residuals via Automatic Differentiation (AD) \parencite{linnainmaa1970, paszke2019pytorch}, using Adam \parencite{kingma2014adam} or L-BFGS \parencite{nocedal1980lbfgs} as the optimizer.
 
 \subsubsection{Application to the Boussinesq Dataset}
 \label{subsubsec:pinn_loss_boussinesq}
 
 For the Boussinesq system, a separate PINN is trained for each sample $(\alpha_i,\beta_i) \in \mathcal{S}$~\eqref{eq:dataset}. The differential operator $\mathcal{D}$ in the generic problem~\eqref{eq:generic_pde} is instantiated as the pair of Boussinesq residuals. Each acts on both predicted fields and carries the coefficients of the sample, so we write them with all four arguments displayed:
-\begin{align}
+\begin{align*}
     \mathcal{D}_1[\eta_\theta, u_\theta, \alpha_i, \beta_i] &= (\eta_\theta)_t + (u_\theta)_x + \alpha_i\,(\eta_\theta\,u_\theta)_x, \\
     \mathcal{D}_2[\eta_\theta, u_\theta, \alpha_i, \beta_i] &= (u_\theta)_t - \tfrac{\beta_i}{3}(u_\theta)_{xxt} + (\eta_\theta)_x + \alpha_i\,u_\theta(u_\theta)_x.
-\end{align}
+\end{align*}
 The combined loss~\eqref{eq:loss_pinn} for sample $i$ then reads:
 \begin{equation}\label{eq:pinn_loss_boussinesq}
     \begin{aligned}
-        \mathcal{L}_{\text{PINN}}(\theta) ={}
+        \mathcal{L}^{i}_{\text{PINN}}(\theta) ={}
         & \frac{1}{N_\mathcal{D}}\sum_{l=1}^{N_\mathcal{D}}
         \Bigl[\mathcal{D}_1[\eta_\theta, u_\theta, \alpha_i, \beta_i](x_l,t_l)^2 + \mathcal{D}_2[\eta_\theta, u_\theta, \alpha_i, \beta_i](x_l,t_l)^2\Bigr] \\
         & + \frac{1}{N_0}\sum_{l=1}^{N_0}
@@ -691,13 +697,13 @@ Neural operators generalize neural networks from learning finite-dimensional map
 \label{subsec:no_general}
 
 Let $D \subset \mathbb{R}^{d}$ be a bounded open domain and let $\mathcal{A}(D; \mathbb{R}^{d_a})$ and $\mathcal{U}(D; \mathbb{R}^{d_u})$ be Banach spaces of functions \parencite{kreyszig1978introductory}. The target operator is a (potentially nonlinear) map
-\begin{equation}
+\begin{equation*}
     G^\dagger : \mathcal{A} \to \mathcal{U},
     \qquad a \mapsto u = G^\dagger(a),
-\end{equation}
+\end{equation*}
 where both the input $a$ and the output $u$ are functions defined on $D$.
 
-In this work, $G^\dagger$ is the solution operator of the Boussinesq system: given an input $a$ encoding the PDE coefficients $(\alpha, \beta)$ together with the initial condition~\eqref{eq:initial_condition}, the operator returns the full space-time solution $(\eta, u)$.
+In this work, $G^\dagger$ is the solution operator of the Boussinesq system: given an input $a$ encoding the PDE coefficients $(\alpha, \beta)$ together with the initial condition~\eqref{eq:initial_condition}, the operator returns the full space-time solution $(\eta, u)$. Because the initial condition is the same for every sample of the dataset~\eqref{eq:dataset}, it carries nothing that distinguishes one sample from another, and the input reduces to the pair $(\alpha_i, \beta_i)$, which is how the operator is written from here on.
 
 A neural operator $G_\theta$ approximates $G^\dagger$ by alternating linear layers with pointwise nonlinearities, in the composition
 \begin{equation}\label{eq:no_arch}
@@ -710,9 +716,9 @@ A neural operator $G_\theta$ approximates $G^\dagger$ by alternating linear laye
     \item $Q : \mathbb{R}^{d_c} \to \mathbb{R}^{d_u}$ is the projection operator mapping the final channel representation back to the output dimension.
 \end{itemize}
 What makes~\eqref{eq:no_arch} an operator, rather than a map between finite-dimensional vectors, is the nonlocal term $\mathcal{K}_\ell$ in each layer. It is an integral operator,
-\begin{equation}\label{eq:integral_operator}
+\begin{equation*}
     (\mathcal{K}_\ell v)(x) = \int_{D} \kappa_\ell(x, y)\,v(y)\,dy,
-\end{equation}
+\end{equation*}
 where $\kappa_\ell : D \times D \to \mathbb{R}^{d_c \times d_c}$ is a learned kernel. Each output point therefore draws on the whole input function, and not only on its value at $x$, which is what the local map $W_\ell$ alone would give. Different choices of kernel parametrization for each $\mathcal{K}_\ell$ give rise to different neural operator architectures.
 
 \subsection{Fourier Neural Operators}
@@ -725,23 +731,23 @@ Each spectral layer updates the channel representation via:
     v_{\ell+1}(x) = \sigma \Big( (W_\ell\,v_\ell)(x) + (\mathcal{K}_\ell v_\ell)(x) \Big).
 \end{equation}
 The operator $\mathcal{K}_\ell$ acts via convolution with the shift-invariant kernel $\kappa_\ell$:
-\begin{equation}
+\begin{equation*}
     (\mathcal{K}_\ell v_\ell)(x) = \int_{D} \kappa_\ell(x-y)\,v_\ell(y)\,dy.
-\end{equation}
+\end{equation*}
 By the convolution theorem \parencite{debnath2012}, this equals:
 \begin{equation}
     (\mathcal{K}_\ell v_\ell)(x) = \mathcal{F}^{-1} \Big( \mathcal{F}(\kappa_\ell) \cdot \mathcal{F}(v_\ell) \Big)(x).
     \label{eq:fno_approximation}
 \end{equation}
 Property~\eqref{eq:fno_approximation} is what makes the layer~\eqref{eq:fno_layer} affordable: the nonlocal integral never has to be formed in physical space, since a forward transform, a pointwise multiplication and an inverse transform deliver it. To see how this is parametrized, recall that for a periodic function $f$ on $[0, 2\pi]$:
-\begin{equation}
+\begin{equation*}
     f(x) = \sum_{k \in \mathbb{Z}} \hat{f}(k) \, e^{ikx}, \qquad \hat{f}(k) = \frac{1}{2\pi} \int_0^{2\pi} f(x) e^{-ikx} \,dx.
-\end{equation}
+\end{equation*}
 The convolution $(\kappa * v)$ simplifies to:
-\begin{equation}
+\begin{equation*}
     (\kappa * v)(x) = \int_0^{2\pi} \kappa(x-y)\, v(y)\, dy
     = \sum_{k \in \mathbb{Z}} \bigl(2\pi\, \hat{\kappa}(k)\, \hat{v}(k)\bigr)\, e^{ikx}.
-\end{equation}
+\end{equation*}
 Instead of learning $\kappa_\ell$ as a function in physical space, the FNO directly parametrizes its Fourier coefficients as learnable complex-valued matrices $R_{\ell,k} \approx 2\pi\,\hat{\kappa}_\ell(k)$. Only the $|k| \le k_{\max}$ low-frequency modes are retained, with all others set to zero; $k_{\max}$ is a hyperparameter.
 
 \subsubsection{Training Objective}
@@ -759,14 +765,14 @@ where $G_\theta$ is the neural operator~\eqref{eq:no_arch} and $(\eta_\theta^i, 
 \label{subsubsec:fno_time}
 
 When the solution is also assumed to be periodic in time with period $T$ (so that $D = [0, 2\pi] \times [0, T]$), shift-invariance extends to the time direction as well: $\kappa_\ell(x, y, t, \tau) = \kappa_\ell(x - y,\, t - \tau)$. The convolution then generalizes to:
-\begin{equation}\label{eq:fno_spacetime}
+\begin{equation*}
     (\mathcal{K}_\ell v_\ell)(x,t)
     = \int_{D} \kappa_\ell(x-y,\,t-\tau)\,v_\ell(y,\tau)\,dy\,d\tau
     = \mathcal{F}^{-1}\!\Big(\mathcal{F}(\kappa_\ell)\cdot\mathcal{F}(v_\ell)\Big)(x,t),
-\end{equation}
+\end{equation*}
 and the FNO parametrizes the two-dimensional Fourier modes $(k_x, k_t)$ with $|k_x| \le k_{x,\max}$ and $|k_t| \le k_{t,\max}$, both hyperparameters.
 
-For problems that are not time-periodic, however, applying the Fourier transform along the temporal axis implicitly extends the signal periodically, potentially introducing a jump discontinuity at the temporal boundary. This can trigger the Gibbs phenomenon \parencite{gibbs1899}, producing oscillatory artifacts near the boundary that persist regardless of how many temporal modes are retained. Standard signal-processing techniques such as zero-padding and window functions (e.g.\ Hann, Hamming windows) can partially mitigate these effects, at the cost of altering the temporal structure of the signal. \textcite{li2021} acknowledge this limitation and provide an alternative formulation in which the Fourier layers operate only along the spatial axis while the model advances forward in time, avoiding the periodicity assumption in the temporal direction entirely. In this work we deliberately retain the two-dimensional space-time formulation, in which the Fourier layers act on both the spatial and the temporal axes, so that a single operator emits the entire trajectory in one forward pass. This keeps the architecture simple and uniform across space and time, but it reintroduces the temporal-periodicity assumption for a Boussinesq solution that is not time-periodic, and therefore admits a Gibbs artifact at the temporal boundary $t = T$. Rather than suppress this artifact with windowing, we retain the plain formulation and examine the boundary behaviour directly in Chapter~\ref{chap:results}, where it turns out to distinguish the purely data-driven operator from its physics-informed variant.
+For problems that are not time-periodic, however, applying the Fourier transform along the temporal axis implicitly extends the signal periodically, potentially introducing a jump discontinuity at the temporal boundary. This can trigger the Gibbs phenomenon \parencite{gibbs1899}, producing oscillatory artifacts near the boundary that persist regardless of how many temporal modes are retained. Standard signal-processing techniques such as zero-padding and window functions (e.g.\ Hann, Hamming windows) can partially mitigate these effects, at the cost of altering the temporal structure of the signal. \textcite{li2021} acknowledge this limitation and provide an alternative formulation in which the Fourier layers operate only along the spatial axis while the operator advances forward in time, avoiding the periodicity assumption in the temporal direction entirely. In this work we deliberately retain the two-dimensional space-time formulation, in which the Fourier layers act on both the spatial and the temporal axes, so that a single operator emits the entire trajectory in one forward pass. This keeps the architecture simple and uniform across space and time, but it reintroduces the temporal-periodicity assumption for a Boussinesq solution that is not time-periodic, and therefore admits a Gibbs artifact at the temporal boundary $t = T$. Rather than suppress this artifact with windowing, we retain the plain formulation and examine the boundary behaviour directly in Chapter~\ref{chap:results}, where it turns out to distinguish the purely data-driven operator from its physics-informed variant.
 
 \subsection{Physics-Informed Neural Operators}
 \label{subsec:pino}
@@ -776,20 +782,20 @@ Analogously to how PINNs add a physics-informed residual loss to the MLP trainin
 Unlike a PINN, which represents the solution as a single continuous function and differentiates it via automatic differentiation, the FNO outputs $(\eta_\theta, u_\theta)$ as a discrete $N_x \times N_t$ array in a single forward pass over the full space-time domain. Evaluating the PDE residuals therefore reduces to numerically differentiating this output array.
 
 Spatial derivatives are computed pseudospectrally using $\xi_k$~\eqref{eq:xi_def}: the DFT of $\eta_\theta$ along the spatial axis at each time $t_n$ yields $\hat{\eta}_\theta(k, t_n)$, from which
-\begin{equation}
+\begin{equation*}
     (\eta_x)_j = \mathcal{F}^{-1}\!\left(i\,\xi_k\,\hat{\eta}_\theta(k,t_n)\right)_{\!j},
     \qquad
     (\eta_{xx})_j = \mathcal{F}^{-1}\!\left(-\xi_k^2\,\hat{\eta}_\theta(k,t_n)\right)_{\!j},
-\end{equation}
+\end{equation*}
 and identically for $u_\theta$. Time derivatives are computed by finite differences: second-order central in the interior and first-order one-sided at the boundaries,
-\begin{equation}
+\begin{equation*}
     (\eta_\theta)_t^n =
     \begin{cases}
         \dfrac{\eta_\theta^{n+1} - \eta_\theta^n}{\Delta t}, & n = 0, \\[6pt]
         \dfrac{\eta_\theta^{n+1} - \eta_\theta^{n-1}}{2\,\Delta t}, & 1 \le n \le N_t - 1, \\[6pt]
         \dfrac{\eta_\theta^n - \eta_\theta^{n-1}}{\Delta t}, & n = N_t,
     \end{cases}
-\end{equation}
+\end{equation*}
 and identically for $(u_\theta)_t^n$. The mixed term $(u_\theta)_{xxt}$ is obtained by first computing $(u_\theta)_{xx}$ spectrally and then applying the time-difference stencil to the result. This combination of spectral spatial derivatives and finite-difference temporal derivatives follows the reference implementation of \textcite{li2023pino} \parencite{li2023pino_code}.
 
 With all derivatives available, the Boussinesq equations~\eqref{eq:boussinesq} define two differential operators acting on the predicted fields:
@@ -819,7 +825,7 @@ Here $(\eta_\theta^i, u_\theta^i) \coloneqq G_\theta(\alpha_i, \beta_i)$ denotes
     \item $\mathcal{L}_{\text{data}}(\theta) = \dfrac{1}{M}\displaystyle\sum_{i=1}^{M}\dfrac{1}{N_x N_t}\displaystyle\sum_{j=0}^{N_x-1}\sum_{n=0}^{N_t}
           \Bigl[(\eta_\theta^i(x_j,t_n) - \eta_i(x_j,t_n))^2 +
           (u_\theta^i(x_j,t_n) - u_i(x_j,t_n))^2\Bigr]$
-          measures deviation from the reference solutions $(\eta_i,u_i) \in \mathcal{D}$~\eqref{eq:dataset};
+          measures deviation from the reference solutions $(\eta_i,u_i) \in \mathcal{S}$~\eqref{eq:dataset};
 
     \item $\lambda_{\text{pde}},\, \lambda_{\text{ic}},\, \lambda_{\text{data}} > 0$
           are weighting hyperparameters.

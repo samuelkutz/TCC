@@ -9,7 +9,7 @@
 \begin{bfseries}
 \begin{center}
 
-\vspace{0.5cm} 
+\vspace{0.5cm}
 UNIVERSIDADE FEDERAL DO PARANÁ \\
 
 \vspace{0.6cm}
@@ -69,42 +69,10 @@ CURITIBA \\
 \begin{center}
 \textbf{RESUMO}
 \end{center}
+\phantomsection
 \addcontentsline{toc}{section}{RESUMO}
-\noindent Este trabalho investiga a eficácia de métodos de Scientific Machine Learning (SciML)
-  na resolução e aproximação do sistema não linear de Boussinesq, um sistema de Equações Diferenciais Parciais (EDPs)
-  utilizado para modelar a dinâmica de ondas aquáticas. Neste estudo, o sistema de Boussinesq será tratado como uma
-  EDP dependente de dois parâmetros: os parâmetros de não linearidade e de dispersão, aqui mantidos iguais entre si, de
-  modo que uma única coordenada controle a dificuldade do problema. O objetivo é analisar o uso do
-  ecossistema contemporâneo de ferramentas desenvolvido em torno do recente crescimento de Machine Learning como
-  complemento aos métodos numéricos clássicos empregados na solução do sistema de Boussinesq. Foi utilizado o método
-  pseudoespectral para gerar um conjunto de dados consistindo de soluções de referência do sistema de Boussinesq para
-  diversos parâmetros, empregado tanto como base de treinamento quanto como referência de acurácia para quatro arquiteturas
-  de SciML investigadas neste trabalho: um Perceptron Multicamadas (MLP), treinado apenas com dados e utilizado como linha de base;
-  Redes Neurais Informadas pela Física (PINNs), treinadas a um único parâmetro tanto com restrições de dados quanto de forma puramente física;
-  Operadores Neurais de Fourier (FNO), operando em regime puramente supervisionado a vários parâmetros com uso exclusivo de dados sem nenhuma
-  informação do operador diferencial da EDP; e Operadores Neurais Informados pela Física (PINO), que consiste em uma FNO
-  com a inclusão do operador diferencial da EDP na função de perda da arquitetura, treinada com e sem dados. Dessas arquiteturas
-  resultam seis modelos, organizados em duas famílias, a pontual e a de operadores, e em três regimes de treinamento: puramente
-  supervisionado, dados e física, e puramente físico. Como métricas de eficiência dessas
-  arquiteturas, utilizamos a evolução do erro espectral e do erro relativo ao longo do espaço-tempo com relação a solução
-  de referência, avaliadas ao longo da faixa de parâmetros e também em resoluções distintas daquela de treinamento, de modo
-  a verificar a invariância à discretização própria dos operadores. O mecanismo por trás do viés espectral é ainda examinado
-  em um experimento mínimo, no qual redes de larguras distintas ajustam um único perfil de elevação do sistema de Boussinesq
-  e têm seu núcleo tangente neural (NTK) medido ao longo do treinamento.
-  Como resultados, percebe-se que as arquiteturas pontuais, especialmente quando treinadas sem o auxílio de dados,
-  sofrem de um fenômeno conhecido como viés espectral, apresentando tendência a aprender primeiramente as componentes de
-  baixa frequência da solução e grandes dificuldades em capturar detalhes essenciais de alta frequência. Em contrapartida,
-  por aprenderem diretamente no espaço das frequências, os modelos de
-  aprendizado de operadores, como o FNO e o PINO treinado com dados, atenuam essa limitação nas baixas e
-  médias frequências, embora nenhum método a elimine por completo: um erro residual de alta frequência persiste em todas as
-  arquiteturas, e o viés reaparece de forma mais acentuada quando o PINO é treinado de maneira puramente física. Observa-se
-  ainda que a inclusão do resíduo físico confere estabilidade temporal, suprimindo o artefato de Gibbs que degrada o FNO no
-  instante final, e que a invariância à discretização se sustenta no aspecto geométrico, mas não em acurácia. O experimento
-  mínimo, por sua vez, mostra que o decaimento do erro segue a previsão do núcleo inicial nas direções alcançáveis e que os
-  autovalores do núcleo decaem por várias ordens de grandeza, o que permite atribuir o desequilíbrio entre frequências a uma
-  causa mensurável em vez de a uma analogia. Assim, concluímos que, entre as intervenções examinadas, a inclusão de dados na
-  função de perda é a que mais atenua --- ainda que não anule --- o viés espectral comumente presente nessas arquiteturas,
-  enquanto o resíduo físico contribui sobretudo com estabilidade ao longo do tempo.
+\noindent
+Este trabalho implementa e avalia métodos de Aprendizado de Máquina Científico (\textit{Scientific Machine Learning}) para o sistema de Boussinesq unidimensional, no qual o coeficiente de não linearidade $\alpha$ e o coeficiente de dispersão $\beta$ são acoplados e variados em conjunto. Quatro arquiteturas foram implementadas do zero: um perceptron multicamadas, uma Rede Neural Informada pela Física, um Operador Neural de Fourier e um Operador Neural Informado pela Física. O cruzamento de duas famílias de arquiteturas, as redes pontuais, que representam uma única solução como um mapa contínuo das coordenadas, e os operadores, que aprendem toda uma família de parâmetros em um único treinamento, com três regimes de treinamento, apenas dados, dados e física, e apenas física, resulta em seis métodos treinados. Um método pseudoespectral com avanço temporal via Runge--Kutta de quarta ordem fornece tanto os dados supervisionados quanto a referência contra a qual todos os métodos são medidos e comparados. Um experimento mínimo à parte ajusta um único perfil de elevação de Boussinesq com redes de três larguras e mede diretamente seu Núcleo Tangente Neural (NTK) empírico, testando se a teoria atual prevê o desequilíbrio entre frequências observado ou apenas o descreve depois do fato. O viés espectral aparece em todas as arquiteturas e em todos os regimes. A presença dos dados supervisionados reduz o erro nas bandas baixa e média mais do que o resíduo da EDP, enquanto este resíduo contribui com estabilidade temporal, suprimindo o fenômeno de Gibbs no tempo final que o tratamento periódico do eixo temporal produz nos operadores. Os operadores reproduzem os números de onda baixos e médios mais de perto do que as redes pontuais e respondem a um novo parâmetro com uma única passagem direta, mas sua invariância à discretização se sustenta apenas geometricamente, sem se transferir para a acurácia: o erro é menor na malha em que o resíduo físico foi formado. As medidas do núcleo confirmam o decaimento previsto por modo enquanto o núcleo permanece fixo e localizam o viés na disparidade entre seus autovalores, e não em uma arquitetura em particular. As escalas mais finas permanecem acuradas apenas no método pseudoespectral, de modo que os métodos estudados complementam as discretizações clássicas em vez de substituí-las.
 
 \vspace{1cm}
 \noindent
@@ -116,35 +84,10 @@ CURITIBA \\
 \begin{center}
 \textbf{ABSTRACT}
 \end{center}
+\phantomsection
 \addcontentsline{toc}{section}{ABSTRACT}
-\noindent This work investigates the effectiveness of Scientific Machine Learning (SciML) methods in solving and approximating the nonlinear
-Boussinesq system, a system of Partial Differential Equations (PDEs) used to model water wave dynamics. In this study, the Boussinesq system will
-be treated as a PDE dependent on two parameters: the nonlinearity and dispersion parameters, here held equal to one another, so that a single
-coordinate controls the difficulty of the problem. The objective is to analyze the use of the contemporary
-ecosystem of tools developed around the recent growth of Machine Learning as a complement to the classical numerical methods employed in solving the
-Boussinesq system. The pseudospectral method was used to generate a dataset consisting of reference solutions of the Boussinesq system for various
-parameters, employed both as the training basis and as the accuracy reference for four SciML architectures investigated in this work: a multilayer
-perceptron (MLP), trained on data alone and used as a baseline; Physics-Informed Neural Networks (PINNs),
-trained at a single parameter both with data constraints and purely physics-informed; Fourier Neural Operators (FNOs), operating in a purely supervised
-regime at multiple parameters using only data without any differential operator information from the PDE; and Physics-Informed Neural Operators (PINOs),
-which consist of an FNO with the inclusion of the PDE differential operator in the architecture loss function, trained with and without data. These
-architectures give rise to six trained models, arranged into two families, the pointwise one and the operator one, and three training regimes: purely
-supervised, data and physics, and purely physics-informed. As efficiency metrics for these architectures,
-we use the evolution of spectral error and relative error over space-time with respect to the reference solution, evaluated across the parameter range
-and also at resolutions other than the training one, so as to test the discretization invariance operators are supposed to enjoy. The mechanism behind
-spectral bias is further examined in a minimal experiment, in which networks of different widths fit a single elevation profile of the Boussinesq system
-and have their Neural Tangent Kernel (NTK) measured along training.
-As results, it is observed that the pointwise architectures,
-especially when trained without the aid of data, suffer from a phenomenon known as spectral bias, showing a tendency to learn the low-frequency components of the solution
-first and great difficulty capturing essential high-frequency details. In contrast, by learning directly in the frequency space, operator learning
-models such as FNO and PINO trained with data attenuate this limitation in the low and mid frequencies, although no method removes it entirely: a residual
-high-frequency error persists across all architectures, and the bias re-emerges more strongly when PINO is trained in a purely physics-informed manner. We further observe
-that the physics residual confers temporal stability, suppressing the Gibbs artifact that degrades the FNO at the final time, and that discretization invariance holds
-geometrically but not in accuracy. The minimal experiment, in turn, shows that the error decay follows the initial-kernel prediction along the reachable directions and
-that the kernel eigenvalues fall by several orders of magnitude, which lets the imbalance between frequencies be traced to a measurable cause rather than to an analogy.
-Thus, we conclude that, among the interventions examined, including data in the
-loss function is the one that most attenuates --- though it does not eliminate --- the spectral bias commonly present in these architectures, while the physics residual
-contributes mainly stability over time.
+\noindent
+This work implements and evaluates Scientific Machine Learning methods for the one-dimensional Boussinesq system, in which the nonlinearity coefficient $\alpha$ and the dispersion coefficient $\beta$ are coupled and varied together. Four architectures were written from scratch: a multilayer perceptron, a Physics-Informed Neural Network, a Fourier Neural Operator, and a Physics-Informed Neural Operator. Crossing two architecture families, the pointwise networks, which represent a single solution as a continuous map of the coordinates, and the operators, which learn a whole parameter family in one training run, with three training regimes, pure data, data and physics, and pure physics, gives six trained methods. A pseudospectral method with fourth-order Runge--Kutta time stepping supplies both the supervised data and the reference against which every method is measured and compared. A separate minimal experiment fits a single Boussinesq elevation profile with networks of three widths and measures their empirical Neural Tangent Kernel (NTK) directly, testing whether the current theory predicts the observed frequency imbalance or only describes it after the fact. Spectral bias appears in every architecture and every regime. The presence of supervised data reduces the low- and mid-band error more than the PDE residual does, while this residual contributes temporal stability, suppressing the Gibbs phenomenon at the final time that the periodic treatment of the time axis produces in the operators. The operators reproduce the low and mid wavenumbers more closely than the pointwise networks and answer a new parameter with a single forward pass, but their discretization invariance holds only geometrically and does not carry over to accuracy: the error is lowest on the grid where the physics residual was formed. The kernel measurements confirm the predicted per-mode decay while the kernel stays fixed, and locate the bias in the disparity between its eigenvalues rather than in any particular architecture. The finest scales stay accurate only in the pseudospectral method, so the methods studied here complement classical discretizations rather than replace them.
 
 \vspace{1cm}
 \noindent
@@ -156,20 +99,49 @@ contributes mainly stability over time.
 \begin{center}
 \textbf{ACKNOWLEDGEMENTS}
 \end{center}
+\phantomsection
 \addcontentsline{toc}{chapter}{ACKNOWLEDGEMENTS}
 
-I would like to thank CNPq, the LabFluid laboratory, and the Federal University of Paraná (UFPR) for their support, infrastructure, and guidance during this research.
+First, I need to express my deepest gratitude for the professors at Federal University of Paraná prof. Roberto Ribeiro and prof. Thiago Quinelato. In the fifth semester, they revitalized my love for mathematics after a burnout in the fourth semester. I did not like numerical analysis, nor anything relating to optimization; suddenly the career I was chasing escaped me and nothing made sense. They brought it back, through their pedagogical excellence and their patience in explaining each concept. I am grateful that they can now grade this work that finishes one of the most important moments of my life. 
+
+I need to also express my love and gratitude to my mother, Angela Kutz. To all of her 3 sons, she knew that the only education could improve things. Indeed, now I understand and I look forward to return all the effort and faith she put in me.
+
+I chose to study applied mathematics very early in my life, around sixteen years old. I did not know a thing about it, just thought the name was cool to show around. Now, I know this is what I love. My biggest hobby. I cannot stay far from mathematics anymore and I know for a fact that for the rest of my life I will be trying to learn new mathematical content every day. It now brings food to my table, and it will continue to be a bedrock skill I developed that makes me survive in this world.
+
+Also, this course brought to me some of my best friends that I will most certainly take to life. To all my dear friends, thank you.
+
+Last, but not least, I would like to thank P4E (Pró-Reitoria de Pertencimento e Políticas de Permanência Estudantil), which enabled me to have the financial support to begin this course. Without it, I would not be here. I had nothing, Federal University of Paraná (UFPR) showed me a path I could pursue. Also, I thank the CNPq for financial aid in my undergraduate research, the LabFluid laboratory for providing the best learning environment that I could have, with daily debates and lessons, and UFPR for their support, amazing professors, and for providing democratized knowledge for us, the wicked.
 
 This work was supported by CNPq and developed with the collaboration of the LabFluid research group at UFPR.
 
 \vfill
 \begin{center}
-  \includegraphics[height=1.2cm]{CNPq.png}\hspace{1.5cm}
-  \includegraphics[height=3.2cm]{LabFluidLogo.png}\hspace{1.5cm}
-  \includegraphics[height=1.6cm]{ufpr_logo.jpg}
+  \raisebox{-0.5\height}{\includegraphics[height=1.2cm]{CNPq.png}}\hspace{1.5cm}
+  \raisebox{-0.5\height}{\includegraphics[height=3.2cm]{LabFluidLogo.png}}\hspace{1.5cm}
+  \raisebox{-0.5\height}{\includegraphics[height=1.6cm]{ufpr_logo.jpg}}
 \end{center}
 
+\pagebreak
 
+% --- EPIGRAFE ---
+\thispagestyle{empty}
+\nocite{carroll2012particle}
+\vspace*{\fill}
+\begin{flushright}
+\begin{minipage}{8.5cm}
+    \begin{spacing}{1.0}
+        \raggedleft\small
+        \textit{``We are part of the universe that has developed a
+        remarkable ability: We can hold an image of the world in our
+        minds. We are matter contemplating itself.''}
+
+        \vspace{0.6cm}
+
+        CARROLL, \textit{The Particle at the End of the Universe}, 2012.
+    \end{spacing}
+\end{minipage}
+\end{flushright}
+\vspace*{2cm}
 
 \pagebreak
 
@@ -178,11 +150,23 @@ This work was supported by CNPq and developed with the collaboration of the LabF
 \begin{center}
 \textbf{LIST OF FIGURES}
 \end{center}
+\phantomsection
 \addcontentsline{toc}{chapter}{LIST OF FIGURES}
 \makeatletter
 \@starttoc{lof}
 \makeatother
 
+\pagebreak
+
+% --- LIST OF TABLES ---
+\begin{center}
+\textbf{LIST OF TABLES}
+\end{center}
+\phantomsection
+\addcontentsline{toc}{chapter}{LIST OF TABLES}
+\makeatletter
+\@starttoc{lot}
+\makeatother
 
 \pagebreak
 
@@ -190,6 +174,7 @@ This work was supported by CNPq and developed with the collaboration of the LabF
 \begin{center}
 \textbf{LIST OF ABBREVIATIONS}
 \end{center}
+\phantomsection
 \addcontentsline{toc}{chapter}{LIST OF ABBREVIATIONS}
 
 \vspace{0.5cm}
@@ -198,18 +183,23 @@ This work was supported by CNPq and developed with the collaboration of the LabF
     SciML & Scientific Machine Learning \\[2pt]
     ML    & Machine Learning \\[2pt]
     PDE   & Partial Differential Equation \\[2pt]
+    ODE   & Ordinary Differential Equation \\[2pt]
+    UDE   & Universal Differential Equation \\[2pt]
+    SINDy & Sparse Identification of Nonlinear Dynamics \\[2pt]
+    ANN   & Artificial Neural Network \\[2pt]
+    MLP   & Multilayer Perceptron \\[2pt]
     PINN  & Physics-Informed Neural Network \\[2pt]
     FNO   & Fourier Neural Operator \\[2pt]
     PINO  & Physics-Informed Neural Operator \\[2pt]
-    MLP   & Multilayer Perceptron \\[2pt]
-    RK4   & Runge--Kutta 4th-order method \\[2pt]
+    NTK   & Neural Tangent Kernel \\[2pt]
     DFT   & Discrete Fourier Transform \\[2pt]
     IDFT  & Inverse Discrete Fourier Transform \\[2pt]
     FFT   & Fast Fourier Transform \\[2pt]
-    NTK   & Neural Tangent Kernel \\[2pt]
+    RK4   & Runge--Kutta 4th-order method \\[2pt]
+    GD    & Gradient Descent \\[2pt]
     MSE   & Mean Squared Error \\[2pt]
-    SGD   & Stochastic Gradient Descent \\[2pt]
-    AD    & Automatic Differentiation \\
+    AD    & Automatic Differentiation \\[2pt]
+    GPU   & Graphics Processing Unit \\
 \end{tabular}
 
 \pagebreak
@@ -218,27 +208,32 @@ This work was supported by CNPq and developed with the collaboration of the LabF
 \begin{center}
 \textbf{LIST OF SYMBOLS}
 \end{center}
+\phantomsection
 \addcontentsline{toc}{chapter}{LIST OF SYMBOLS}
 
 \vspace{0.4cm}
 \noindent\textit{Domain and general operators}\\[2pt]
 \noindent
-\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+\begin{tabular}{@{}p{3.4cm}p{12cm}@{}}
     $x$              & spatial coordinate \\[2pt]
     $t$              & temporal coordinate \\[2pt]
     $u(x,t)$         & PDE solution (generic) \\[2pt]
     $\mathcal{D}$    & differential operator of the PDE \\[2pt]
     $\mathcal{L}$    & linear differential operator; also a loss functional \\[2pt]
     $\nabla$         & gradient (nabla) operator \\[2pt]
+    $\Omega$         & spatial domain, $\Omega = [-L, L]$ \\[2pt]
+    $T$              & final time of the horizon $[0, T]$ \\[2pt]
     $N_x$            & number of spatial grid points \\[2pt]
     $N_t$            & number of time steps \\[2pt]
-    $\Delta x,\,\Delta t$ & spatial and temporal grid spacings \\
+    $\Delta x,\,\Delta t$ & spatial and temporal grid spacings \\[2pt]
+    $\mathcal{S}$    & parametric dataset of reference solutions \\[2pt]
+    $M$              & number of samples in $\mathcal{S}$ \\
 \end{tabular}
 
 \vspace{0.5cm}
 \noindent\textit{Boussinesq system and spectral quantities}\\[2pt]
 \noindent
-\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+\begin{tabular}{@{}p{3.4cm}p{12cm}@{}}
     $\eta(x,t)$      & surface elevation field \\[2pt]
     $u(x,t)$         & depth-averaged horizontal velocity field \\[2pt]
     $\alpha$         & nonlinearity parameter of the Boussinesq system \\[2pt]
@@ -247,15 +242,26 @@ This work was supported by CNPq and developed with the collaboration of the LabF
     $L$              & domain half-length, $\Omega = [-L, L]$ \\[2pt]
     $k$              & wavenumber (integer mode index) \\[2pt]
     $\xi_k$          & wavenumber $\pi k / L$ on the domain $[-L,L]$ \\[2pt]
-    $\omega(k)$      & angular frequency / dispersion relation \\[2pt]
     $\hat{f}(k)$     & Fourier coefficient of $f$ at mode $k$ \\[2pt]
-    $\hat{f}(k,t)$   & time-evolving Fourier mode of $f$ at wavenumber $k$ \\
+    $\hat{f}(k,t)$   & time-evolving Fourier mode of $f$ at wavenumber $k$ \\[2pt]
+    $\omega$         & primitive root of unity $e^{-2\pi \mathrm{i}/N}$ of the DFT matrix \\[2pt]
+    $N_k$            & number of retained real-DFT modes \\[2pt]
+    $B_{\mathrm{low}},\,B_{\mathrm{mid}},\,B_{\mathrm{high}}$ & low, mid and high wavenumber bands \\
+\end{tabular}
+
+\vspace{0.5cm}
+\noindent\textit{Error metrics}\\[2pt]
+\noindent
+\begin{tabular}{@{}p{3.4cm}p{12cm}@{}}
+    $\mathbb{E}(t_n)$ & time-resolved relative $L^2$ error at time level $t_n$ \\[2pt]
+    $\mathbb{E}_{\mathrm{spec}}(k,t_n)$ & absolute spectral error at mode $k$ and time $t_n$ \\[2pt]
+    $\mathbb{E}_{\mathrm{band}}(B)$ & band-averaged absolute spectral error over band $B$ \\
 \end{tabular}
 
 \vspace{0.5cm}
 \noindent\textit{Neural networks and Neural Tangent Kernel}\\[2pt]
 \noindent
-\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+\begin{tabular}{@{}p{3.4cm}p{12cm}@{}}
     $\theta$         & trainable parameter vector of a neural network \\[2pt]
     $u_{\theta}$     & neural network approximation of the PDE solution \\[2pt]
     $h^{(l)}$        & hidden-layer activation vector at layer $l$ \\[2pt]
@@ -263,15 +269,26 @@ This work was supported by CNPq and developed with the collaboration of the LabF
     $W^{(l)},\,b^{(l)}$ & weight matrix and bias vector at layer $l$ \\[2pt]
     $N_{\mathrm{MLP}}$ & number of neurons in a hidden layer \\[2pt]
     $L_{\mathrm{MLP}}$ & number of layers in the neural network \\[2pt]
-    $K(\theta)$      & empirical Neural Tangent Kernel, $K = J J^{\mathsf{T}}$ \\[2pt]
+    $N_{\theta}$     & number of trainable parameters \\[2pt]
+    $\mu$            & learning rate / gradient-descent step size \\[2pt]
+    $J,\,J_0$        & Jacobian of the network output, and its value at initialization \\[2pt]
+    $K(\theta),\,K_0$ & empirical Neural Tangent Kernel, $K = J J^{\mathsf{T}}$, and its value at initialization \\[2pt]
+    $V,\,\Lambda$    & eigenvectors and eigenvalues of $K_0$, $K_0 = V \Lambda V^{\mathsf{T}}$ \\[2pt]
     $\lambda_k$      & NTK eigenvalue associated with mode $k$ \\[2pt]
+    $\lambda_{\max}$ & largest eigenvalue of $K_0$ \\[2pt]
+    $v_k$            & $k$-th eigenvector of $K_0$ \\[2pt]
+    $e,\,e^{(n)}$    & training-error vector on the grid, and its value at iteration $n$ \\[2pt]
+    $c_k$            & error coefficient along the eigendirection $v_k$ \\[2pt]
+    $\tau_k$         & decay time constant of mode $k$ \\[2pt]
+    $n_k$            & iterations for mode $k$ to reach the precision $\varepsilon$ \\[2pt]
+    $\varepsilon$    & precision threshold on the modal error \\[2pt]
     $\hat{e}(k,t)$   & Fourier coefficient of the training error at mode $k$ \\
 \end{tabular}
 
 \vspace{0.5cm}
 \noindent\textit{Neural operators}\\[2pt]
 \noindent
-\begin{tabular}{@{}p{2.6cm}p{12cm}@{}}
+\begin{tabular}{@{}p{3.4cm}p{12cm}@{}}
     $G^\dagger,\,G_\theta$ & target solution operator and its neural approximation \\[2pt]
     $\mathcal{K}_{\ell}$   & integral operator of the $\ell$-th FNO spectral layer \\[2pt]
     $\kappa_{\ell}$        & kernel function of the FNO integral operator \\[2pt]
@@ -286,7 +303,7 @@ This work was supported by CNPq and developed with the collaboration of the LabF
 
 % --- CORPO DO TEXTO ---
 
-\include{chapters/01-introduction.tex} 
+\include{chapters/01-introduction.tex}
 
 \include{chapters/02-mathematical-background.tex}
 

@@ -24,7 +24,7 @@ import sys
 
 from config import Config
 from tools import set_seed
-from experiments.common import resolve_device
+from experiments.common import BAND_METRIC, resolve_device
 from experiments.dataset import run_dataset
 from experiments.evaluate import load_stage_metadata
 from experiments.plots.figures import plot_soliton_profile, plot_spectral_bias_panel
@@ -69,6 +69,10 @@ def plot_spectral_bias_evolution(ordered_metadata, outdir,
         if not history or not history.get('epochs'):
             raise ValueError(f'no spectral_history in {metadata_file}; the training '
                              'stage must record band errors for this figure')
+        if history.get('metric') != BAND_METRIC:
+            print(f'  WARNING: {label} band history was recorded under '
+                  f'{history.get("metric", "an earlier measure")!r}, not {BAND_METRIC!r}; '
+                  'the panel is stale until this model is retrained')
         models_data.append((label, history))
     plot_spectral_bias_panel(models_data, outdir=outdir, filename=filename)
 
