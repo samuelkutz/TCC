@@ -1,58 +1,57 @@
 \chapter{CONCLUSION}
 \label{chap:conclusions}
 
-
-After an extensive set of tests, we can finally draw some general and specific conclusions. First, spectral bias is undeniably present in all architectures, as a general behavior of training dynamics. The data supervision helps approximate the low and mid spectral bands better than what physics-informed showed. On the other hand, physics-informed brought more stability on the time axis since it helps to mitigate the Gibbs artifact coming from Fourier transforms on non-periodic time. The sections below read that result family by family, and then set out the boundaries of the study and the work that should follow it.
+After an extensive set of tests, we can finally draw some general and specific conclusions. First, spectral bias shows up in every architecture tested here, growing during training much as Chapter~\ref{chap:math-bg} predicts (Figure~\ref{fig:spectral_bias}). Data supervision fits the low and mid frequency bands~\eqref{eq:m_bands} better than a pure physics loss does, in both the network and the operator architectures. The rest of this chapter reads that result method by method, then marks the limits of the study and the paths still open.
 
 % ===============================================================
 \section{Assessment of Each Method Family}
 \label{sec:c_verdict}
 
-The four architectures split into two families by how one trained network relates to the parameter axis, and reading them family by family also answers the questions posed in Chapter~\ref{chap:intro}.
+We classify the six implemented methods as NN-focused and NO-focused, following the distinction made in Section~\ref{sec:intro_goals}, and directly answer what Chapter~\ref{chap:intro} set out to ask.
 
-\paragraph{Neural Networks: MLP and PINN} Recall that this family of methods aims to learn the solution for only one parameter. The MLP (a ``pure data PINN'') shows spectral bias in its plain form, fitting spectra as training goes. The pure physics PINN contrasts with it in the sense that it does not fit well mid and high bands of the spectrum: PINNs do not seem to approximate wave profile tails, meaning the high frequency content. Thus, the combination data + physics seems to be the best, gathering both strengths, the physics-informed part of the loss working as a regularization term a priori of the solution.
+\paragraph{Neural Networks: MLP and PINN} These methods fit one Boussinesq parameter at a time. The MLP, trained on data alone, shows the spectral bias pattern the theory predicts. Figure~\ref{fig:sb_mlp} shows it fitting the low band fast and the high band slowly. 
 
-\paragraph{Neural Operators: FNO and PINO}
+The pure-physics PINN struggles the most. Without data to anchor it, the band error~\eqref{eq:m_band_err} barely moves in the mid and high bands over the whole run (Figure~\ref{fig:spectral_bias}), so the wave's fine structure, its high-frequency content, is the part it never really learns. 
 
-In this family, we have one architecture capable of showing how the solution looks at any model parameter close to what it saw in the dataset. Here we have similar results. The FNO, the pure data supervised architecture, simply learns to fit and, while still showing spectral bias, has its main weakness in the Gibbs phenomenon anomaly from taking Fourier transforms in the time axis. This introduces error shootouts at the temporal boundaries. Meanwhile, the pure physics PINO presents the same multiparameter solution, but shows the same behavior as the pure physics PINN, meaning they cannot approximate high frequency details of the solution or, in other words, their ripples. The best method is, again, the mix of data + physics, and here we can observe that the Gibbs anomaly in the FNO is suppressed in this supervised PINO, ultimately presenting this work's best architecture, which fits the data and respects the model's physics. Also, discretization invariance holds for the two architectures, with only one caveat: increasing resolution yields slightly lower quality results, but the architectures remain advantageous as surrogates.
+The PINN trained on both data and physics keeps the lowest time-resolved error $E(t_n)$~\eqref{eq:m_rel_time}, the plain MLP follows, and the pure-physics PINN trails with a much wider spread. Figure~\ref{fig:nn_comparison} puts them side by side for the same problem.
 
+Here, data, not the physics residual, is what pins the solution down. The residual works better as a regularizer on top of data than as a replacement for it, at least for the Boussinesq system~\eqref{eq:boussinesq} and the parameter range tested here.
 
-\paragraph{Spectral Bias Study}
+\paragraph{Neural Operators: FNO and PINO} An operator learns the whole parameter range at once, so it can predict at values close to the ones it trained on, not just the one it saw. 
 
-After we gathered, to the best of our knowledge, theoretical findings that explain or expose spectral bias, we condensed them in this work and designed the experiments to verify its plausibility. For all we can say, while the simple network struggled to learn the target, the kernel stayed close to its initial setting and thus our theory predicts the loss behavior well on each NTK kernel eigenvector direction (or mode, for our problem). The network size also shows us that, really, increasing the size of the MLP indeed helps the kernel to change less, allowing for the good estimates presented, such as loss evolution by mode and iteration a priori estimate. As long as the kernel does not drift (drifting is a good thing, it means the network is learning), our predictions are good.
+Figures~\ref{fig:ab_fno}--\ref{fig:ab_pino_physics} sweep the parameters for all three operators. The FNO fits the data well but still carries spectral bias, and its main weakness is the Gibbs artifact discussed in Section~\ref{subsubsec:fno_time}, since it treats time as periodic, error spikes appear near the edges of the time window. 
 
-The cost accounting of Table~\ref{tab:training} completes the comparison. A pointwise network is the cheaper object to train and the more expensive one to use, since a new parameter means a new training run, while an operator pays its training cost once and answers the rest of the sweep in forward passes. Both physics-informed variants cost more to train than their data-driven counterparts, since every iteration differentiates the network to form the residual.
+The pure-physics PINO repeats the pure-physics PINN's problem, missing the high-frequency ripples of the solution (Figure~\ref{fig:spectral_bias}). 
+
+The PINO trained on data and physics together does best across the parameter sweep, combining a close fit with the physics constraint.
+
+Figures~\ref{fig:res_fno}--\ref{fig:res_pino_physics} then query the operators off their training resolution. All three keep working as expected, so discretization invariance holds, though accuracy drops a little as resolution grows. Even with that drop, an operator remains a practical way to cover a range of parameters that would otherwise need a new network trained for each one.
+
+\paragraph{Spectral Bias MLP Study} Section~\ref{sec:m_minimal} runs the same test directly on the Spectral Bias MLP, and the same picture holds. 
+
+Figure~\ref{fig:minimal_fit} shows the network struggling to fit the target profile~\eqref{eq:m_minimal_target} at every width tested. As long as its Neural Tangent Kernel stays close to its value at initialization, the theory of Chapter~\ref{chap:math-bg} predicts the loss along each kernel eigendirection well, as seen in Figure~\ref{fig:theory_error}, and gives a good a priori estimate~\eqref{eq:iteration_bound_discrete} of how many iterations each frequency needs (Figure~\ref{fig:theory_iter}) for a given error.
 
 % ===============================================================
-\section{What This Study Cannot Claim}
+\section{What This Study Cannot Claim and Directions Forward}
 \label{sec:c_limits}
 
-Several boundaries fence in the results above, and they should be weighed before the conclusions are carried anywhere else.
+We have many options to branch out from the results above, and they should be weighed before the conclusions are carried anywhere else.
 
-Every experiment used one initial condition, the unit solitary profile of Table~\ref{tab:m_fixed}, and held the two coefficients equal. The operators therefore learned a one-parameter family and not the four-parameter Boussinesq family classified by \textcite{bona2002} and \textcite{martins2023}, so the generalization reported here is generalization along a single coordinate. Decoupling $\alpha$ from $\beta$, or varying the initial data, is a different potential challenge to be explored.
+Every experiment used one initial condition, the unit solitary profile of Table~\ref{tab:m_fixed}, and swept only the single value $\alpha=\beta$~\eqref{eq:param_grid}. The operators therefore learned a one-parameter restriction of the Boussinesq system~\eqref{eq:boussinesq} and not the four-parameter family classified by \textcite{bona2002} and \textcite{martins2023}. Decoupling $\alpha$ from $\beta$, or varying the initial data, is a different challenge left open and needs further investigation.
 
-The temporal advantage measured for the PINO is entangled with an implementation choice. Our operators transform along the time axis as well as the spatial one, and the terminal-time artifact of Section~\ref{sec:r_gibbs} follows from that assumption of temporal periodicity. An operator that marched in time, as \textcite{li2021} suggest, would not produce the artifact at all, so part of what the residual is credited with here is the repair of a defect the architecture introduced.
+The reference solution is itself a numerical solution, accurate to the order of the pseudospectral scheme it was solved with and not exact. This matters most at the high wavenumbers, where the reference carries the largest share of its own error, and Figures~\ref{fig:spec_mlp}--\ref{fig:spec_pino_nodata} show that this is also where every trained method is weakest. One possible approach is to design forcing terms in the PDE~\eqref{eq:boussinesq} that produce a known analytical solution, so the reference is exact and the error can be measured directly, building a fair comparison between ML methods and classical methods.
 
-Capacity and budget were fixed rather than tuned. Both operators keep $16$ Fourier modes per axis, every trained method ran modest $15{,}000$ Adam iterations at a single learning rate, and the whole pipeline ran from one seed on one GPU.
+The Spectral Bias MLP (Section~\ref{sec:m_minimal_setting}) has time fixed, the target is a single profile, training is plain gradient descent, and the kernel is small enough to eigendecompose at every checkpoint. All six methods compared in Chapter~\ref{chap:results} run under none of these simplifications, so the exact predictions of Figure~\ref{fig:theory} do not carry over to them directly. Only the general trend, low frequencies learned before high ones, does.
 
-The reference solution is itself a numerical solution, accurate to the order of the pseudospectral scheme on the grid it was solved on and not exact, which matters at the high wavenumbers, where it carries the largest share of its own error and where the trained methods are weakest.
+Mitigating this spectral bias is a natural next step, and the literature already offers many candidates such as adaptive weighting of the loss terms \parencite{wang2021understanding}, the Neural Tangent Kernel weighting that \textcite{wang2022ntk} derived for PINNs, and the second-order, spectrum-aware optimizers of \textcite{khodakarami2026}.
 
-The minimal experiment is a model of the mechanism and not a model of the trained methods. It fixes time, fits a single profile by plain gradient descent, and works with a kernel small enough to be eigendecomposed at every checkpoint. Not much of this analysis transfers easily to PINNs and NOs.
+\section{Final Considerations}
+\label{sec:final_consid}
 
-% ===============================================================
-\section{Considerations and Directions Forward}
-\label{sec:c_future}
+Spectral bias is a real behavior in these architectures, and someone willing to implement these architectures will need a workaround like the mitigations discussed or at least consider that the approximation cannot be fully trusted at high-frequency details.
 
-For directions: adaptive weighting of the loss terms \parencite{wang2021understanding}, the Neural Tangent Kernel weighting derived for PINNs by \textcite{wang2022ntk}, and the second-order and spectrum-aware optimizers of \textcite{khodakarami2026} are possible near-future steps to consider, evaluating possible mitigations for spectral bias.
+None of this argues for replacing classical numerical solvers with ML ones. Industrial fluid dynamics will keep relying on classical solvers, and the two go well together. Once trained, an operator answers a whole parameter sweep in one forward pass, at a fraction of what repeated solver calls would cost. The classical solver still supplies the reference data ML methods train on and check against, and it carries an abundant, mature theory and formalism with it. This is what is missing from ML methods: error bounds and convergence guarantees that come standard with a finite-difference or spectral scheme are not yet natural to this way of approximating solutions to PDEs. Of course, the field is still moving, with new mitigations for problems being developed every year, including for spectral bias.
 
-An operator that marches in time removes the temporal periodicity assumption by construction, which would isolate how much of the late-time steadiness of the PINO comes from the physics term itself. A related question is whether the residual keeps helping once the training data are made scarce, the regime the physics-informed formulation was proposed for and the one this study, with a reference solution available at every point of the grid, did not test. Maybe we could try some real problems with observations that include errors and whatnot.
+The comparison in this work, spectral bias, training cost, and generalization across one parameter, covers four architectures on one PDE. Other equations, other parameter families, and other architectures would need their own version of the same test.
 
-The decoupling of the nonlinearity from the dispersion, varying the initial data, and extending to the two-dimensional system would show whether the ordering found here survives a solution operator of higher dimension, and the analysis of \textcite{krishnapriyan2021characterizing} gives reason to expect the physics-informed losses to grow harder to optimize as that happens.
-
-We can also explore other architectures like DeepONet \parencite{lu2021deeponet} and hybrid schemes that hand the high-frequency residual back to a classical corrector, which would test whether the complementary role identified here can be built into a single solver.
-
-% ===============================================================
-
-At this time, we can accept spectral bias as a behavior we can choose to mitigate, and we recommend doing so, since the literature presents simple and effective ways. It should be taken into account and acknowledged, if the reader is aiming to implement these architectures. This also shows that ML methods do not ultimately come to take the place of numerical methods. Key Fluid Dynamics simulations in the industry will not stop using classical-based solvers for ML methods, as these should actually work together. In the end, a trained operator answers a parameter test sweep for parametric physical models in a single forward pass, for a fraction of what repeated solves would cost. Also, unlike classical methods, theoretical analyses for ML methods are much harder to come by and not yet fully consolidated.
-
-All of this considered, we finish this work noting that this is a novel field and most certainly the new era of Fluid Dynamics where ML models promise fast evaluation and new predictions. Of course this is not tied to only neural networks and neural operators, given the vastness of the field.
+All of this considered, we finish this work noting that this is a novel field with many open questions but great potential, as ML tends to gain more and more importance in the field of numerical solutions of PDEs and scientific computing. We hope this is a good entry point for someone willing to implement these architectures and test them on their own problems, and that the results here help them understand what to expect from each method.

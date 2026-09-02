@@ -27,11 +27,13 @@ from tools import set_seed
 from experiments.common import BAND_METRIC, resolve_device
 from experiments.dataset import run_dataset
 from experiments.evaluate import load_stage_metadata
-from experiments.plots.figures import plot_soliton_profile, plot_spectral_bias_panel
+from experiments.plots.figures import (
+    plot_nn_comparison_panel, plot_soliton_profile, plot_spectral_bias_panel,
+)
 from experiments.plots.fno import eval_fno, gif_fno
-from experiments.plots.mlp import eval_mlp, gif_mlp
+from experiments.plots.mlp import eval_mlp, gif_mlp, mlp_predictor
 from experiments.plots.ntk import plot_ntk
-from experiments.plots.pinn import eval_pinn, gif_pinn
+from experiments.plots.pinn import eval_pinn, gif_pinn, pinn_predictor
 from experiments.plots.pino import eval_pino, gif_pino
 from experiments.train.fno import train_fno
 from experiments.train.mlp import train_mlp
@@ -58,6 +60,34 @@ def _metadata_files(cfg):
         'pinn_no_data': cfg.metadata_file('pinn', 'pinn', 'pure_physics'),
         'ntk': cfg.metadata_file(os.path.join('mlp', 'ntk'), 'mlp_ntk'),
     }
+
+
+def plot_nn_comparison(cfg, meta):
+    """MLP vs.\ both PINN regimes at the trained parameter, resolution 256.
+
+    Mirrors the FNO/PINO comparison panels: one row per method, surface and
+    time-resolved error columns, a box plot of the three methods' spread.
+    """
+    device = resolve_device()
+    resolution = cfg.dataset_res * 2
+    predictors = [
+        ('MLP (pure data)', mlp_predictor(meta['mlp'], cfg.x_limit, cfg.t_limit, device)),
+        ('PINN (data and physics)',
+         pinn_predictor('data_and_physics', meta['pinn_data'], cfg.x_limit, cfg.t_limit, device)),
+        ('PINN (pure physics)',
+         pinn_predictor('pure_physics', meta['pinn_no_data'], cfg.x_limit, cfg.t_limit, device)),
+    ]
+    method_names, true_list, pred_list = [], [], []
+    x = t = None
+    for name, predict in predictors:
+        x, t, eta_true, eta_pred = predict(cfg.median_param, cfg.x_limit, cfg.t_limit, resolution)
+        method_names.append(name)
+        true_list.append(eta_true)
+        pred_list.append(eta_pred)
+    plot_nn_comparison_panel(
+        x, t, true_list, pred_list, method_names,
+        outdir=cfg.img_subdir(SCIML, 'comparison'), filename='nn_comparison_panel.png',
+    )
 
 
 def plot_spectral_bias_evolution(ordered_metadata, outdir,
@@ -137,6 +167,9 @@ def plot_all(cfg, meta):
     _stage('plotting pinn (pure physics)')
     eval_pinn('pure_physics', meta['pinn_no_data'],
               output_dir=cfg.img_subdir(SCIML, 'nn', 'pure_physics'), **cfg.eval_kwargs)
+
+    _stage('nn comparison panel')
+    plot_nn_comparison(cfg, meta)
 
     _stage('plotting spectral-bias probe (NTK)')
     plot_ntk(meta['ntk'], **cfg.ntk_plot_kwargs)

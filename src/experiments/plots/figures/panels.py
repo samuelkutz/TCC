@@ -147,9 +147,9 @@ def _emit_surface_panel(stem, outdir, x_list, t_list, eta_pred_list, time_rel_no
         ))
         # tick labels hidden: in perspective they pile up and bury the surface
         fig.update_layout(scene=dict(
-            xaxis=dict(title='Time (t)', **scene_axis),
-            yaxis=dict(title='Space (x)', **scene_axis),
-            zaxis=dict(title='η', range=z_lim, **scene_axis),
+            xaxis=dict(title='t', **scene_axis),
+            yaxis=dict(title='x', **scene_axis),
+            zaxis=dict(title='η(x,t)', range=z_lim, **scene_axis),
             aspectmode='manual', aspectratio=_SURFACE_ASPECTRATIO, camera=_SURFACE_CAMERA,
             domain=dict(x=[0.0, 1.0], y=[0.0, 1.0]),
         ))
@@ -167,7 +167,7 @@ def _emit_surface_panel(stem, outdir, x_list, t_list, eta_pred_list, time_rel_no
             mode='lines', line=dict(color=THESIS_ERROR_COLOR, width=1.8), showlegend=False,
         ))
         fig.update_xaxes(title_text='Time (t)')
-        fig.update_yaxes(title_text='Relative error')
+        fig.update_yaxes(title_text=r'$\Huge E(t_n)$')
         save_thesis_fig(
             fig, os.path.join(outdir, f'{stem}_relerr_{i}.png'),
             _LINE_W, _LINE_H, _LINE_FRAC,
@@ -183,7 +183,7 @@ def _emit_surface_panel(stem, outdir, x_list, t_list, eta_pred_list, time_rel_no
             line_color='#e6550d', showlegend=False, width=0.2,
         ))
     fig.update_xaxes(title_text=box_xaxis_title)
-    fig.update_yaxes(title_text='Relative error')
+    fig.update_yaxes(title_text=r'$\Huge E(t_n)$')
     save_thesis_fig(
         fig, os.path.join(outdir, f'{stem}_box.png'),
         _BOX_W, _BOX_H, _BOX_FRAC,
@@ -250,6 +250,30 @@ def plot_resolution_panel(x_list, t_list, eta_true_list, eta_pred_list, resoluti
     )
 
 
+def plot_nn_comparison_panel(x, t, eta_true_list, eta_pred_list, method_names, outdir, filename):
+    """Surface and error-vs-time tile per pointwise method, plus a box plot.
+
+    MLP and PINN fit a single alpha = beta, so all three methods share one
+    spatial/temporal grid; the rows compare architectures instead of a sweep.
+    """
+    ensure_outdir(outdir)
+    stem = panel_stem(filename)
+
+    x = np.asarray(x, dtype=float)
+    t = np.asarray(t, dtype=float)
+    n = len(method_names)
+
+    time_rel_norms = [time_relative_error_norm(a, b)
+                      for a, b in zip(eta_true_list, eta_pred_list)]
+    _emit_surface_panel(
+        stem, outdir,
+        x_list=[x] * n, t_list=[t] * n,
+        eta_pred_list=eta_pred_list, time_rel_norms=time_rel_norms,
+        box_names=list(method_names),
+        box_fillcolor='#fdae6b', box_xaxis_title='Method',
+    )
+
+
 _PAIR_W, _PAIR_H, _PAIR_FRAC = 820, 470, 0.48
 _MEAN_W, _MEAN_H, _MEAN_FRAC = 1200, 430, 0.68
 
@@ -297,6 +321,7 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
     annot_px = thesis_px_sizes(_PAIR_W, _PAIR_FRAC)['annot']
     kxl = kx.tolist()
     for i, idx in enumerate(indices, start=1):
+        t_val = float(t[idx])
         # ---- reference vs predicted spectrum ----
         fig = go.Figure()
         fig.add_trace(go.Scatter(
@@ -311,12 +336,12 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
             line=dict(color=THESIS_PREDICTION_COLOR, width=1.8, dash='dash'),
             marker=dict(size=3, symbol='diamond'),
         ))
-        fig.update_xaxes(title_text='Spectral index n')
+        fig.update_xaxes(title_text=r'$\Huge k$')
         # log amplitude: the reference spectrum spans several decades between the
         # crest and the tail, and it is in the tail that the fit is decided. On a
         # linear axis every mode past the first few sits on the zero line and the
         # panel shows nothing the error panel beside it does not already show.
-        fig.update_yaxes(title_text='Amplitude', type='log')
+        fig.update_yaxes(title_text=rf'$\Huge |\hat\eta(k,t={t_val:.0f})|$', type='log')
         save_thesis_fig(
             fig, os.path.join(outdir, f'{stem}_spectrum_{i}.png'),
             _PAIR_W, _PAIR_H, _PAIR_FRAC,
@@ -331,11 +356,11 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
             line=dict(color=THESIS_ERROR_COLOR, width=1.8),
             marker=dict(size=3, symbol='circle'),
         ))
-        fig.update_xaxes(title_text='Spectral index n')
+        fig.update_xaxes(title_text=r'$\Huge k$')
         # same decades as the spectrum panel beside it, so the two are read
         # together: a mode is reproduced when its error lies well under the
         # amplitude the reference carries there, and lost when the two meet
-        fig.update_yaxes(title_text='Absolute error', type='log')
+        fig.update_yaxes(title_text=rf'$\Huge E_{{\text{{spec}}}}(k,t={t_val:.0f})$', type='log')
         save_thesis_fig(
             fig, os.path.join(outdir, f'{stem}_relerr_{i}.png'),
             _PAIR_W, _PAIR_H, _PAIR_FRAC,
@@ -358,7 +383,7 @@ def plot_spectral_panel(x, t, eta_true, eta_pred, outdir, filename, n_times=3):
         line=dict(color='#c28b00', width=2.0), marker=dict(size=5),
     ))
     fig.update_xaxes(title_text='Time (t)')
-    fig.update_yaxes(title_text='Mean absolute error', type='log')
+    fig.update_yaxes(title_text=r'$\Huge \widetilde{E}_{\text{spec}}(t_n)$', type='log')
     save_thesis_fig(
         fig, os.path.join(outdir, f'{stem}_mean.png'),
         _MEAN_W, _MEAN_H, _MEAN_FRAC,
@@ -398,7 +423,7 @@ def plot_spectral_bias_panel(models_data, outdir, filename='spectral_bias_evolut
             fig, os.path.join(outdir, f'{stem}_{slugify(label)}.png'),
             BAND_W, BAND_H, BAND_FRAC,
             extra_layout=dict(
-                xaxis_title='Epoch', yaxis_title='Abs. spectral error', yaxis_type='log',
+                xaxis_title='Epoch', yaxis_title=r'$\Huge E_{\text{band}}(B)$', yaxis_type='log',
                 margin=dict(t=40, b=62, l=86, r=20), showlegend=True,
                 legend=THESIS_LEGEND_ABOVE,
             ),

@@ -102,15 +102,15 @@ This work implements and evaluates Scientific Machine Learning methods for the o
 \phantomsection
 \addcontentsline{toc}{chapter}{ACKNOWLEDGEMENTS}
 
-First, I need to express my deepest gratitude for the professors at Federal University of Paraná prof. Roberto Ribeiro and prof. Thiago Quinelato. In the fifth semester, they revitalized my love for mathematics after a burnout in the fourth semester. I did not like numerical analysis, nor anything relating to optimization; suddenly the career I was chasing escaped me and nothing made sense. They brought it back, through their pedagogical excellence and their patience in explaining each concept. I am grateful that they can now grade this work that finishes one of the most important moments of my life. 
+First, I need to express my deepest gratitude to the professors at Federal University of Paraná, Prof. Roberto Ribeiro and Prof. Thiago Quinelato. In the fifth semester, they revitalized my love for mathematics after a burnout in the fourth semester. I did not like numerical analysis, nor anything relating to optimization; suddenly the career I was chasing escaped me and nothing made sense. They brought it back, through their pedagogical excellence and their patience in explaining each concept. I am grateful that they can now grade this work that finishes one of the most important moments of my life. 
 
-I need to also express my love and gratitude to my mother, Angela Kutz. To all of her 3 sons, she knew that the only education could improve things. Indeed, now I understand and I look forward to return all the effort and faith she put in me.
+I need to also express my love and gratitude to my mother, Angela Kutz. To all of her three sons, she knew that the only education could improve things. Indeed, now I understand and I look forward to returning all the effort and faith she put in me.
 
 I chose to study applied mathematics very early in my life, around sixteen years old. I did not know a thing about it, just thought the name was cool to show around. Now, I know this is what I love. My biggest hobby. I cannot stay far from mathematics anymore and I know for a fact that for the rest of my life I will be trying to learn new mathematical content every day. It now brings food to my table, and it will continue to be a bedrock skill I developed that makes me survive in this world.
 
-Also, this course brought to me some of my best friends that I will most certainly take to life. To all my dear friends, thank you.
+Also, this course brought me some of my best friends that I will most certainly take to life. To all my dear friends, thank you.
 
-Last, but not least, I would like to thank P4E (Pró-Reitoria de Pertencimento e Políticas de Permanência Estudantil), which enabled me to have the financial support to begin this course. Without it, I would not be here. I had nothing, Federal University of Paraná (UFPR) showed me a path I could pursue. Also, I thank the CNPq for financial aid in my undergraduate research, the LabFluid laboratory for providing the best learning environment that I could have, with daily debates and lessons, and UFPR for their support, amazing professors, and for providing democratized knowledge for us, the wicked.
+Last, but not least, I would like to thank P4E (Pró-Reitoria de Pertencimento e Políticas de Permanência Estudantil), which enabled me to have the financial support to begin this course. Without it, I would not be here. I had nothing. Federal University of Paraná (UFPR) showed me a path I could pursue. Also, I thank the CNPq for financial aid in my undergraduate research, the LabFluid laboratory for providing the best learning environment that I could have, with daily debates and lessons, and UFPR for their support, amazing professors, and for providing democratized knowledge for us, the wicked.
 
 This work was supported by CNPq and developed with the collaboration of the LabFluid research group at UFPR.
 
@@ -122,7 +122,7 @@ This work was supported by CNPq and developed with the collaboration of the LabF
 \end{center}
 
 \pagebreak
-
+  
 % --- EPIGRAFE ---
 \thispagestyle{empty}
 \nocite{carroll2012particle}
@@ -132,7 +132,7 @@ This work was supported by CNPq and developed with the collaboration of the LabF
     \begin{spacing}{1.0}
         \raggedleft\small
         \textit{``We are part of the universe that has developed a
-        remarkable ability: We can hold an image of the world in our
+        remarkable ability: we can hold an image of the world in our
         minds. We are matter contemplating itself.''}
 
         \vspace{0.6cm}
@@ -187,8 +187,10 @@ This work was supported by CNPq and developed with the collaboration of the LabF
     UDE   & Universal Differential Equation \\[2pt]
     SINDy & Sparse Identification of Nonlinear Dynamics \\[2pt]
     ANN   & Artificial Neural Network \\[2pt]
+    NN    & Neural Network \\[2pt]
     MLP   & Multilayer Perceptron \\[2pt]
     PINN  & Physics-Informed Neural Network \\[2pt]
+    NO    & Neural Operator \\[2pt]
     FNO   & Fourier Neural Operator \\[2pt]
     PINO  & Physics-Informed Neural Operator \\[2pt]
     NTK   & Neural Tangent Kernel \\[2pt]
@@ -217,7 +219,7 @@ This work was supported by CNPq and developed with the collaboration of the LabF
 \begin{tabular}{@{}p{3.4cm}p{12cm}@{}}
     $x$              & spatial coordinate \\[2pt]
     $t$              & temporal coordinate \\[2pt]
-    $u(x,t)$         & PDE solution (generic) \\[2pt]
+    $u(x,t)$         & PDE solution (generic placeholder; not the Boussinesq velocity field below) \\[2pt]
     $\mathcal{D}$    & differential operator of the PDE \\[2pt]
     $\mathcal{L}$    & linear differential operator; also a loss functional \\[2pt]
     $\nabla$         & gradient (nabla) operator \\[2pt]
@@ -253,9 +255,9 @@ This work was supported by CNPq and developed with the collaboration of the LabF
 \noindent\textit{Error metrics}\\[2pt]
 \noindent
 \begin{tabular}{@{}p{3.4cm}p{12cm}@{}}
-    $\mathbb{E}(t_n)$ & time-resolved relative $L^2$ error at time level $t_n$ \\[2pt]
-    $\mathbb{E}_{\mathrm{spec}}(k,t_n)$ & absolute spectral error at mode $k$ and time $t_n$ \\[2pt]
-    $\mathbb{E}_{\mathrm{band}}(B)$ & band-averaged absolute spectral error over band $B$ \\
+    $E(t_n)$ & time-resolved relative $L^2$ error at time level $t_n$ \\[2pt]
+    $E_{\mathrm{spec}}(k,t_n)$ & absolute spectral error at mode $k$ and time $t_n$ \\[2pt]
+    $E_{\mathrm{band}}(B)$ & band-averaged absolute spectral error over band $B$ \\
 \end{tabular}
 
 \vspace{0.5cm}

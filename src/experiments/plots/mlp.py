@@ -25,6 +25,17 @@ def _load(model_metadata_file, device):
     return metadata, model
 
 
+def mlp_predictor(model_metadata_file, x_limit, t_limit, device=None):
+    """Predictor for the trained MLP, for panels built outside `eval_mlp`."""
+    device = device or resolve_device()
+    _, model = _load(model_metadata_file, device)
+
+    def predict_eta_grid(x_query, t_query):
+        return mlp_eta_grid(model, x_query, t_query, x_limit, t_limit)
+
+    return pointwise_predictor(predict_eta_grid, device)
+
+
 def eval_mlp(model_metadata_file, x_limit, t_limit, eval_params, resolutions,
              spectral_res, output_dir=None):
     device = resolve_device()

@@ -134,9 +134,19 @@ def _tidy_ticks(fig):
         if axis.type == 'log':
             # one label per decade only while the axis is short. The kernel
             # spectrum runs fifteen decades, and a label on each of them overlaps
-            # into an unreadable stack, so the step widens with the span.
+            # into an unreadable stack, so the step widens with the span. Below
+            # one decade, whole-decade ticks can miss the visible range entirely
+            # (a series confined to, say, 2e-4..6e-4 crosses no power of ten),
+            # leaving the axis blank, so a sub-decade span gets a fractional
+            # step instead, sized to land a handful of ticks inside it.
             span = _axis_log_span(axis, spans.get(kind))
-            axis.dtick = max(1, int(np.ceil(span / 6.0))) if span else 1
+            if span and span < 1:
+                # doubling steps (log10(2)) rather than a fraction of the span:
+                # finer fractional steps round to the same leading digit at
+                # this label precision and print as duplicate ticks
+                axis.dtick = np.log10(2)
+            else:
+                axis.dtick = max(1, int(np.ceil(span / 6.0))) if span else 1
             axis.exponentformat = 'power'
         else:
             axis.exponentformat = 'none'

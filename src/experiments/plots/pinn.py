@@ -40,6 +40,13 @@ def _load(model_metadata_file, x_limit, t_limit, device):
     return metadata, model
 
 
+def pinn_predictor(mode, model_metadata_file, x_limit, t_limit, device=None):
+    """Predictor for a trained PINN, for panels built outside `eval_pinn`."""
+    device = device or resolve_device()
+    _, model = _load(model_metadata_file, x_limit, t_limit, device)
+    return pointwise_predictor(model.predict_eta_grid, device)
+
+
 def eval_pinn(mode, model_metadata_file, x_limit, t_limit, eval_params, resolutions,
               spectral_res, output_dir=None):
     label = _label(mode)
