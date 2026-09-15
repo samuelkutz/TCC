@@ -1,0 +1,36 @@
+\begin{document}
+
+\maketitle
+
+\sepframe[title={Sumário}]
+
+\include{sections/01-introducao}
+\include{sections/02-revisao-literatura}
+\include{sections/03-fundamentacao}
+\include{sections/04-metodologia}
+\include{sections/05-resultados}
+\include{sections/06-conclusao}
+
+\appendix
+
+\begin{frame}[allowframebreaks]{Referências}
+  \scriptsize
+  \setlength{\emergencystretch}{3em}
+  \printbibliography[heading=none]
+\end{frame}
+
+\thanksframe[{\includegraphics[width=2.9cm]{LabFluidLogoh.png}}]{Obrigado pela atenção!}
+
+% O backup tem citações próprias: uma refsection separa a lista dele da lista
+% principal, que fica só com o que é citado na apresentação.
+\begin{refsection}
+  \input{sections/07-backup}
+
+  \begin{frame}[allowframebreaks]{Referências do backup}
+    \scriptsize
+    \setlength{\emergencystretch}{3em}
+    \printbibliography[heading=none]
+  \end{frame}
+\end{refsection}
+
+\end{document}

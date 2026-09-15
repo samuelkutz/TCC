@@ -1,0 +1,240 @@
+% =====================================================================
+%  Slides de backup -- fora da contagem de tempo da apresentação
+% =====================================================================
+
+\begin{frame}{Slides de backup}
+  \framesection{Conteúdo}
+  \begin{enumerate}
+    \item Linha do tempo das redes neurais
+    \item Decaimento do erro por autovetor do NTK
+    \item As três bandas de frequência
+    \item Normalização e onde cada método a aplica
+    \item Painéis de resolução do PINO
+    \item Método pseudoespectral
+  \end{enumerate}
+\end{frame}
+
+% ---------------------------------------------------------------- B0
+\begin{frame}{Redes neurais}
+  Toda arquitetura estudada aqui repousa sobre os mesmos blocos básicos.
+  \vspace{2pt}
+  \begin{center}
+    \begin{tikzpicture}[scale=1.0]
+      \draw[-{Stealth}, thick] (0,0) -- (12.7,0);
+      \foreach \x/\ano/\lab in {%
+        0.9/1943/{neurônio conceitual},
+        3.08/1954/{nome\\ ``redes neurais''},
+        5.26/1958/{perceptron},
+        7.44/1986/{retropropagação},
+        9.62/1989/{aproximação universal},
+        11.8/2015/{aprendizado profundo}}
+      {
+        \draw[thick] (\x,0.16) -- (\x,-0.16);
+        \node[below=3pt, font=\footnotesize\bfseries] at (\x,-0.16) {\ano};
+        \node[above=4pt, font=\scriptsize, text width=2.05cm, align=center]
+          at (\x,0.16) {\lab};
+      }
+    \end{tikzpicture}
+  \end{center}
+  \vspace{2pt}
+  \begin{itemize}
+    \item \textcite{mcculloch1943} e \textcite{rosenblatt1958}: o neurônio matemático e o
+          perceptron; o nome ``redes neurais'' já circula nos anos 1950
+          \parencite{minsky1954};
+    \item Retropropagação \parencite{rumelhart1986}: múltiplas camadas por gradiente;
+    \item Aproximação universal \parencite{cybenko1989, hornik1989}: um Multilayer
+          Perceptron (MLP) largo o bastante aproxima qualquer função contínua em
+          um compacto;
+    \item ``Profundo'' \parencite{lecun2015deep}: muitas camadas ocultas, mais
+          capacidade representacional, popularização de ``Redes Neurais Profundas'' (Deep Neural Networks).
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- B2
+\begin{frame}{Decaimento do erro por autovetor do NTK}
+  Sob treinamento preguiçoso, $K(\theta(\tau)) \approx K_0$ e a dinâmica do erro
+  vira $de/d\tau = -K_0\,e$, com $e(0) = e_0$.
+  \begin{itemize}
+    \item $K_0$ é simétrica positiva semidefinida, logo o teorema espectral
+          \parencite{strang2006, golub2013} dá $K_0 = V\Lambda V^{T}$, $V$ ortogonal;
+    \item A mudança $c(\tau) = V^{T} e(\tau)$ leva a $dc/d\tau = -\Lambda c$;
+    \item Com $\Lambda$ diagonal, o sistema desacopla em $dc_k/d\tau = -\lambda_k c_k$,
+          de solução $c_k(\tau) = c_k(0)e^{-\lambda_k\tau}$;
+    \item Voltando por $e(\tau) = Vc(\tau)$ e $c_k(0) = v_k^{T}e_0$:
+  \end{itemize}
+  \begin{equation*}
+    e(\tau) = \sum_{k=1}^{N} \bigl(v_k^{T} e_0\bigr)\,e^{-\lambda_k\tau}\,v_k ,
+    \qquad
+    e^{(n)} = \sum_{k=1}^{N} \bigl(v_k^{T} e_0\bigr)\,(1-\mu\lambda_k)^{n}\,v_k .
+  \end{equation*}
+  \begin{itemize}
+    \item A segunda forma é a contraparte por Euler explícito da primeira: um passo
+          de descenso do gradiente é um passo de Euler sobre o erro.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- B3
+\begin{frame}{As três bandas de frequência}
+  Com $N_k = \lfloor N_x/2 \rfloor + 1$ modos retidos, $q_1 = \lfloor N_k/4 \rfloor$
+  e $q_2 = \lfloor N_k/2 \rfloor$:
+  \begin{equation*}
+    B_{\text{baixa}} = \{\, k : 0 \le k < q_1 \,\}, \quad
+    B_{\text{média}} = \{\, k : q_1 \le k < q_2 \,\}, \quad
+    B_{\text{alta}}  = \{\, k : q_2 \le k < N_k \,\}.
+  \end{equation*}
+  \begin{itemize}
+    \item Um quarto do intervalo para cada uma das duas primeiras bandas, metade
+          superior para a última;
+    \item O erro por banda faz duas médias: sobre os $N_t$ níveis de tempo, depois
+          sobre os modos da banda;
+    \item A redução alternativa inverte os eixos e colapsa o espectro numa curva
+          contra $t$:
+          $\widetilde{E}_{\text{spec}}(t_n) = \frac{1}{N_k}\sum_{k=0}^{N_k-1} E_{\text{spec}}(k,t_n)$;
+    \item As curvas por banda são registradas a cada $500$ iterações, em
+          $\alpha = \beta = 3{,}21$: métodos pontuais contra a própria solução de
+          treino, operadores contra a amostra mais próxima.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- B4
+\begin{frame}{Normalização e onde cada método a aplica}
+  Uma regra única leva toda entrada da rede a $[-1,1]$,
+  \begin{equation*}
+    \tilde f = \frac{2\,(f - f_{\min})}{f_{\max} - f_{\min}} - 1,
+    \qquad
+    f = f_{\min} + \tfrac{1}{2}\,(\tilde f + 1)\,(f_{\max} - f_{\min}),
+  \end{equation*}
+  a segunda sendo a inversa exata da primeira.
+  \begin{itemize}
+    \item \textbf{MLP.} Aplica às duas coordenadas; a saída fica em unidades físicas;
+    \item \textbf{PINN.} O mesmo, dentro da passagem direta; a diferenciação
+          automática carrega a regra da cadeia pelo reescalonamento, e o que se impõe
+          é o resíduo do sistema original;
+    \item \textbf{FNO e PINO.} Aplicam aos quatro canais de entrada e aos dois de
+          saída, mais dois canais de coordenada: a camada de elevação lê seis canais;
+    \item \textbf{Unidades de cada termo.} Predição e alvo são comparados
+          normalizados; o PINO devolve os campos a unidades físicas para resíduo e
+          condição inicial.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- B5
+\begin{frame}{Painéis de resolução do PINO}
+  Os dois regimes do PINO fora da grade de treino em $\alpha = \beta = 3{,}21$, sem
+  retreino.
+  \begin{columns}[T]
+    \column{0.24\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_surface_1.png}\\
+      {\scriptsize PINO dados, res.\ $128$}
+    \column{0.24\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_surface_3.png}\\
+      {\scriptsize PINO dados, res.\ $512$}
+    \column{0.24\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_resolution_panel_surface_1.png}\\
+      {\scriptsize PINO física, res.\ $128$}
+    \column{0.24\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_resolution_panel_surface_3.png}\\
+      {\scriptsize PINO física, res.\ $512$}
+  \end{columns}
+  \vspace{4pt}
+  \begin{columns}[T]
+    \column{0.44\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_relerr_2.png}\\
+      {\scriptsize PINO (dados e física), erro relativo, res.\ $256$}
+    \column{0.44\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_resolution_panel_relerr_2.png}\\
+      {\scriptsize PINO (física pura), erro relativo, res.\ $256$}
+  \end{columns}
+\end{frame}
+
+% ---------------------------------------------------------------- 11
+\begin{frame}{Transformada discreta de Fourier}
+  O domínio $[-L,L]$ é discretizado em $N_x$ pontos equidistantes $x_j = -L + j\,\Delta x$. A transformada discreta de Fourier (DFT) e sua
+  inversa são \parencite{trefethen2000}
+  \begin{equation*}
+    \hat{f}(k) = \sum_{j=0}^{N_x-1} f(x_j)\, e^{-2\pi i k j / N_x},
+    \qquad
+    f(x_j) = \frac{1}{N_x} \sum_{k} \hat{f}(k)\, e^{2\pi i k j / N_x}.
+  \end{equation*}
+  Com o número de onda $\xi_k := \pi k / L$, a derivada vira multiplicação:
+  \begin{equation*}
+    \widehat{(f_x)}(k) = i\,\xi_k\,\hat{f}(k),
+    \qquad
+    \widehat{(f_{xx})}(k) = -\xi_k^2\,\hat{f}(k).
+  \end{equation*}
+  \begin{itemize}[<+->]
+    \item Cálculo de derivadas muito mais eficiente e confiável;
+    \item Cada DFT custa $O(N_x \log N_x)$ pela transformada rápida de Fourier (FFT)
+          \parencite{cooley1965}.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 12a
+\begin{frame}{Transformadas do sistema de Boussinesq}
+  Aplicamos a DFT a cada equação, usando $\widehat{(f_x)} = i\,\xi_k\,\hat{f}$, temos
+  $\widehat{(u_{xxt})} = -\xi_k^2\,\hat{u}_t$ e também um dos termos não lineares pode ser escrito como $u u_x = \tfrac{1}{2}(u^2)_x$ \parencite{martins2023}:
+  \begin{alignat*}{2}
+    \eta_t + u_x + \alpha\,(\eta u)_x &= 0
+      &\quad\longrightarrow\quad&
+    \hat{\eta}_t + i\,\xi_k\,\hat{u} + \alpha\,i\,\xi_k\,\widehat{(\eta u)} = 0, \\[6pt]
+    u_t - \tfrac{\beta}{3}\,u_{xxt} + \eta_x + \tfrac{\alpha}{2}\,(u^2)_x &= 0
+      &\quad\longrightarrow\quad&
+    \hat{u}_t + \tfrac{\beta}{3}\,\xi_k^2\,\hat{u}_t + i\,\xi_k\,\hat{\eta}
+      + \alpha\,i\,\xi_k\,\widehat{\left(\tfrac{1}{2}u^2\right)} = 0.
+  \end{alignat*}
+  \uncover<2->{%
+  Na segunda equação, agrupamos os termos em $\hat{u}_t$:
+  \begin{equation*}
+    \Bigl(1 + \tfrac{\beta\,\xi_k^2}{3}\Bigr)\,\hat{u}_t
+      = -i\,\xi_k\,\hat{\eta} - \alpha\,i\,\xi_k\,\widehat{\left(\tfrac{1}{2}u^2\right)} .
+  \end{equation*}}%
+  \uncover<3->{%
+  Isolar $\hat{u}_t$ vira uma divisão por modo; a primeira equação já está resolvida
+  para $\hat{\eta}_t$.}
+\end{frame}
+
+% ---------------------------------------------------------------- 12
+\begin{frame}{Formulação espectral do sistema}
+  Sob a DFT, o sistema de Boussinesq vira, para cada número de onda $k$, uma Equação Diferencial Ordinária (EDO) em $t$ \parencite{martins2023}:
+  \begin{equation*}
+    \begin{cases}
+      \hat{\eta}_t(k,t) = -i\,\xi_k\,\hat{u}(k,t) - \alpha\,i\,\xi_k\,\widehat{(\eta u)}(k,t), \\[10pt]
+      \hat{u}_t(k,t) = \dfrac{-i\,\xi_k\,\hat{\eta}(k,t) - \alpha\,i\,\xi_k\,\widehat{\left(\tfrac{1}{2}u^2\right)}(k,t)}
+                            {1 + \dfrac{\beta\,\xi_k^2}{3}} .
+    \end{cases}
+  \end{equation*}
+  Tomando $\hat{Y}(k,t) = (\hat\eta, \hat u)$, o problema toma a forma
+  $\hat{Y}_t = F(\hat{Y})$.
+  \vspace{6pt}
+
+  Assim, chegamos a um sistema de EDOs para cada índice de frequência $k$.
+  
+  Com a discretização em $N_x$ pontos, são $N_x$ sistemas de EDOs a serem evoluídos no
+  tempo.
+\end{frame}
+
+% ---------------------------------------------------------------- 13
+\begin{frame}{Evolução temporal e solução de referência}
+  Para evoluir $\hat{Y}_t = F(\hat{Y})$ no tempo, usamos Runge--Kutta de quarta ordem
+  \parencite{suli2003, burden2011}:
+  \begin{align*}
+    \kappa_1 &= F(\hat{Y}_n), & \kappa_2 &= F\!\left(\hat{Y}_n + \tfrac{\Delta t}{2}\,\kappa_1\right), \\
+    \kappa_3 &= F\!\left(\hat{Y}_n + \tfrac{\Delta t}{2}\,\kappa_2\right), & \kappa_4 &= F\!\left(\hat{Y}_n + \Delta t\,\kappa_3\right),
+  \end{align*}
+  \begin{equation*}
+    \hat{Y}_{n+1} = \hat{Y}_n + \frac{\Delta t}{6}\,(\kappa_1 + 2\kappa_2 + 2\kappa_3 + \kappa_4).
+  \end{equation*}
+  \begin{itemize}[<+->]
+    \item Cada estágio volta ao espaço físico para os produtos não lineares e
+          retorna ao de Fourier para as derivadas;
+    \item Acurácia espectral no espaço e quarta ordem no tempo: referência de alta
+          acurácia para todos os métodos treinados
+          \parencite{trefethen2000, steinmoeller2012}.
+  \end{itemize}
+\end{frame}

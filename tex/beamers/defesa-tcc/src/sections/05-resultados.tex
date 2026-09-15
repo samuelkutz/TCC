@@ -1,0 +1,308 @@
+\section{Resultados}
+
+% ---------------------------------------------------------------- 26
+\begin{frame}{Custo de treinamento}
+  Primeiro, vamos ver o quanto cada método custa para treinar.
+  \vspace{4pt}
+  \begin{center}
+    \begin{tabular}{@{}llrrr@{}}
+      \toprule
+      \textbf{Método} & \textbf{Regime} & \textbf{Parâmetros} & \textbf{Tempo de treino (s)} & \textbf{Perda final} \\
+      \midrule
+      MLP  & dados puros      & $198.401$   & $151{,}9$  & $4{,}3 \times 10^{-5}$ \\
+      PINN & dados e física   & $198.658$   & $898{,}9$  & $7{,}1 \times 10^{-5}$ \\
+      PINN & física pura      & $198.658$   & $868{,}4$  & $4{,}6 \times 10^{-5}$ \\
+      FNO  & dados puros      & $2.106.146$ & $1177{,}8$ & $4{,}8 \times 10^{-7}$ \\
+      PINO & dados e física   & $2.106.146$ & $5459{,}4$ & $5{,}2 \times 10^{-5}$ \\
+      PINO & física pura      & $2.106.146$ & $4441{,}2$ & $4{,}0 \times 10^{-5}$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{2pt}
+  \begin{information}[Observação]
+    Cada loss é uma escala diferente para um método diferente, não pode ser usado como comparativo.
+  \end{information}
+\end{frame}
+
+% ---------------------------------------------------------------- 27
+\begin{frame}{Redes Neurais}
+  Treinados em resolução $128$ para $\alpha = \beta = 3{,}21$, avaliados em $256$.
+  \begin{columns}[T]
+    \column{0.30\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/nn_comparison_panel_surface_1.png}\\
+      {\scriptsize MLP (dados puros)}
+    \column{0.30\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/nn_comparison_panel_surface_2.png}\\
+      {\scriptsize PINN (dados e física)}
+    \column{0.30\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/comparison/nn_comparison_panel_surface_3.png}\\
+      {\scriptsize PINN (física pura)}
+  \end{columns}
+  \vspace{2pt}
+  \begin{center}
+    \includegraphics[width=0.46\textwidth]{boussinesq_sciml/comparison/nn_comparison_panel_box.png}
+  \end{center}
+\end{frame}
+
+% ---------------------------------------------------------------- 28
+\begin{frame}{FNO: variação dos parâmetros da EDP}
+  O FNO treinado só em dados, em três valores de $\alpha = \beta$ na resolução
+  $256$.
+  \begin{columns}[T]
+    \column{0.31\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_surface_1.png}\\
+      {\scriptsize $\alpha = \beta = 0{,}1$}
+    \column{0.31\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_surface_2.png}\\
+      {\scriptsize $\alpha = \beta = 3{,}21$}
+    \column{0.31\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_surface_3.png}\\
+      {\scriptsize $\alpha = \beta = 4{,}2$}
+  \end{columns}
+  \vspace{2pt}
+  \begin{center}
+    \includegraphics[width=0.50\textwidth]{boussinesq_sciml/no/pure_data/fno_model2_alpha_beta_panel_box.png}
+  \end{center}
+\end{frame}
+
+% ---------------------------------------------------------------- 29
+\begin{frame}{PINOs: variação dos parâmetros da EDP}
+  Os dois regimes do PINO na mesma varredura e resolução.
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \centering
+      {\scriptsize PINO (dados e física), campo em $\alpha = \beta = 3{,}21$}\\
+      \includegraphics[width=0.72\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_surface_2.png}\\[2pt]
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_alpha_beta_panel_box.png}
+    \column{0.48\textwidth}
+      \centering
+      {\scriptsize PINO (física pura), campo em $\alpha = \beta = 3{,}21$}\\
+      \includegraphics[width=0.72\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_alpha_beta_panel_surface_2.png}\\[2pt]
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_alpha_beta_panel_box.png}
+  \end{columns}
+\end{frame}
+
+% ---------------------------------------------------------------- 30
+\begin{frame}{FNO e PINOs: variação de resolução}
+  Consulta fora da grade de treino, sem retreino, em $\alpha = \beta = 3{,}21$.
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \centering
+      {\scriptsize FNO (dados puros), resolução $512$}\\
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_resolution_panel_surface_3.png}\\[2pt]
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_resolution_panel_box.png}
+    \column{0.32\textwidth}
+      \centering
+      {\scriptsize PINO (dados e física), resolução $512$}\\
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_surface_3.png}\\[2pt]
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_resolution_panel_box.png}
+    \column{0.32\textwidth}
+      \centering
+      {\scriptsize PINO (física pura), resolução $512$}\\
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_resolution_panel_surface_3.png}\\[2pt]
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_resolution_panel_box.png}
+  \end{columns}
+\end{frame}
+
+% ---------------------------------------------------------------- 31
+\begin{frame}{Redes Neurais: espectro}
+  Comparação de espectros para $\alpha = \beta = 3{,}21$ e $t = 15$; abaixo, o erro
+  absoluto médio sobre todos os modos ao longo do tempo.
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_spectrum_2.png}\\
+      {\scriptsize MLP (dados puros)}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_spectrum_2.png}\\
+      {\scriptsize PINN (dados e física)}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_spectrum_2.png}\\
+      {\scriptsize PINN (física pura)}
+  \end{columns}
+  \vspace{3pt}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_data/mlp_model2_spectral_panel_mean.png}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/nn/data_and_physics/pinn_model2_spectral_panel_mean.png}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/nn/pure_physics/pinn_model2_spectral_panel_mean.png}
+  \end{columns}
+  \vspace{2pt}
+\end{frame}
+
+% ---------------------------------------------------------------- 32
+\begin{frame}{Operadores Neurais: espectro}
+  Mesmo parâmetro, mesmo instante e mesma leitura, agora para os operadores.
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_spectrum_2.png}\\
+      {\scriptsize FNO (dados puros)}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_spectrum_2.png}\\
+      {\scriptsize PINO (dados e física)}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_spectrum_2.png}\\
+      {\scriptsize PINO (física pura)}
+  \end{columns}
+  \vspace{3pt}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_data/fno_model2_spectral_panel_mean.png}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/data_and_physics/pino_model2_spectral_panel_mean.png}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_sciml/no/pure_physics/pino_model2_spectral_panel_mean.png}
+  \end{columns}
+  \vspace{2pt}
+\end{frame}
+
+% ---------------------------------------------------------------- 34
+\begin{frame}{Viés espectral nos seis métodos}
+  Erro absoluto médio por banda ao longo do treino, em $\alpha = \beta = 3{,}21$ e
+  resolução $256$.
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=0.96\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_mlp_pure_data.png}\\
+      {\scriptsize MLP (dados puros)}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=0.96\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_pinn_data_and_physics.png}\\
+      {\scriptsize PINN (dados e física)}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=0.96\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_pinn_pure_physics.png}\\
+      {\scriptsize PINN (física pura)}
+  \end{columns}
+  \vspace{3pt}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=0.96\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_fno_pure_data.png}\\
+      {\scriptsize FNO (dados puros)}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=0.96\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_pino_data_and_physics.png}\\
+      {\scriptsize PINO (dados e física)}
+    \column{0.32\textwidth}
+      \centering
+      \includegraphics[width=0.96\linewidth]{boussinesq_sciml/comparison/spectral_bias_evolution_pino_pure_physics.png}\\
+      {\scriptsize PINO (física pura)}
+  \end{columns}
+  \vspace{2pt}
+  {\footnotesize Bandas baixa (\emph{Low}), média (\emph{Mid}) e alta (\emph{High}).
+  A baixa cai rápido, já a banda alta permanece relativamente plana.}
+\end{frame}
+
+% ---------------------------------------------------------------- 33a
+\begin{frame}{Viés espectral: aproximação por MLPs}
+  As MLPs do experimento de viés espectral contra a solução de referência
+  $\eta(x,15)$ em $\alpha = \beta = 3{,}21$.
+  \vspace{2pt}
+  \begin{columns}[T]
+    \column{0.49\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk_fit.png}\\
+      {\scriptsize Ajuste final em cada largura}
+    \column{0.49\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk_fit_evolution.png}\\
+      {\scriptsize Rede mais larga ao longo do treino}
+  \end{columns}
+  \vspace{4pt}
+  \begin{itemize}
+    \item A largura $64$ dá o melhor ajuste (por ter menos overfitting);
+    \item O que interessa aqui é se as redes largas seguem o comportamento esperado de
+          um kernel quase constante durante o treino.
+  \end{itemize}
+\end{frame}
+
+% cores das larguras nas figuras do experimento mínimo e amostra de linha da legenda
+\definecolor{legBlue}{RGB}{0,114,178}
+\definecolor{legOrange}{RGB}{230,159,0}
+\definecolor{legGreen}{RGB}{0,158,115}
+\definecolor{legRed}{RGB}{213,94,0}
+\newcommand{\legline}[1]{\tikz[baseline=-0.6ex]\draw[line width=1pt,#1] (0,0) -- (0.35,0);}
+\newcommand{\legmark}[1]{\tikz[baseline=-0.6ex]\draw[line width=0.6pt,#1] (0,0) circle (1.6pt);}
+
+% ---------------------------------------------------------------- 33
+\begin{frame}{Viés espectral: deriva dos parâmetros e iterações}
+  Deriva dos parâmetros e contagem de iterações ao longo dos treinos do experimento
+  mínimo.
+  % imagens alinhadas pela base; legendas e descrições numa faixa própria, na mesma altura
+  \begin{columns}[b]
+    \column{0.49\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{boussinesq_spectral_bias_mlp/ntk/mlp_ntk_panel_param.png}
+    \column{0.49\textwidth}
+      \centering
+      \includegraphics[width=\linewidth,clip,trim=0 0 0 110]{boussinesq_spectral_bias_mlp/ntk_iteration_count.png}
+  \end{columns}
+  \begin{columns}[T]
+    \column{0.49\textwidth}
+      \centering
+      {\tiny \legline{legBlue}~width $8$ \enspace \legline{legOrange}~width $64$ \enspace
+       \legline{legGreen}~width $512$}\\
+      {\scriptsize Deriva dos parâmetros, $\|\theta - \theta_0\|/\|\theta_0\|$}
+    \column{0.49\textwidth}
+      \centering
+      {\tiny \legline{gray,dashed}~$y = x$ \enspace
+       \tikz[baseline=-0.6ex]\fill[legBlue] (0,0) circle (1.5pt);~width $8$ \enspace
+       \tikz[baseline=-0.6ex]\fill[legOrange] (-1.4pt,-1.4pt) rectangle (1.4pt,1.4pt);~width $64$ \enspace
+       \tikz[baseline=-0.6ex]\fill[legGreen] (0,1.9pt) -- (1.9pt,0) -- (0,-1.9pt) -- (-1.9pt,0) -- cycle;~width $512$}\\
+      {\scriptsize Iterações: previsto contra medido}
+  \end{columns}
+  \vspace{4pt}
+  \begin{itemize}
+    \item Quanto mais larga a rede, menos os parâmetros e o kernel se movem.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 33b
+\begin{frame}{Viés espectral: decaimento do erro}
+  As predições do kernel inicial, medidas ao longo dos treinos do experimento
+  mínimo.
+  % imagens alinhadas pela base; legendas e descrições numa faixa própria, na mesma altura
+  \begin{columns}[b]
+    \column{0.49\textwidth}
+      \centering
+      \includegraphics[width=\linewidth,clip,trim=0 0 0 115]{boussinesq_spectral_bias_mlp/ntk_error_decay.png}
+    \column{0.49\textwidth}
+      \centering
+      \includegraphics[width=\linewidth,clip,trim=0 0 0 120]{boussinesq_spectral_bias_mlp/ntk_spectral_decay.png}
+  \end{columns}
+  \begin{columns}[T]
+    \column{0.49\textwidth}
+      \centering
+      {\tiny \legline{legBlue}~$k=1$ \enspace \legline{legOrange}~$k=2$ \enspace
+       \legline{legGreen}~$k=3$ \enspace \legline{legRed}~$k=5$ \enspace
+       \legline{black}~measured \enspace \legmark{black}~prediction}\\
+      {\scriptsize Decaimento por autovetor, $|v_k^{T} e^{(n)}|$}
+    \column{0.49\textwidth}
+      \centering
+      {\tiny \legline{legBlue}~$k=1$ \enspace \legline{legOrange}~$k=4$ \enspace
+       \legline{legGreen}~$k=9$ \enspace \legline{legRed}~$k=15$ \enspace
+       \legline{black}~measured \enspace \legmark{black}~prediction}\\
+      {\scriptsize Decaimento por modo de Fourier, $|\hat{e}_k^{(n)}|$}
+  \end{columns}
+\end{frame}
+

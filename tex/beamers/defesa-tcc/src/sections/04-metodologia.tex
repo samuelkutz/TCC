@@ -1,0 +1,165 @@
+\section{Metodologia}
+
+% ---------------------------------------------------------------- 21
+\begin{frame}{Configuração computacional}
+  Todo o software por trás destes experimentos foi escrito para este trabalho.
+  \vspace{4pt}
+  \begin{center}
+    \small
+    \begin{tabular}{@{}lp{9.2cm}@{}}
+      \toprule
+      \textbf{Item} & \textbf{Escolha} \\
+      \midrule
+      Linguagem e biblioteca & Python 3.11, PyTorch 2.12.0 \parencite{paszke2019pytorch} \\
+      Aceleração             & CUDA 13.0, uma única GPU NVIDIA GeForce GTX 1660 SUPER \\
+      Solver de referência   & pseudoespectral com Runge--Kutta 4, código próprio \\
+      Arquiteturas           & FNO \parencite{li2021}, PINO \parencite{li2023pino}, PINN \parencite{raissi2019} \\
+      Reprodutibilidade      & semente global $37$, cuDNN determinístico, estágios em ordem fixa \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{2pt}
+  \begin{itemize}[<+->]
+    \item Sem pesos pré-treinados, sem biblioteca de terceiros e sem conjunto de
+          dados externo;
+    \item Escrever tudo do zero permitiu organizar o processo de otimização para
+          medir o viés espectral;
+    \item Implementação em \url{https://github.com/samuelkutz/TCC}.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 22a
+\begin{frame}{Conjunto de dados}
+  Os métodos são treinados e avaliados no conjunto
+  \begin{equation*}
+    \mathcal{S} = \bigl\{\bigl((\alpha_i,\beta_i),\,(\eta_i,u_i)\bigr)\bigr\}_{i=1}^{M}.
+  \end{equation*}
+  \begin{itemize}[<+->]
+    \item $(\alpha_i,\beta_i)$: parâmetros de não linearidade e de dispersão da
+          $i$-ésima amostra;
+    \item $(\eta_i,u_i)$: solução espaço-temporal obtida pelo solver pseudoespectral
+          com esses parâmetros;
+    \item A condição inicial é a mesma em todas os dados;
+    \item As soluções de referência são os alvos supervisionados dos métodos
+          orientados a dados.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 22
+\begin{frame}{Resumo dos parâmetros de cada experimento}
+  Domínio $x \in [-60, 60]$, $t \in [0, 30]$, condição inicial
+  $\eta(x,0) = \operatorname{sech}^2(x)$, $u(x,0) = 0$. A largura é deliberada: os
+  pulsos não alcançam a fronteira periódica no horizonte considerado.
+  \begin{itemize}[<+->]
+    \item Física do PINO avaliado em $N_x = 128$ e $N_t = 128$ pontos,
+          $\Delta x = 0{,}9375$ e $\Delta t \approx 0{,}2362$, em comparação ao domínio de tamanho $2L = 120$;
+    \item Parâmetros variando uniformemente em $\alpha = \beta \in [0{,}1;\, 4{,}0]$, com $M = 20$ amostras;
+    \item Para NOs, há quatro canais de input ($\eta_i(x,0)$, $u_i(x,0)$, $\alpha_i$,
+          $\beta_i$) e dois de saída:
+          \[
+            X \in \mathbb{R}^{M \times 4 \times N_x \times N_t},
+            \qquad
+            Y \in \mathbb{R}^{M \times 2 \times N_x \times N_t};
+          \]
+    \item Entradas e saídas normalizadas para $[-1,1]$ e desnormalizadas no final.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 23
+\begin{frame}{Métricas de erro}
+  Cada método é medido contra uma referência pseudoespectral recalculada, em
+  $\alpha = \beta \in \{0{,}1;\, 3{,}21;\, 4{,}2\}$ e
+  $N_x \in \{128, 256, 512\}$.
+  \begin{itemize}[<+->]
+    \item Erro relativo resolvido no tempo:
+          \[
+            E(t_n) = \frac{\bigl\| \eta_{\text{pred}}(\cdot, t_n) - \eta_{\text{true}}(\cdot, t_n) \bigr\|_2}
+                          {\bigl\| \eta_{\text{true}}(\cdot, t_n) \bigr\|_2} ;
+          \]
+    \item Erro espectral absoluto por modo ($1/N_x$ desfaz o escalonamento da DFT):
+          \[
+            E_{\text{spec}}(k, t_n) = \frac{1}{N_x}\,\Bigl|\, |\hat\eta_{\text{pred}}(k,t_n)| - |\hat\eta_{\text{true}}(k,t_n)| \,\Bigr| ;
+          \]
+    \item Erro médio por banda $B$ (baixa, média, alta), a cada $500$ iterações:
+          \[
+            E_{\text{band}}(B) = \frac{1}{|B|} \sum_{k \in B} \frac{1}{N_t} \sum_{n=1}^{N_t} E_{\text{spec}}(k, t_n) .
+          \]
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 24
+\begin{frame}{Os seis métodos}
+  Quatro arquiteturas dão seis métodos treinados:
+  \vspace{4pt}
+  \begin{center}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{@{}llcccc@{}}
+      \toprule
+      \textbf{Família} & \textbf{Regime} & \textbf{Método} & \textbf{Parâmetros} & \textbf{Alvo do treino} & \textbf{Pesos pde/ic/data} \\
+      \midrule
+      Redes neurais & dados puros      & MLP  & $198.401$   & $\alpha=\beta=3{,}21$ & $-/-/1$ \\
+      Redes neurais & dados e física   & PINN & $198.658$   & $\alpha=\beta=3{,}21$ & $1/1/1$ \\
+      Redes neurais & física pura      & PINN & $198.658$   & $\alpha=\beta=3{,}21$ & $1/1/0$ \\
+      \midrule
+      Operadores    & dados puros      & FNO  & $2.106.146$ & as $20$ amostras & $-/-/1$ \\
+      Operadores    & dados e física   & PINO & $2.106.146$ & as $20$ amostras & $100/1/1$ \\
+      Operadores    & física pura      & PINO & $2.106.146$ & as $20$ amostras & $100/1/0$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \vspace{2pt}
+  \begin{itemize}[<+->]
+    \item $15.000$ iterações de Adam com taxa de aprendizado $10^{-3}$;
+    \item Os operadores leem as $20$ amostras de uma vez; MLP e PINNs fixados a $\alpha=\beta=3{,}21$.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 25
+\begin{frame}{Experimento para averiguar viés espectral}
+  Treinamos uma rede $\mathbb{R} \to \mathbb{R}$ aproximando contra
+  o perfil de elevação em tempo fixo, solução vinda do pseudoespectral.
+  \begin{equation*}
+    x \longmapsto \eta_\theta(x) \approx \eta(x,\, 15),
+    \qquad x \in [-60, 60], \qquad \alpha = \beta = 3{,}21 .
+  \end{equation*}
+  \begin{itemize}[<+->]
+    \item Três larguras, $N_{\mathrm{MLP}} \in \{8, 64, 512\}$ para 4 camadas ocultas;
+    \item Descida do gradiente pura, full batch, $500.000$ iterações;
+    \item Passo $\mu = 0{,}4/\lambda_{\max}$, com $\lambda_{\max}$ sendo o maior autovalor do kernel inicial;
+    \item O kernel $K_0 = J_0 J_0^{T}$ fica com $128 \times 128$ e
+          pode ser diagonalizado diretamente, por ser semidefinido positivo.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- B1
+\begin{frame}{Tabela de constantes}
+  \vspace{2pt}
+  \begin{center}
+    \small
+    \begin{tabular}{@{}ll@{}}
+      \toprule
+      \textbf{Parâmetro} & \textbf{Valor} \\
+      \midrule
+      \multicolumn{2}{@{}l}{\textit{Domínio e condição inicial}} \\
+      Semicomprimento espacial $L$ \; ($\Omega = [-L,L]$) & $60$ \\
+      Tempo final $T$ \; ($t \in [0,T]$)                  & $30$ \\
+      Amplitude inicial $A$                               & $1$ \\
+      Condição inicial                                    & $\eta(x,0) = \operatorname{sech}^2(x)$, \; $u(x,0) = 0$ \\
+      \midrule
+      \multicolumn{2}{@{}l}{\textit{Solução de referência}} \\
+      Pontos da grade espacial $N_x$                      & $128$ \\
+      Níveis de tempo ($127$ passos de RK4)               & $128$ \\
+      Espaçamento espacial $\Delta x = 2L/N_x$            & $0{,}9375$ \\
+      Espaçamento temporal $\Delta t = T/127$             & $\approx 0{,}2362$ \\
+      \midrule
+      \multicolumn{2}{@{}l}{\textit{Amostragem, avaliação e reprodutibilidade}} \\
+      Coeficientes acoplados                              & $\alpha = \beta$ \\
+      Amostras de treino $M$ / grade de amostragem        & $20$ / $\operatorname{linspace}(0{,}1;\, 4{,}0;\, 20)$ \\
+      Valores de avaliação $\alpha = \beta$               & $\{0{,}1;\, 3{,}21;\, 4{,}2\}$ \\
+      Resoluções de avaliação $N_x$                       & $\{128,\, 256,\, 512\}$ \\
+      Resolução do recorte espectral / semente global     & $256$ / $37$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+\end{frame}

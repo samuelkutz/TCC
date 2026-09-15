@@ -77,7 +77,13 @@ class]%
 \RequirePackage{expl3}
 \RequirePackage{iftex}
 \RequirePackage{pgfpages}
-\RequirePackage{fontawesome5}
+% fontawesome5 removido: quebra o Tectonic 0.16.9 nesta maquina
+% (falha do fontconfig -> heap corruption). O tema usa apenas tres
+% icones; abaixo eles sao substituidos por equivalentes das fontes base.
+\RequirePackage{amssymb}
+\providecommand{\faAngleRight}{\raisebox{0.05ex}{$\scriptstyle\blacktriangleright$}}
+\providecommand{\faAngleDoubleRight}{\raisebox{0.05ex}{$\scriptscriptstyle\blacktriangleright\blacktriangleright$}}
+\providecommand{\faInfoCircle}{\textbf{\textit{i}}}
 
 
 \ifbeamer@am@delaunay
@@ -451,12 +457,12 @@ class]%
     (date)
     {\parbox[t]{.78\paperwidth}{\raggedleft%
         \usebeamerfont{date}\textcolor{black}{\insertdate}}};
-    \node[anchor=south~west]
-    at ([yshift=20pt]current~page.west)~(logo)
-    {\parbox[t]{.19\paperwidth}{\raggedleft%
+    \node[anchor=north~west]
+    at ([xshift=20pt,yshift=-18pt]current~page.north~west)~(logo)
+    {\parbox[t]{.30\paperwidth}{\raggedright%
         \usebeamercolor[fg]{titlegraphic}\inserttitlegraphic}};
-    \node[anchor=east]
-    at ([yshift=-25pt,xshift=-20pt]current~
+    \node[anchor=north~east]
+    at ([yshift=-8pt,xshift=-20pt]current~
     page.east) (title)
     {\parbox[t]{\textwidth}{\raggedleft%
         \usebeamerfont{title}\color{white}%
@@ -618,6 +624,7 @@ class]%
       \fill[structure]
       ([yshift=15pt]current~page.west) rectangle (current~page.south~
       east);
+      \tccwaves[155]
       \ifbeamer@am@rule
       \fill[Amurmaple@rule]
       ([yshift=15pt]current~page.west)~rectangle~([yshift=10pt]current~page.
@@ -672,6 +679,7 @@ class]%
       \fill[structure]
       ([yshift=15pt]current page.west) rectangle (current page.south
       east);
+      \tccwaves[265]
       \ifbeamer@am@rule
       \fill[Amurmaple@rule]
       ([yshift=15pt]current page.west) rectangle ([yshift=10pt]current page.east);

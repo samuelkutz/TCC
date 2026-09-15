@@ -1,0 +1,83 @@
+\section{Introdução}
+
+% ---------------------------------------------------------------- 1
+\begin{frame}{Motivação}
+  \begin{center}
+    \includegraphics[width=0.82\linewidth,clip,trim=76 0 0 48]{shallow-water-wave.png}\\[3pt]
+    {\scriptsize\color{black!55}Onda quase solitária gerada em um canal de águas
+     rasas \parencite{pizzo_video}.}
+  \end{center}
+  \vspace{1pt}
+  \begin{itemize}[<+->]
+    \item A matemática é uma das principais linguagens com que descrevemos fenômenos
+          como este, e as equações diferenciais parciais (EDPs), um de seus dialetos;
+    \item Nem sempre essas equações possuem formas fechadas para soluções, isso quando
+          possuem; é para isso que usamos métodos numéricos;
+    \item Este trabalho busca aplicar métodos de Scientific Machine Learning na aproximação da solução de um sistema de EDPs, o sistema de Boussinesq.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 2
+\begin{frame}{Scientific Machine Learning}
+  Em resumo, estudaremos métodos de Scientific Machine Learning (SciML),
+  uma subárea de Machine Learning (ML) na interseção com a Computação Científica,
+  termo consolidado por \textcite{baker2019} e revisado por \textcite{karniadakis2021} e \textcite{dietrich2025}.
+  \begin{itemize}[<+->]
+    \item A ascensão recente de ML veio acompanhada de todo um ecossistema de
+          ferramentas: bibliotecas, otimizadores e aceleradores que receberam
+          investimento nas últimas décadas;
+    \item Um caminho natural é aproveitar esse ecossistema na solução numérica de
+          EDPs, e é isso que os métodos deste trabalho fazem.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 3
+\begin{frame}{O sistema de Boussinesq}
+  Aqui, estudaremos o Sistema de Boussinesq na forma paramétrica de \textcite{martins2023},
+  que parte do modelo com topografia $h$ e pressão $P_0$ na superfície, em $x \in [-L, L]$, a saber:
+  \begin{equation*}
+    \begin{cases}
+      \eta_t + \bigl((1 - \alpha h + \alpha\eta)\,u\bigr)_x = h_t, \\[4pt]
+      u_t + \eta_x + \alpha\,u u_x - \tfrac{\beta}{3}\,u_{xxt}
+        = -\tfrac{\beta}{2}\,h_{xtt} - \alpha\,(P_0)_x
+    \end{cases}
+    \xrightarrow[(P_0)_x = 0]{h = 0}
+    {\color{AmurmapleRed}
+    \begin{cases}
+      \eta_t + u_x + \alpha\,(\eta u)_x = 0, \\[4pt]
+      u_t - \tfrac{\beta}{3}\,u_{xxt} + \eta_x + \alpha\,u u_x = 0 .
+    \end{cases}}
+  \end{equation*}
+  \begin{itemize}[<+->]
+    \item $\eta(x,t)$: elevação da superfície da onda;
+    \item $u(x,t)$: média vertical da velocidade horizontal da onda;
+    \item $\alpha \ge 0$ controla as não linearidades $(\eta u)_x$ e $u u_x$;
+    \item $\beta > 0$ controla a dispersão $u_{xxt}$;
+    \item Condição inicial fixada: $\eta(x,0) = A\operatorname{sech}^2(x)$,
+          $u(x,0) = 0$.
+    \item Formato que utilizamos veio de \textcite{martins2023}, que também fornece meios de resolver numericamente por método pseudoespectral, que será nossa solução de referência.
+  \end{itemize}
+
+\end{frame}
+
+% ---------------------------------------------------------------- 4
+\begin{frame}{Objetivos}
+  Avaliar o desempenho de 4 arquiteturas de SciML na aproximação da solução do sistema de Boussinesq, a saber:
+  \vspace{4pt}
+  \begin{center}
+    \begin{tabular}{@{}lccc@{}}
+      \toprule
+       & \textbf{Dados puros} & \textbf{Dados e física} & \textbf{Física pura} \\
+      \midrule
+      Redes Neurais (NN)         & MLP  & PINN & PINN \\
+      Operadores Neurais (NO)   & FNO  & PINO & PINO \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+  \begin{enumerate}[<+->]
+    \item Qual é melhor: os dados, a física ou os dois juntos? O resíduo da EDP ajuda?
+    \item Há viés espectral evidente nesses métodos? \footnote{\textcolor{AmurmapleRed}{Viés espectral é a tendência de redes neurais aprenderem primeiro componentes de baixa frequência, e só depois os de alta frequência, durante a otimização.}}
+    \item Uma análise via Neural Tangent Kernel (NTK) consegue descrever bem o viés espectral?
+    \item Para Operadores Neurais, há realmente invariância perante discretização?
+  \end{enumerate}
+\end{frame}

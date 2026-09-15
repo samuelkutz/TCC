@@ -1,0 +1,133 @@
+% =====================================================================
+%  Defesa de TCC -- Samuel Kutz Paranhos
+%  Metodos de Scientific Machine Learning para o sistema de Boussinesq
+%
+%  Tema Amurmaple (c) 2022 Maxime CHUPIN, esquema azul.
+%  Compilar a partir de tex/beamers/defesa-tcc/ com:  tectonic -X build
+%  Saida: build/defesa-tcc/defesa-tcc.pdf
+% =====================================================================
+
+\documentclass[10pt,aspectratio=169,brazil]{beamer}
+
+\usepackage{babel}
+\usepackage{tcolorbox}
+\usepackage{amsmath, amssymb}
+\usepackage{physics}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{subcaption}
+
+\usepackage[backend=biber,style=authoryear,maxcitenames=2,mincitenames=1,%
+            uniquename=false,uniquelist=false]{biblatex}
+\addbibresource{bibfile.bib}
+
+% Bibliografia enxuta: sem URL/DOI/eprint e sem icone, para caber no apendice.
+% Entradas @online (videos, paginas) mantem url e nota: sem elas a
+% referencia nao identifica a fonte.
+\AtEveryBibitem{%
+  \ifentrytype{online}{}{%
+    \clearfield{url}\clearfield{urldate}\clearfield{note}%
+  }%
+  \clearfield{doi}%
+  \clearfield{eprint}\clearfield{eprinttype}%
+  \clearfield{issn}\clearfield{isbn}%
+}
+\setlength{\bibitemsep}{1.5pt}
+\setbeamertemplate{bibliography item}{}
+
+\usetheme[amurmapleblue]{Amurmaple}
+\usefonttheme{serif}
+\usetikzlibrary{arrows.meta, positioning}
+
+% --- motivo de ondas (Boussinesq) para as faixas azuis ------------------
+% Usar dentro de um tikzpicture com remember picture/overlay; recorta na
+% faixa azul (metade inferior) e desenha tres senoides quase transparentes.
+% O argumento opcional e a defasagem (em graus) das senoides, para que
+% cada slide de faixa azul tenha um recorte de onda diferente.
+\newcommand{\tccwaves}[1][0]{%
+  \begin{scope}
+    \clip ([yshift=15pt]current page.west) rectangle (current page.south east);
+    \begin{scope}[shift={(current page.south west)},x=1cm,y=1cm,white,
+                  smooth,variable=\x,domain=-0.3:16.3,samples=160,line width=1.1pt]
+      \draw[opacity=0.17] plot ({\x},{1.55+0.20*sin(\x*52+(#1))});
+      \draw[opacity=0.11] plot ({\x},{1.12+0.26*sin(\x*44+120+1.4*(#1))});
+      \draw[opacity=0.07] plot ({\x},{0.68+0.22*sin(\x*60+240+0.7*(#1))});
+    \end{scope}
+  \end{scope}%
+}
+
+% --- slide divisor de secao ------------------------------------------
+\setbeamertemplate{section page}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[white] ([yshift=15pt]current page.west) rectangle (current page.north east);
+    \fill[structure] ([yshift=15pt]current page.west) rectangle (current page.south east);
+    \tccwaves[\the\value{section}*71]
+    \node[anchor=east, font=\huge\bfseries, text width=0.85\linewidth, align=right]
+      at ([yshift=-0.30\paperheight,xshift=-25pt]current page.north east) (section)
+      {\textcolor{structure}{\insertsection}};
+  \end{tikzpicture}%
+}
+\AtBeginSection[]{%
+  {%
+    \setbeamertemplate{background}{}%
+    \begin{frame}[plain,noframenumbering]
+      \sectionpage
+    \end{frame}%
+  }%
+}
+
+% --- imagens ----------------------------------------------------------
+% ../imgs/ = logos deste deck ; ../../../../results/imgs/ = figuras geradas
+\graphicspath{ {../imgs/} {../../../../results/imgs/} }
+
+% --- atalhos de notacao ----------------------------------------------
+\newcommand{\etab}{\eta}
+\newcommand{\Ltwo}{L^{2}}
+
+\title[SciML para Boussinesq]{Métodos de Scientific Machine Learning\\ para o Sistema Não Linear de Boussinesq}
+\author[Samuel Kutz]{Samuel Kutz Paranhos}
+\institute[UFPR]{Universidade Federal do Paraná (UFPR)\\ Bacharelado em Matemática Industrial\\[0.3em] Orientador: Prof.\ Roberto Ribeiro}
+\date{2026}
+\titlegraphic{\includegraphics[width=7.4cm]{LabFluidLogoh.png}}
+
+% --- slide de titulo --------------------------------------------------
+% Reescreve o template do Amurmaple: logo maior crescendo na diagonal a
+% partir do canto superior esquerdo, bloco autor/instituicao respirando
+% na direita e titulo em duas linhas equilibradas sobre a faixa azul.
+\setbeamertemplate{title page}{%
+  \bgroup
+  \setbeamertemplate{background}{}%
+  \setbeamertemplate{navigation symbols}{}%
+  \setbeamercolor{background canvas}{bg=white}%
+  \begin{tikzpicture}[remember picture,overlay]
+    % faixas: branca no topo, azul da metade para baixo
+    \fill[white]     ([yshift=15pt]current page.west) rectangle (current page.north east);
+    \fill[structure] ([yshift=15pt]current page.west) rectangle (current page.south east);
+    % motivo de ondas (Boussinesq) no rodape da faixa azul
+    \tccwaves
+    % logo: centralizado na vertical da faixa branca, crescendo para a direita
+    \coordinate (logoanchor) at
+      ($(current page.north west)!0.5!([yshift=15pt]current page.west)$);
+    \node[anchor=west,inner sep=0pt] at ([xshift=24pt]logoanchor)
+      {\usebeamercolor[fg]{titlegraphic}\inserttitlegraphic};
+    % autor + instituicao, alinhados a direita da faixa branca
+    \node[anchor=north east] at ([xshift=-24pt,yshift=-26pt]current page.north east)
+      (author) {\parbox[t]{.55\paperwidth}{\raggedleft%
+        \usebeamerfont{author}\color{structure}\insertauthor}};
+    \node[anchor=north east] at ([yshift=-9pt]author.south east)
+      (institute) {\parbox[t]{.55\paperwidth}{\raggedleft%
+        \textcolor{structure!35}{\rule{2.6cm}{0.7pt}}\par\smallskip
+        \usebeamerfont{institute}\small\color{black!55}\insertinstitute}};
+    % titulo sobre a faixa azul, com filete de destaque acima
+    \coordinate (band) at ([yshift=15pt,xshift=-24pt]current page.east);
+    \draw[white,opacity=0.75,line width=1pt]
+      ([yshift=-30pt]band) -- ++(-2.4,0);
+    \node[anchor=north east] at ([yshift=-46pt]band)
+      {\parbox[t]{.86\paperwidth}{\raggedleft%
+        \usebeamerfont{title}\fontsize{18}{23}\selectfont\color{white}\inserttitle}};
+    % data no rodape da faixa azul
+    \node[anchor=south east] at ([xshift=-24pt,yshift=16pt]current page.south east)
+      {\usebeamerfont{date}\small\color{white!85}\insertdate};
+  \end{tikzpicture}%
+  \egroup
+}

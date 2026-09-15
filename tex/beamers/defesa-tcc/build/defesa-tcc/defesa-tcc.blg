@@ -1,0 +1,15 @@
+[0] Config.pm:307> INFO - This is Biber 2.17
+[0] Config.pm:310> INFO - Logfile is 'defesa-tcc.blg'
+[167] biber-MSWIN64:340> INFO - === 
+[231] Biber.pm:418> INFO - Reading 'defesa-tcc.bcf'
+[479] Biber.pm:972> INFO - Found 50 citekeys in bib section 0
+[500] Biber.pm:4383> INFO - Processing section 0
+[519] Biber.pm:4574> INFO - Looking for bibtex file 'bibfile.bib' for section 0
+[624] bibtex.pm:1713> INFO - LaTeX decoding ...
+[746] bibtex.pm:1518> INFO - Found BibTeX data source 'bibfile.bib'
+[1158] UCollate.pm:68> INFO - Overriding locale 'pt-BR' defaults 'variable = shifted' with 'variable = non-ignorable'
+[1158] UCollate.pm:68> INFO - Overriding locale 'pt-BR' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[1158] Biber.pm:4203> INFO - Sorting list 'nyt/global//global/global' of type 'entry' with template 'nyt' and locale 'pt-BR'
+[1158] Biber.pm:4209> INFO - No sort tailoring available for locale 'pt-BR'
+[1228] bbl.pm:654> INFO - Writing 'defesa-tcc.bbl' with encoding 'UTF-8'
+[1262] bbl.pm:757> INFO - Output to defesa-tcc.bbl

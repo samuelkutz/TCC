@@ -1,0 +1,51 @@
+\section{Conclusão}
+
+% ---------------------------------------------------------------- 35
+\begin{frame}{Redes neurais e operadores}
+  Em resumo, o ganhador é quando juntamos física com dados.
+  \textbf{Redes neurais (MLP e PINN)}
+  \begin{itemize}[<+->]
+    \item \textbf{MLP, dados puros.} Reproduz a onda; banda baixa depressa, alta
+          devagar;
+    \item \textbf{PINN, dados e física.} Menor erro relativo entre os três;
+    \item \textbf{PINN, física pura.} Sem dados, não aprende detalhes da onda.
+  \end{itemize}
+  \vspace{2pt}
+  \textbf{Operadores (FNO e PINO)}
+  \begin{itemize}[<+->]
+    \item \textbf{FNO.} Ajusta bem os dados, mas com viés espectral;
+    \item \textbf{PINO, física pura.} Escapam as ondulações de alta frequência;
+    \item \textbf{PINO, dados e física.} O caso mais consistente na varredura;
+    \item \textbf{Invariância à discretização.} Fora da grade de treino, queda modesta.
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 37
+\begin{frame}{Limitações}
+  Temos que levar em consideração que:
+  \begin{itemize}[<+->]
+    \item Utilizamos uma única condição inicial;
+    \item Consideramos $\alpha = \beta$;
+    \item A solução de referência é numérica;
+    \item O estudo do viés espectral é bastante simplificado.
+    
+    \uncover<+->{
+      \begin{information}[Viés espectral]
+        O estudo de viés espectral que fizemos é um cenário muito simplificado, não pode-se garantir que as estimativas encontradas se estendam para outras arquiteturas.
+      \end{information}
+    }
+  \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------- 38
+\begin{frame}{Considerações finais}
+  Vimos que o viés espectral é um comportamento real dessas arquiteturas, quem as implementa deve estar, ao menos, ciente disso.
+  \begin{itemize}[<+->]
+    \item Nada neste trabalho favorece que ML substitui métodos clássicos de solução de EDPs;
+    \item Métodos clássicos vêm com a vantagem teórica de estimativas de erros e garantias de convergência;
+    \item As comparações deste trabalho são amarradas apenas para o sistema de Boussinesq, não se pode generalizar para outras EDPs.
+  \end{itemize}
+  \begin{information}[Fechamento]
+    Conforme grande crescimento de ML, esperamos que este trabalho sirva como guia para estudantes que desejam conhecer a aplicação de SciML à EDPs.
+  \end{information}
+\end{frame}
