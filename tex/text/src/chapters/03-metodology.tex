@@ -229,7 +229,7 @@ The first three checks are drawn at the widest network, since lazy training is a
 
 The predictions above assume the kernel stays put, and we measure whether it does along the same three runs from Section~\ref{sec:m_minimal_setting}. We log the relative parameter drift $\|\theta - \theta_0\| / \|\theta_0\|$ and the relative kernel drift $\|K - K_0\| / \|K_0\|$ at logarithmically spaced iterations, and we record the eigenvalue spectrum of $K$ at initialization and again at the end of training.
 
-The two drift curves ask whether the kernel stays put, as lazy training assumes, and whether it does so more convincingly as the network widens, as the initial-kernel approximation~\eqref{eq:error_linear_ode} predicts. The spectrum should expose the eigenvalue disparity that~\eqref{eq:training_time} names as the cause of spectral bias. Together with the four checks of Section~\ref{sec:m_minimal_setting}, these curves open the results of Chapter~\ref{chap:results}, where they anchor the reading of the spectral bias curves measured on the full architectures.
+The two drift curves ask whether the kernel stays put, as lazy training assumes, and whether it does so more convincingly as the network widens, as the initial-kernel approximation~\eqref{eq:error_linear_ode} predicts. The spectrum should expose the eigenvalue disparity that~\eqref{eq:training_time} names as the cause of spectral bias. Together with the four checks of Section~\ref{sec:m_minimal_setting}, these curves are present in Chapter~\ref{chap:results}, where they anchor the reading of the spectral bias curves measured on the full architectures.
 
 % ===============================================================
 \section{Configuration Summary}

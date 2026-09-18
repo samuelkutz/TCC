@@ -19,7 +19,7 @@ Here, data, not the physics residual, is what pins the solution down. The residu
 
 \paragraph{Neural Operators: FNO and PINO} An operator learns the whole parameter range at once, so it can predict at values close to the ones it trained on, not just the one it saw. 
 
-Figures~\ref{fig:ab_fno}--\ref{fig:ab_pino_physics} sweep the parameters for all three operators. The FNO fits the data well but still carries spectral bias, and its main weakness is the Gibbs artifact discussed in Section~\ref{subsubsec:fno_time}, since it treats time as periodic, error spikes appear near the edges of the time window. 
+Figures~\ref{fig:ab_fno}--\ref{fig:ab_pino_physics} sweep the parameters for all three operators. The FNO fits the data well but still carries spectral bias, and its main weakness is the Gibbs artifact discussed in Section~\ref{subsubsec:fno_time}: since it treats time as periodic, error spikes appear near the edges of the time window. 
 
 The pure-physics PINO repeats the pure-physics PINN's problem, missing the high-frequency ripples of the solution (Figure~\ref{fig:spectral_bias}). 
 

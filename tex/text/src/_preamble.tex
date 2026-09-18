@@ -36,7 +36,9 @@
     backend=biber,     % Usa o Biber, mais moderno que o BibTeX
     style=abnt,
     maxcitenames=1,     % Citações no texto com até 3 autores, acima disso usa "et al."
-    mincitenames=1      % Complemento do maxcitenames
+    mincitenames=1,     % Complemento do maxcitenames
+    maxbibnames=999,    % Referências listam todos os autores, sem "et al."
+    giveninits=true     % Prenomes sempre abreviados nas referências
 ]{biblatex}
 \renewcommand*{\mkbibnamelast}[1]{\MakeUppercase{#1}}
 \renewcommand*{\mkbibnamefamily}[1]{\MakeUppercase{#1}}

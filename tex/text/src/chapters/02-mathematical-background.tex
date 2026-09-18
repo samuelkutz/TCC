@@ -320,7 +320,7 @@ As the step size $\mu \to 0$, the spacing in~\eqref{eq:tau_k} shrinks to zero, t
 \begin{equation}\label{eq:grad_flow}
     \frac{d\theta}{d\tau} = -\nabla_\theta \mathcal{L}(\theta), \qquad \theta(0) = \theta^{(0)}.
 \end{equation}
-The gradient flow~\eqref{eq:grad_flow} is a central object in optimization, and many standard first-order methods can be recovered as different time-discretization schemes of this same continuous trajectory. The discrete update~\eqref{eq:gd_discrete} is precisely the forward (explicit) Euler discretization of~\eqref{eq:grad_flow} with step size $\mu$ \parencite{suli2003, burden2011}, so gradient descent is just one numerical integrator for the flow; applying instead the backward (implicit) Euler scheme \parencite{suli2003} recovers the proximal gradient method \parencite{parikh2013}. Reading optimizers as discretizations of~\eqref{eq:grad_flow} thus organizes them into a single family, and it is the continuous flow that we analyze in what follows.
+The gradient flow~\eqref{eq:grad_flow} is a central object in optimization, and many standard first-order methods can be recovered as different time-discretization schemes of this same continuous trajectory. The discrete update~\eqref{eq:gd_discrete} is precisely the forward (explicit) Euler discretization of~\eqref{eq:grad_flow} with step size $\mu$ \parencite{suli2003, burden2011}, so gradient descent is just one numerical integrator for the flow; applying instead the backward (implicit) Euler scheme \parencite{suli2003} one recovers the proximal gradient method \parencite{parikh2013}. Reading optimizers as discretizations of~\eqref{eq:grad_flow} thus organizes them into a single family, and it is the continuous flow that we analyze in what follows.
 
 \subsection{Neural Tangent Kernel}
 \label{subsec:ntk}
@@ -622,7 +622,7 @@ This estimate is tested numerically in this work. The minimal experiment of Chap
 \subsection{Physics-Informed Neural Networks}
 \label{subsec:pinn}
 
-Introduced by \textcite{raissi2019}, Physics-Informed Neural Networks (PINNs) insert the PDE directly into the optimization process, forcing the neural network to satisfy the model equations and approximating the PDE solution.
+Introduced by \textcite{raissi2019}, Physics-Informed Neural Networks (PINNs) insert the PDE directly into the optimization process, forcing the neural network to satisfy the model equations and to approximate the PDE solution.
 
 Consider the general PDE initial value problem:
 \begin{equation}\label{eq:generic_pde}
@@ -686,7 +686,7 @@ The Neural Tangent Kernel analysis of Sections~\ref{subsec:ntk}--\ref{subsec:spe
 \end{equation}
 so that, up to normalization, $\mathcal{L}_{\text{PINN}}$ reduces to the same quadratic form $\tfrac{1}{2}\|e\|^2$ analyzed for the MLP. With this definition the gradient-flow derivation leading to~\eqref{eq:ntk_dynamics} carries over verbatim, with the Jacobian now also containing the parameter gradients of the PDE residuals, and the error still obeys the linear dynamics $\frac{de}{d\tau} = -K_0\,e$, with convergence of each eigenvector governed by its eigenvalue exactly as in~\eqref{eq:training_time} \parencite{wang2022ntk}.
 
-This prediction is borne out empirically. Spectral bias is a frequently reported obstacle in PINN training: networks fit smooth, low-frequency solutions readily but stall on sharp gradients and high-frequency content \parencite{rahaman2019, xu2019frequency, wang2021understanding}, and the same pathology underlies several documented PINN failure modes \parencite{krishnapriyan2021characterizing}. \textcite{wang2022ntk} traced the effect directly to the NTK, showing that its spectrum is concentrated at low eigenvalues, so that high-frequency PDE residuals are the last to be minimized. For nonlinear wave equations of Boussinesq type, \textcite{wang2024} report the same difficulty in resolving the finer wave structure; the two-field Boussinesq system studied here has not been examined in this respect, which is part of what Chapter~\ref{chap:results} sets out to do. A range of remedies targets this imbalance directly, among them Fourier feature mappings that recondition the kernel spectrum \parencite{tancik2020}, adaptive loss weighting \parencite{wang2021understanding}, and second-order or spectrum-aware optimizers \parencite{khodakarami2026}. Pursuing these mitigations is beyond the scope of this work: our aim is to apply the SciML methods to the Boussinesq system and to expose and understand the spectral bias that emerges there, not to remove it. Understanding the effect nonetheless remains essential background for the neural-operator methods studied in the remainder of this work, whose ability to capture the high-frequency content of the Boussinesq solutions is examined directly in Chapter~\ref{chap:results}.
+This prediction is borne out empirically. Spectral bias is a frequently reported obstacle in PINN training: networks fit smooth, low-frequency solutions readily but stall on sharp gradients and high-frequency content \parencite{rahaman2019, xu2019frequency, wang2021understanding}, and the same pathology underlies several documented PINN failure modes \parencite{krishnapriyan2021characterizing}. \textcite{wang2022ntk} traced the effect directly to the NTK, showing that its spectrum is concentrated at low eigenvalues, so that high-frequency PDE residuals are the last to be minimized. For nonlinear wave equations of Boussinesq type, \textcite{wang2024} report that resolving the finer wave structure required decomposing the equations into lower-order coupled systems; the two-field Boussinesq system studied here has not been examined in this respect, which is part of what Chapter~\ref{chap:results} sets out to do. A range of remedies targets this imbalance directly, among them Fourier feature mappings that recondition the kernel spectrum \parencite{tancik2020}, adaptive loss weighting \parencite{wang2021understanding}, and second-order or spectrum-aware optimizers \parencite{khodakarami2026}. Pursuing these mitigations is beyond the scope of this work: our aim is to apply the SciML methods to the Boussinesq system and to expose and understand the spectral bias that emerges there, not to remove it. Understanding the effect nonetheless remains essential background for the neural-operator methods studied in the remainder of this work, whose ability to capture the high-frequency content of the Boussinesq solutions is examined directly in Chapter~\ref{chap:results}.
 
 \section{Neural Operators}
 \label{sec:neural_operators}
@@ -703,7 +703,7 @@ Let $D \subset \mathbb{R}^{d}$ be a bounded open domain and let $\mathcal{A}(D; 
 \end{equation*}
 where both the input $a$ and the output $u$ are functions defined on $D$.
 
-In this work, $G^\dagger$ is the solution operator of the Boussinesq system: given an input $a$ encoding the PDE coefficients $(\alpha, \beta)$ together with the initial condition~\eqref{eq:initial_condition}, the operator returns the full space-time solution $(\eta, u)$. Because the initial condition is the same for every sample of the dataset~\eqref{eq:dataset}, it carries nothing that distinguishes one sample from another, and the input reduces to the pair $(\alpha_i, \beta_i)$, which is how the operator is written from here on.
+In this work, $G^\dagger$ is the solution operator of the Boussinesq system: given an input $a$ encoding the PDE coefficients $(\alpha, \beta)$ together with the initial condition~\eqref{eq:initial_condition}, the operator returns the full space-time solution $(\eta, u)$. Because the initial condition is the same for every sample of the dataset~\eqref{eq:dataset}, it carries nothing that distinguishes one sample from another, and the input reduces to the pair $(\alpha_i, \beta_i)$, which is how the operator is written from here on. We note that there would be no problem to consider the initial condition (or boundary conditions and forcings) as the PDE parameter to be mapped to the corresponding solution.
 
 A neural operator $G_\theta$ approximates $G^\dagger$ by alternating linear layers with pointwise nonlinearities, in the composition
 \begin{equation}\label{eq:no_arch}
@@ -805,7 +805,7 @@ With all derivatives available, the Boussinesq equations~\eqref{eq:boussinesq} d
     \mathcal{D}_2(\eta_\theta, u_\theta) &\coloneqq (u_\theta)_t - \tfrac{\beta}{3}(u_\theta)_{xxt}
                + (\eta_\theta)_x + \alpha\,(u_\theta(u_\theta)_x). \label{eq:res2}
 \end{align}
-Here $(\eta_\theta^i, u_\theta^i) \coloneqq G_\theta(\alpha_i, \beta_i)$ denotes the network output for sample $i$, and the subscript $_{j,n}$ indicates evaluation at the grid point $(x_j, t_n)$. The PINO loss is a weighted sum of three terms:
+Here $(\eta_\theta^i, u_\theta^i) \coloneqq G_\theta(\alpha_i, \beta_i)$ denotes the network output for sample $i$. The PINO loss is a weighted sum of three terms:
 \begin{equation}\label{eq:pino_loss}
     \mathcal{L}_{\text{PINO}}(\theta) = \lambda_{\text{pde}}\,\mathcal{L}_{\text{pde}}(\theta)
     + \lambda_{\text{ic}}\,\mathcal{L}_{\text{ic}}(\theta)
@@ -815,7 +815,7 @@ Here $(\eta_\theta^i, u_\theta^i) \coloneqq G_\theta(\alpha_i, \beta_i)$ denotes
 \begin{itemize}
     \item $\mathcal{L}_{\text{pde}}(\theta) = \dfrac{1}{M}\displaystyle\sum_{i=1}^{M}\dfrac{1}{N_x N_t}\displaystyle\sum_{j=0}^{N_x-1}\sum_{n=0}^{N_t}
           \Bigl[\mathcal{D}_1(\eta_\theta^i, u_\theta^i)_{j,n}^{\,2} + \mathcal{D}_2(\eta_\theta^i, u_\theta^i)_{j,n}^{\,2}\Bigr]$
-          penalizes violation of the Boussinesq equations at each grid point, with residuals evaluated using the parameters $(\alpha_i,\beta_i)$ of each sample;
+          penalizes violation of the Boussinesq equations at each grid point, with residuals evaluated using the parameters $(\alpha_i,\beta_i)$ of each sample and the subscript $_{j,n}$ indicates evaluation at the grid point $(x_j, t_n)$;
 
     \item $\mathcal{L}_{\text{ic}}(\theta) = \dfrac{1}{M}\displaystyle\sum_{i=1}^{M}\dfrac{1}{N_x}\displaystyle\sum_{j=0}^{N_x-1}
           \Bigl[(\eta_\theta(x_j,0) - \eta_0(x_j))^2 +

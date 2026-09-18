@@ -16,8 +16,8 @@ from experiments.plots.figures.metrics import (
     time_relative_error_norm,
 )
 from experiments.plots.figures.panels import (
-    plot_alpha_beta_panel, plot_nn_comparison_panel, plot_resolution_panel,
-    plot_soliton_profile, plot_spectral_bias_panel, plot_spectral_panel,
+    plot_alpha_beta_panel, plot_nn_comparison_panel, plot_reference_panel,
+    plot_resolution_panel, plot_soliton_profile, plot_spectral_bias_panel, plot_spectral_panel,
     plot_training_statistics,
 )
 from experiments.plots.figures.style import (
@@ -29,7 +29,7 @@ __all__ = [
     'THESIS_BAND_COLORS', 'THESIS_LEGEND_ABOVE', 'THESIS_PALETTE',
     'band_slices', 'compute_spectral_error', 'distribution_summary',
     'ensure_outdir', 'log_marker_iters', 'panel_stem', 'plot_alpha_beta_panel',
-    'plot_nn_comparison_panel',
+    'plot_nn_comparison_panel', 'plot_reference_panel',
     'plot_resolution_panel', 'plot_soliton_profile', 'plot_spectral_bias_panel',
     'plot_spectral_panel', 'plot_training_statistics', 'save_solution_gif',
     'save_thesis_fig', 'slugify', 'spatial_wavenumbers', 'spectral_amplitude',

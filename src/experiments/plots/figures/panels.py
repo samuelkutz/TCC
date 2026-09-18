@@ -122,6 +122,53 @@ _SURFACE_CROP_W_RATIO = 0.681
 _SURF_W, _SURF_H, _SURF_FRAC = 1000, 500, 0.48
 _LINE_W, _LINE_H, _LINE_FRAC = 820, 470, 0.48
 _BOX_W, _BOX_H, _BOX_FRAC = 1200, 430, 0.68
+# the reference row sets three tiles side by side
+_REF_FRAC = 0.32
+
+
+def plot_reference_panel(x, t, eta_list, param_values, outdir,
+                         filename='reference_panel.png'):
+    """Pseudospectral eta(x, t), one tile per parameter, sharing one z-range."""
+    import plotly.graph_objects as go
+
+    ensure_outdir(outdir)
+    stem = panel_stem(filename)
+
+    z_min = min(float(np.asarray(e).min()) for e in eta_list)
+    z_max = max(float(np.asarray(e).max()) for e in eta_list)
+    z_margin = (z_max - z_min) * 0.05
+    z_lim = [z_min - z_margin, z_max + z_margin]
+
+    axis_px = thesis_px_sizes(_SURF_W * _SURFACE_CROP_W_RATIO, _REF_FRAC)['axis']
+    scene_axis = dict(title_font=dict(size=axis_px, color='#000000'), showticklabels=False)
+
+    for i, eta in enumerate(eta_list, start=1):
+        fig = go.Figure(go.Surface(
+            x=np.asarray(t, dtype=float), y=np.asarray(x, dtype=float),
+            z=np.asarray(eta, dtype=float),
+            colorscale=_SURFACE_COLORSCALE, cmin=z_min, cmax=z_max, showscale=False,
+            lighting=_SURFACE_LIGHTING, lightposition=_SURFACE_LIGHTPOSITION,
+        ))
+        fig.update_layout(scene=dict(
+            xaxis=dict(title='t', **scene_axis),
+            yaxis=dict(title='x', **scene_axis),
+            zaxis=dict(title='η(x,t)', range=z_lim, **scene_axis),
+            aspectmode='manual', aspectratio=_SURFACE_ASPECTRATIO, camera=_SURFACE_CAMERA,
+            domain=dict(x=[0.0, 1.0], y=[0.0, 1.0]),
+        ))
+        path = save_thesis_fig(
+            fig, os.path.join(outdir, f'{stem}_surface_{i}.png'),
+            _SURF_W, _SURF_H, _REF_FRAC,
+            extra_layout=dict(margin=dict(t=8, b=16, l=16, r=14)),
+        )
+        autocrop_white(path)
+
+    _write_metrics(outdir, stem, {
+        'resolution': int(len(x)),
+        'items': [{'param': float(p), 'eta_min': float(np.min(e)), 'eta_max': float(np.max(e))}
+                  for p, e in zip(param_values, eta_list)],
+    })
+    print(f'reference panel figures saved to {outdir} ({stem}_*)')
 
 
 def _emit_surface_panel(stem, outdir, x_list, t_list, eta_pred_list, time_rel_norms,

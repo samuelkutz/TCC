@@ -12,7 +12,8 @@ Figures are written under `results/imgs` in two experiment sets:
         no/{pure_data,data_and_physics,pure_physics}   FNO,  PINO(+data), PINO(phys)
         comparison/              the six-model spectral-bias band tracking
     boussinesq_spectral_bias_mlp/  the R -> R spectral-bias probe (+ ntk/ drift)
-    setup/                       the reference soliton profile
+    setup/                       the reference soliton profile and the reference
+                                 solutions at the three evaluation parameters
 
 Every figure is drawn from saved weights/metadata, so `--plots-only` skips
 training and regenerates the whole figure tree from the saved `.pth` files.
@@ -24,11 +25,12 @@ import sys
 
 from config import Config
 from tools import set_seed
-from experiments.common import BAND_METRIC, resolve_device
+from experiments.common import BAND_METRIC, reference_solution, resolve_device
 from experiments.dataset import run_dataset
 from experiments.evaluate import load_stage_metadata
 from experiments.plots.figures import (
-    plot_nn_comparison_panel, plot_soliton_profile, plot_spectral_bias_panel,
+    plot_nn_comparison_panel, plot_reference_panel, plot_soliton_profile,
+    plot_spectral_bias_panel,
 )
 from experiments.plots.fno import eval_fno, gif_fno
 from experiments.plots.mlp import eval_mlp, gif_mlp, mlp_predictor
@@ -90,6 +92,20 @@ def plot_nn_comparison(cfg, meta):
     )
 
 
+def plot_references(cfg):
+    """Pseudospectral eta(x, t) at the evaluation parameters, resolution 256."""
+    device = resolve_device()
+    resolution = cfg.dataset_res * 2
+    eta_list = []
+    x = t = None
+    for value in cfg.eval_params:
+        x, t, eta, _ = reference_solution(value, cfg.x_limit, cfg.t_limit, nx=resolution,
+                                          nt=resolution - 1, device=device,
+                                          amplitude=cfg.amplitude)
+        eta_list.append(eta.T)
+    plot_reference_panel(x, t, eta_list, cfg.eval_params, outdir=cfg.img_subdir('setup'))
+
+
 def plot_spectral_bias_evolution(ordered_metadata, outdir,
                                  filename='spectral_bias_evolution.png'):
     """The six-model band-tracking figure, read back from the saved histories."""
@@ -143,6 +159,9 @@ def plot_all(cfg, meta):
     """
     _stage('soliton profile')
     plot_soliton_profile(outdir=cfg.img_subdir('setup'), amplitude=cfg.amplitude)
+
+    _stage('reference solutions')
+    plot_references(cfg)
 
     _stage('plotting mlp (data only)')
     eval_mlp(meta['mlp'], output_dir=cfg.img_subdir(SCIML, 'nn', 'pure_data'),

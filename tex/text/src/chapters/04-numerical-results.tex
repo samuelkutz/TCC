@@ -3,6 +3,41 @@
 
 This chapter reports what the experiments of Chapter~\ref{chap:methodology} produced. Section~\ref{sec:r_cost} accounts for what each method costs to train. Section~\ref{sec:r_nn_comparison} puts the MLP and both PINN regimes side by side at their trained parameter, and Section~\ref{sec:r_no_comparison} puts the FNO and the PINO side by side, sweeping the nonlinearity parameter at a fixed resolution (Section~\ref{sec:r_params}) and then querying both operators off their training resolution (Section~\ref{sec:r_res}). Section~\ref{sec:r_spectrum} fixes both and compares the spectra of all six methods mode by mode at three time instants. Section~\ref{sec:r_bias} tests the spectral-bias theory of Chapter~\ref{chap:math-bg} on a minimal network, and Section~\ref{sec:r_bands} follows the same bias through training in the six trained methods. The pseudospectral solver is the ground truth throughout.
 
+In order to make comparisons easier, we first show how the reference solutions turn out for each selected parameter~\eqref{eq:m_eval_params} at resolution $256$, for the Boussinesq system defined in Section~\ref{sec:boussinesq}, namely
+\begin{equation}\label{eq:r_ivp}
+    \begin{cases}
+        \eta_t + u_x + \alpha\,(\eta u)_x = 0, \\[2pt]
+        u_t - \dfrac{\beta}{3}\,u_{xxt} + \eta_x + \alpha\,u u_x = 0, \\[6pt]
+        \eta(x,0) = \sech^2(x), \quad u(x,0) = 0,
+    \end{cases}
+    \qquad (x,t) \in [-60, 60] \times [0, 30],
+\end{equation}
+with periodic boundary conditions in $x$. Figure~\ref{fig:r_reference} shows the surface $\eta(x,t)$ that the pseudospectral solver computes for each of the three parameters.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{setup/reference_panel_surface_1.png}
+        \caption{$\alpha=\beta=0{,}1$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{setup/reference_panel_surface_2.png}
+        \caption{$\alpha=\beta=3{,}21$.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{setup/reference_panel_surface_3.png}
+        \caption{$\alpha=\beta=4{,}2$.}
+    \end{subfigure}
+    \caption{Reference solution $\eta(x,t)$ of~\eqref{eq:r_ivp} computed by the pseudospectral solver at resolution $256$.}
+    \label{fig:r_reference}
+    \autoriapropria
+\end{figure}
+
 % ===============================================================
 \section{Training Cost}
 \label{sec:r_cost}
@@ -899,6 +934,6 @@ We now watch spectral bias develop as the optimizer runs. Figure~\ref{fig:spectr
     \autoriapropria
 \end{figure}
 
-As one can see, the behavior of the low band is similar across all methods, with the error dropping quickly and leveling off. The mid band shows a more gradual decrease, while the high band remains relatively flat, indicating that these methods struggle to capture high-frequency components effectively. The choice of normalization technique here mattered empirically for us; we saw that the low band fall off was much faster and consistent across all methods without our normalization~\eqref{eq:m_minmax}. After implementation of our presented normalization, the low band fall off was less consistent and clear.
+As one can see, the behavior of the low band is similar across all methods, with the error dropping quickly and leveling off. The mid band shows a more gradual decrease, while the high band remains relatively flat across methods, indicating that these methods struggle to capture high-frequency components effectively. The choice of normalization technique here mattered empirically for us; we saw that the low band fall off was much faster and consistent across all methods without our normalization~\eqref{eq:m_minmax}. After implementation of our presented normalization, the low band fall off was less consistent and clear.
 
 This picture matches the one anticipated in Chapter~\ref{chap:intro} that these methods complement the pseudospectral solver that sets the accuracy ceiling here rather than replacing it. Their value is in amortizing the parameter sweep and in the temporal regularization physics supplies, and it is smallest at the high wavenumbers, where the reference solver is unchallenged. Overall, this shows that physics-informed interpolation can be a somewhat reliable way of approximating the continuous solution, but fitting physics alone must be taken with a grain of salt.

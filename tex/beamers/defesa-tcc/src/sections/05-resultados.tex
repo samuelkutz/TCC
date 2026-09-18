@@ -241,7 +241,7 @@
 \definecolor{legOrange}{RGB}{230,159,0}
 \definecolor{legGreen}{RGB}{0,158,115}
 \definecolor{legRed}{RGB}{213,94,0}
-\newcommand{\legline}[1]{\tikz[baseline=-0.6ex]\draw[line width=1pt,#1] (0,0) -- (0.35,0);}
+\newcommand{\legline}[1]{\tikz[baseline=-0.6ex]\draw[line width=1pt,#1] (0,0) -- (0.25,0);}
 \newcommand{\legmark}[1]{\tikz[baseline=-0.6ex]\draw[line width=0.6pt,#1] (0,0) circle (1.6pt);}
 
 % ---------------------------------------------------------------- 33
@@ -293,15 +293,15 @@
   \begin{columns}[T]
     \column{0.49\textwidth}
       \centering
-      {\tiny \legline{legBlue}~$k=1$ \enspace \legline{legOrange}~$k=2$ \enspace
-       \legline{legGreen}~$k=3$ \enspace \legline{legRed}~$k=5$ \enspace
-       \legline{black}~measured \enspace \legmark{black}~prediction}\\
+      {\tiny \legline{legBlue}~$k{=}1$ \; \legline{legOrange}~$k{=}2$ \;
+       \legline{legGreen}~$k{=}3$ \; \legline{legRed}~$k{=}5$ \;
+       \legline{black}~measured \; \legmark{black}~prediction}\\
       {\scriptsize Decaimento por autovetor, $|v_k^{T} e^{(n)}|$}
     \column{0.49\textwidth}
       \centering
-      {\tiny \legline{legBlue}~$k=1$ \enspace \legline{legOrange}~$k=4$ \enspace
-       \legline{legGreen}~$k=9$ \enspace \legline{legRed}~$k=15$ \enspace
-       \legline{black}~measured \enspace \legmark{black}~prediction}\\
+      {\tiny \legline{legBlue}~$k{=}1$ \; \legline{legOrange}~$k{=}4$ \;
+       \legline{legGreen}~$k{=}9$ \; \legline{legRed}~$k{=}15$ \;
+       \legline{black}~measured \; \legmark{black}~prediction}\\
       {\scriptsize Decaimento por modo de Fourier, $|\hat{e}_k^{(n)}|$}
   \end{columns}
 \end{frame}
