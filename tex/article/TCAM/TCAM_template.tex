@@ -1,0 +1,621 @@
+%% Before processing this LaTeX file (LaTeX2e), make sure that the file
+%% TCAM.cls is in the same folder. The file TCAM.cls can be obtained from
+%% https://tcam.sbmac.org.br.
+
+
+\documentclass[english]{TCAM} % Use for manuscripts written in English
+%\documentclass[brazil]{TCAM} % Usar para manuscritos escritos em Português
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Attention:
+% This file uses UTF-8 encoding.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[utf8]{inputenc} % UTF-8 encoding
+
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{lineno} % to display line numbers
+\linenumbers
+
+\usepackage{listingsutf8} % for code listings
+
+\lstdefinestyle{mystyle}{
+basicstyle=\ttfamily\footnotesize,
+breakatwhitespace=false,
+breaklines=true,
+captionpos=b,
+keepspaces=true,
+showspaces=false,
+showstringspaces=false,
+showtabs=false,
+tabsize=2
+}
+
+\lstset{style=mystyle}
+
+%********************************************************
+% LIST ALL PACKAGES REQUIRED BY YOUR PAPER HERE
+%********************************************************
+\usepackage{framed}
+\usepackage{tikz}
+
+%********************************************************
+% PAPER INFORMATION
+%********************************************************
+
+\title{Template with Instructions for Preparing Manuscripts for \textit{Trends in Computational and Applied Mathematics}}
+
+\runningtitle{Short running title for the top of the page}
+
+\author{
+Anonymous Authors%
+\aff{Affiliations should be omitted to ensure a double-blind review process. After review and acceptance, the final manuscript must include a full list of authors, affiliations with addresses, email, and mandatory ORCID.}, %
+%*********************************************************
+% Use this template to add author's names after the 
+% double-blind review process.
+%*********************************************************
+% Anonymous Second Author%
+% \aff{Department of Applied Mathematics and Statistics, ICMC, University of São Paulo, Av. Trabalhador São-carlense, 400, 13566-590, São Carlos, SP, Brazil -- E-mail: tcam@sbmac.org.br https://orcid.org/xxxx-xxxx-xxxx-xxxx} %
+}
+
+\abstracttcam{This document, prepared using the special class \texttt{TCAM.cls}, provides important information for authors who intend to submit full papers to \textit{Trends in Computational and Applied Mathematics} journal. The submission version \textbf{must not} include author names or affiliations, in order to ensure a double-blind peer-review process. Document version $2026.02$.}
+
+\keywords{Keyword 1, keyword 2, keyword 3.}
+
+\acknowledgments{The acknowledgments section is optional. Please omit it in the submission version to ensure a double-blind peer-review process.}
+
+
+%***************************************************************
+% INFORMATIONS IN ENGLISH - MANDATORY WHEN WRITING IN PORTUGUESE
+% CAN BE OMITTED WHEN WRITING THE MANUSCRIPT IN ENGLISH
+%
+\titleenglish{This the English translation of your Portuguese title}
+
+\abstracttcamenglish{Provide this abstract in English when Portuguese is the main language of the manuscript. Omit this section if English is chosen as the main language.}
+
+\keywordsenglish{Keywords in English.}
+
+%***************************************************************
+
+
+\begin{document}
+
+%********************************************************
+
+\maketitle
+
+%********************************************************
+
+\section{Introduction}
+
+The \textit{Trends in Computational and Applied Mathematics} journal aims to publish original full papers in all areas of Applied and Computational Mathematics.
+
+The recommended manuscript size limit is 20 pages. Exceptionally, at the discretion of the Editorial Committee, papers longer than 20 pages may be accepted. Publications are continuous, within a single volume published annually. The purpose of the journal is to serve as a venue for publishing original articles on topics promoted and encouraged by SBMAC. Authors of works submitted to SBMAC-promoted conferences are encouraged to extend their work and submit a complete and updated version to \textit{Trends in Computational and Applied Mathematics}, which will undergo the same double-blind review process adopted for all submissions.
+
+\subsection{Manuscript preparation}
+
+Authors must prepare their manuscripts in \LaTeX2e following the instructions in this document. Only the manuscript PDF (\texttt{.pdf}) to be considered for publication should be submitted, together with a \textit{Cover Letter} describing the manuscript contributions and suggesting potential reviewers. These files must be submitted electronically at \url{https://tcam.sbmac.org.br}. Authors are also referred to this website for a complete set of instructions and guidelines for manuscript preparation.
+
+Submitted papers will be evaluated by \textit{ad hoc} reviewers and, once accepted, will be published according to the journal's continuous publication policy, depending on demand and the processing order of the approved papers.
+
+Instead of \verb|\documentclass{article}|, authors must use \verb|\documentclass{TCAM}|. The class file \texttt{TCAM.cls}, available at \url{https://tcam.sbmac.org.br}, must be in the same directory at compilation time.
+
+The \verb|TCAM| class is bilingual; therefore, authors should choose the manuscript language using an option when loading the \verb|TCAM| class. Use \verb|\documentclass[english]{TCAM}| for manuscripts written in English, and \verb|\documentclass[brazil]{TCAM}| for manuscripts written in Portuguese. All standard environment names, such as Figures, Tables, References, and Theorems, will be automatically translated. Please do not use custom names for those.
+
+We encourage authors to use English as the preferred language to enhance the TCAM Journal's internationalization, as it is currently indexed in Scopus and other international databases.
+
+Line numbering via the \verb|\linenumbers| command must be kept to facilitate the review process.
+
+%********************************************************
+
+\section{First page}
+
+The first page of the manuscript must contain the paper title, authors' names and affiliations, an abstract, and keywords for manuscripts written in English (or \textbf{resumo} and \textbf{palavras-chave} for manuscripts written in Portuguese).
+
+To ensure a double-blind peer-review process, the list of authors, affiliations, and acknowledgments must be omitted from the first page in the submission version. They may be reinserted for the final (camera-ready) version after the manuscript has been reviewed and accepted.
+
+For manuscripts written in Portuguese, it is mandatory that \textbf{title}, \textbf{abstract}, and \textbf{keywords} in English are included. Please use the commands \verb|\titleenglish{}|, \verb|\abstracttcamenglish{}|, and \verb|\keywordsenglish{}| to provide the necessary information. They will be automatically inserted at the end of the document when using \verb|\documentclass[brazil]{TCAM}|. 
+
+The following example illustrates how to build the first page of this document, with title, authors, abstract, keywords, and acknowledgements. The author's information should be hidden during the blind review process.
+
+\newpage
+
+\begin{framed}
+\begin{verbatim}
+\title{Template with Instructions for Preparing Manuscripts
+for \textit{Trends in Computational and Applied Mathematics}}
+
+\runningtitle{Short running title for the top of the page}
+
+\author{
+
+F. S. SOUSA%
+\aff{Department of Applied Mathematics and Statistics, ICMC,
+University of São Paulo, Av. Trabalhador São-carlense, 400,
+13566-590, São Carlos, SP, Brazil -- E-mail: fsimeoni@icmc.usp.br
+https://orcid.org/xxxx-xxxx-xxxx-xxxx}, %
+
+R. F. AUSAS%
+\aff{Department of Applied Mathematics and Statistics, ICMC,
+University of São Paulo, Av. Trabalhador São-carlense, 400,
+13566-590, São Carlos, SP, Brazil -- E-mail: rfausas@icmc.usp.br
+https://orcid.org/xxxx-xxxx-xxxx-xxxx} %
+
+\abstracttcam{This document, prepared using the special class
+\texttt{TCAM.cls}, provides important information for authors who intend
+to submit full papers to the \textit{Trends in Computational and Applied
+Mathematics} series.}
+
+\keywords{Keyword 1, keyword 2, keyword 3.}
+
+\acknowledgments{Here the authors may acknowledge institutions or people
+who contributed in some way to the work, as well as research funding
+agencies. \textit{This item is optional}.}
+}
+\end{verbatim}
+\end{framed}
+
+The \verb|\author{}| parameters contain the author name and affiliation information. It is mandatory to include each author's ORCID, as well as an email address, in addition to the full institutional name and address.
+
+The \verb|\runningtitle{}| command contains the title that appears in the page header. This running title may have a maximum of 50 characters, including spaces.
+
+If additional packages are required to compile the file, include them in the section \texttt{``LIST ALL PACKAGES REQUIRED BY YOUR PAPER HERE''}.
+
+%********************************************************
+
+\section{About equations}
+
+Although you must use the \verb|\documentclass{TCAM}| command, equations and bibliographic references are produced in the same way as in the standard \verb|article| class. 
+
+% CODE ********************************************************
+\begin{framed}
+\begin{verbatim}
+\section{First section}
+\label{cin} Consider
+
+\begin{equation} \label{cin.um}
+\begin{array}{rcl}
+S_{n+1}(z) & = & z S_{n}(z) +
+a_{n+1} S_{n}^{*}(z), \\ [1ex]
+\left(1-|a_{n+1}|^2\right) z S_{n}(z) & = &
+S_{n+1}(z) - a_{n+1} S_{n+1}^{*}(z),
+\end{array}
+\end{equation}
+
+for $n \geq 1$, where $S_n^{*}(z) = z^n \overline{S}_n(1/z)$.
+
+Equations (\ref{cin.um}) above are the first numbered equations
+in this section. Below is an example of a centered but unnumbered equation.
+\[ x^x = e^{x \ln(x)}, \qquad x > 0. \]
+
+\section{Second section}
+\label{qua}
+
+Equation (\ref{qua.um}) is the first numbered equation of section
+\ref{qua}, see
+\begin{equation} \label{qua.um}
+e = \lim_{n\rightarrow\infty} \left( 1+\frac{1}{n}\right)^n.
+\end{equation}
+
+\subsection{First subsection of the second section}
+
+Note that the equations continue to be numbered by section.
+\begin{align} \label{qua.dois}
+A_{j} &=\sum_{k=0}^j a_k +\sum_{k=j+1}^{\infty} b_k c_k, \\
+B_{j} &=\sum_{k=0}^j b_k +\sum_{k=j+1}^{\infty} a_k c_k,\\
+T_{j} &=\prod_{k=0}^j a_k+\prod_{k=j+1}^{2j} b_k c_k.\nonumber
+\end{align}
+\end{verbatim}
+\end{framed}
+%********************************************************
+
+
+\begin{framed}
+\begin{minipage}{12cm}
+
+\setcounter{section}{0}
+\section{First section}
+\label{cin} Consider
+
+\begin{equation} \label{cin.um}
+\begin{array}{rcl}
+S_{n+1}(z) & = & z S_{n}(z) +
+a_{n+1} S_{n}^{*}(z), \\ [1ex]
+\left(1-|a_{n+1}|^2\right) z S_{n}(z) & = &
+S_{n+1}(z) - a_{n+1} S_{n+1}^{*}(z),
+\end{array}
+\end{equation}
+
+for $n \geq 1$, where $S_n^{*}(z) = z^n \overline{S}_n(1/z)$.
+
+Equations (\ref{cin.um}) above are the first numbered equations
+in this section. Below is an example of a centered but unnumbered equation.
+
+\[ x^x = e^{x \ln(x)}, \qquad x > 0. \]
+
+\section{Second section}
+\label{qua}
+
+Equation (\ref{qua.um}) is the first numbered equation of section
+\ref{qua}, see
+\begin{equation} \label{qua.um}
+e = \lim_{n\rightarrow\infty} \left( 1+\frac{1}{n}\right)^n.
+\end{equation}
+
+\subsection{First subsection of the second section}
+
+Note that the equations continue to be numbered by section.
+\begin{align} \label{qua.dois}
+A_{j} &=\sum_{k=0}^j a_k +\sum_{k=j+1}^{\infty} b_k c_k, \\
+B_{j} &=\sum_{k=0}^j b_k +\sum_{k=j+1}^{\infty} a_k c_k,\\
+T_{j} &=\prod_{k=0}^j a_k+\prod_{k=j+1}^{2j} b_k c_k.\nonumber
+\end{align}
+
+\end{minipage}
+\end{framed}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\setcounter{section}{3}
+
+\section{Figures and tables}
+
+Figures and illustrations may be in color and should preferably be prepared in ``Portable Document Format'' (\texttt{.pdf}) or ``Portable Network Graphics'' (\texttt{.png}) format.
+
+Annotations and symbols in figures must be legible and consistent with the manuscript's standard font size. Packages such as \texttt{tikz} can be used, or figures can be generated in the \texttt{.pdf\_t} format. Examples of the use of these approaches are listed below.
+
+\subsection{The \texttt{.pdf\_t} format}
+
+In \texttt{.pdf\_t} files, all text is automatically replaced by \LaTeX\ text, including formulas and annotations. This is done via an auxiliary file to the \texttt{.pdf} with extension \texttt{.pdf\_t}, which must be imported using the \texttt{input} command.
+These files are generated by drawing programs, with \texttt{Inkscape} being the most popular (cross-platform and free).
+
+The result of the following code is shown in Figure \ref{fig:02}, where the annotations in the figure are generated by \LaTeX\ via the \texttt{.pdf\_t} file.
+
+\begin{framed}
+\begin{verbatim}
+\begin{figure}[h!]
+\centering
+\scalebox{0.24}{\input{fig02.pdf_t}}
+\caption{Example of a figure in \texttt{pdf\_t} format. 
+         Taken from \cite{Ausas:2010}.}
+\label{fig:02}
+\end{figure}
+\end{verbatim}
+\end{framed}
+
+\begin{figure}[h!]
+\centering
+\scalebox{0.24}{\input{fig02.pdf_t}}
+\caption{Example of a figure in \texttt{pdf\_t} format. Taken from \cite{Ausas:2010}.}
+\label{fig:02}
+\end{figure}
+
+\subsection{The \texttt{tikz} package}
+
+The \texttt{tikz} package is a powerful tool for drawing directly in \LaTeX, producing high-quality vector figures. The user must, however, become familiar with writing the script that generates the drawing. Its use is accepted in the \textit{Trends in Computational and Applied Mathematics} template. The code shown below combines this package with \texttt{minipage} and \texttt{subfigure}, and the result is shown in Figure \ref{fig:03}.
+
+\newpage
+
+\begin{framed}
+\begin{lstlisting}[language={[latex]TeX}]
+\begin{figure}[h!]
+\centering
+\begin{minipage}[b]{0.45\linewidth}
+\centering
+\subfigure[North wall]{
+\centering
+\begin{tikzpicture}[scale=1.5]
+    \draw[-] (1,1) rectangle (3,3);
+    \draw[dashed, red] (1,2) -- (3,2);
+    \draw[dashed, red] (2,1) -- (2,3);
+    \draw[fill = red, color=red] (2,2) circle (0.06cm)
+         node[below, scale=0.8] {$p_{i,j}$};
+    \node[scale=0.8] at (2,3.2) {$\mathbf{u} = 0$};
+    \draw[fill = black] (2,1) circle (0.06cm)
+         node[below right, scale=0.8] {$v_{i,j-1/2}$};
+    \draw[fill = black] (3,2) circle (0.06cm)
+         node[right, scale=0.8] {$u_{i+1/2,j}$};
+    \draw[dashed, red] (3,3) -- (3,4);
+    \draw[fill = red, color=red] (3,4) circle (0.06cm)
+         node[right, scale=0.8, red] {$u_{i+1/2,j+1}$};
+\end{tikzpicture}
+\label{norte} }
+\end{minipage}
+\begin{minipage}[b]{0.45\linewidth}
+\centering
+\subfigure[South wall]{
+\centering
+\begin{tikzpicture}[scale=1.5]
+    \draw[-] (1,1) rectangle (3,3);
+    \draw[dashed, red] (1,2) -- (3,2);
+    \draw[dashed, red] (2,1) -- (2,3);
+    \draw[fill = red, color=red] (2,2) circle (0.06cm)
+         node[below, scale=0.8] {$p_{i,j}$};
+    \node[scale=0.8] at (2,0.8) {$\mathbf{u} = 0$};
+    \draw[fill = black] (2,3) circle (0.06cm)
+         node[above right, scale=0.8] {$v_{i,j+1/2}$};
+    \draw[fill = black] (3,2) circle (0.06cm)
+         node[right, scale=0.8] {$u_{i+1/2,j}$};
+    \draw[dashed, red] (3,1) -- (3,0);
+    \draw[fill = red, color=red] (3,0) circle (0.06cm)
+         node[right, scale=0.8, red] {$u_{i+1/2,j-1}$};
+\end{tikzpicture}
+\label{sul} }
+\end{minipage}
+\caption{Example using the \texttt{tikz} package.}
+\label{fig:03}
+\end{figure}
+\end{lstlisting}
+\end{framed}
+
+
+\begin{figure}[h!]
+\centering
+
+\begin{minipage}[b]{0.45\linewidth}
+\centering
+\subfigure[North wall]{
+\centering
+\begin{tikzpicture}[scale=1.5]
+\draw[-] (1,1) rectangle (3,3);
+\draw[dashed, red] (1,2) -- (3,2);
+\draw[dashed, red] (2,1) -- (2,3);
+\draw[fill = red, color=red] (2,2) circle (0.06cm)
+node[below, scale=0.8] {$p_{i,j}$};
+\node[scale=0.8] at (2,3.2) {$\mathbf{u} = 0$};
+\draw[fill = black] (2,1) circle (0.06cm)
+node[below right, scale=0.8] {$v_{i,j-1/2}$};
+% ...
+\draw[fill = black] (3,2) circle (0.06cm)
+node[right, scale=0.8] {$u_{i+1/2,j}$};
+\draw[dashed, red] (3,3) -- (3,4);
+\draw[fill = red, color=red] (3,4) circle (0.06cm)
+node[right, scale=0.8, red] {$u_{i+1/2,j+1}$};
+\end{tikzpicture}
+\label{norte} }
+\end{minipage}
+\begin{minipage}[b]{0.45\linewidth}
+\centering
+\subfigure[South wall]{
+\centering
+\begin{tikzpicture}[scale=1.5]
+\draw[-] (1,1) rectangle (3,3);
+\draw[dashed, red] (1,2) -- (3,2);
+\draw[dashed, red] (2,1) -- (2,3);
+\draw[fill = red, color=red] (2,2) circle (0.06cm)
+node[below, scale=0.8] {$p_{i,j}$};
+\node[scale=0.8] at (2,0.8) {$\mathbf{u} = 0$};
+\draw[fill = black] (2,3) circle (0.06cm)
+node[above right, scale=0.8] {$v_{i,j+1/2}$};
+\draw[fill = black] (3,2) circle (0.06cm)
+node[right, scale=0.8] {$u_{i+1/2,j}$};
+\draw[dashed, red] (3,1) -- (3,0);
+\draw[fill = red, color=red] (3,0) circle (0.06cm)
+node[right, scale=0.8, red] {$u_{i+1/2,j-1}$};
+\end{tikzpicture}
+\label{sul} }
+\end{minipage}
+
+\caption{Example using the \texttt{tikz} package.}
+\label{fig:03}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{Tables}
+
+Tables follow the usual \LaTeX\ standard. Table \ref{tabela:01} is a simple example.
+
+\begin{framed}
+\begin{verbatim}
+\begin{table} [h]
+\centering
+\caption{Example table.} \label{tabela:01}
+\begin{tabular}{|c|c|c|c|c|}
+    \hline & A & B & C & D \\
+    \hline 0 & \multicolumn{1}{r|}{1.00} & \multicolumn{1}{l|}{2.0}
+    & \multicolumn{2}{c|}{7.0} \\
+    \hline 1 & \multicolumn{1}{r|}{1.00} & \multicolumn{1}{l|}{2.00}
+    & 3.000 & 4.000 \\
+    \hline 2 & \multicolumn{1}{r|}{1.000} & \multicolumn{1}{l|}{2.000}
+    & 3.00 & 4.0000 \\
+    \hline
+\end{tabular}
+\end{table}
+\end{verbatim}
+\end{framed}
+
+\begin{table} [h]
+\centering
+\caption{Example table.} \label{tabela:01}
+\begin{tabular}{|c|c|c|c|c|}
+\hline & A & B & C & D \\
+\hline 0 & \multicolumn{1}{r|}{1.00} & \multicolumn{1}{l|}{2.0}
+& \multicolumn{2}{c|}{7.0} \\
+\hline 1 & \multicolumn{1}{r|}{1.00} & \multicolumn{1}{l|}{2.00}
+& 3.000 & 4.000 \\
+\hline 2 & \multicolumn{1}{r|}{1.000} & \multicolumn{1}{l|}{2.000}
+& 3.00 & 4.0000 \\
+\hline
+\end{tabular}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+
+\section{Style guidelines}
+
+\begin{itemize}
+\item All numbered equations must be referenced in the text.
+
+\item To center or emphasize equations, use:
+\verb|\begin{equation*}| and \verb|\end{equation*}|,
+or simply \verb|\[| and \verb|\]|.
+These commands display equations without numbering.
+
+\item To reference an equation, use the combination of \verb|\label{}| and \verb|(\ref{})| in parentheses, or \verb|\eqref{}|. Example:
+
+\begin{framed}
+\begin{verbatim}
+\begin{equation} \label{eqX}
+e = \lim_{n\rightarrow\infty} \left( 1+\frac{1}{n}\right)^n
+\end{equation}
+
+Equation (\ref{eqX}) is used to show that...
+
+Equation \eqref{eqX} is used to show that...
+\end{verbatim}
+\end{framed}
+
+\item Avoid excessive use of subsections.
+
+\item Avoid using manual spacing such as \verb|\vspace|, \verb|\hspace|, etc.
+
+\item Theorem environments are automatically numbered according to the section where they appear. There are predefined commands for automatic numbering and translation according to the chosen language:
+\texttt{definition}, \texttt{theorem}, \texttt{lemma}, \texttt{corollary} and \texttt{proposition}.
+
+\item To begin and end a proof, use \verb|\begin{proof}| and \verb|\end{proof}|, respectively.
+
+\item In English, the word \textit{Demonstração} will be automatically replaced by \textit{Proof}.
+
+\newpage
+
+\begin{framed}
+\begin{verbatim}
+\begin{theorem}[Triangle inequality]
+\label{teoDT}
+If $a$ and $b$ are any real numbers, then
+\[ |a+b| \leq |a| + |b| \]
+\end{theorem}
+
+\begin{proof}
+Place the proof here.
+\end{proof}
+
+\begin{corollary}
+If $a_1, a_2, \ldots, a_n$ are $n$ real numbers, then
+\[ |a_1+a_2+\cdots+a_n| \leq |a_1|+|a_2|+|a_2|+\cdots+|a_n|. \]
+\end{corollary}
+\end{verbatim}
+\end{framed}
+
+
+\begin{framed}
+\begin{theorem}[Triangle inequality]
+\label{teoDT}
+If $a$ and $b$ are any real numbers, then
+\[ |a+b| \leq |a| + |b| \]
+\end{theorem}
+
+\begin{proof}
+Place the proof here.
+\end{proof}
+
+\begin{corollary}
+If $a_1, a_2, \ldots, a_n$ are $n$ real numbers, then
+\[ |a_1+a_2+\cdots+a_n| \leq |a_1|+|a_2|+|a_2|+\cdots+|a_n|. \]
+\end{corollary}
+\end{framed}
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{About references}
+
+References must be prepared using \texttt{bibtex}. \textit{Trends in Computational and Applied Mathematics} adopts the IEEE-TR style, which orders references by citation order and uses a standard abbreviation for authors' names. The author must create a \texttt{.bib} file and include it in the text using:
+
+\begin{framed}
+\begin{verbatim}
+\bibliographystyle{ieeetr}
+\bibliography{file-name}
+\end{verbatim}
+\end{framed}
+
+An example \texttt{.bib} file is shown below:
+
+\newpage
+
+\begin{framed}
+\begin{verbatim}
+@article{Ausas:2010,
+Author = {Ausas, R F and Sousa, Fabricio S and Buscaglia, G C},
+Journal = {Comput Methods Appl Mech Engrg},
+Number = {17-20},
+Pages = {1019-1031},
+Title = {{An improved finite element space for
+discontinuous pressures}},
+Volume = {199},
+Year = {2010}}
+
+@inproceedings{Silva:2014,
+Author = {Lino M. Silva and Aurelio R. L. Oliveira},
+Booktitle = {Proceeding Series of the Brazilian Society of
+Computational and Applied Mathematics},
+Pages = {1-7},
+Publisher = {SBMAC},
+Title = {Improving the performance of controlled Cholesky factorization
+in the preconditioning of linear systems arising from interior-point
+methods},
+Volume = {3},
+Year = {2015}}
+
+@phdthesis{Linhares:1968,
+Address = {São Carlos, SP},
+Author = {Odelar L. Linhares},
+School = {EESC, Universidade de São Paulo},
+Title = {On the rationalization of two numerical algorithms},
+Year = {1968}}
+
+@book{Leveque:1998,
+Author = {Randall J. Leveque},
+Publisher = {Cambridge},
+Title = {Finite volume methods for hyperbolic problems},
+Year = {1998}}
+\end{verbatim}
+\end{framed}
+
+Citations must be inserted using \verb|\cite{}|.
+
+As an example, references \cite{Chihara:1978,Leveque:1998} refer to books; references \cite{Ausas:2010,Cordeiro:2013,Courant:1943} are journal articles; reference \cite{Linhares:1968} is a Ph.D. thesis example; and references \cite{Gautschi:1981,Jones:1986,Silva:2014} refer to conference proceedings papers.
+
+%*************************************************************
+% DATA AVAILABILITY - This section is mandatory
+% CHOOSE ONE OPTION AND REMOVE THE OTHERS
+
+\section*{Data availability}
+
+\noindent \textbf{Choose one from the options below.}
+
+\noindent Do not apply.
+
+OR
+
+\noindent Datasets related to this article are available upon request to the corresponding author.
+
+OR
+
+\noindent Data supporting the findings of this study cannot be shared at this time due to technical or time limitations.
+
+OR
+
+\noindent All data generated or analysed during this study are included in this published article.
+
+OR
+
+\noindent The data that support the findings of this study are available at http://xxxx.
+
+
+
+\bibliographystyle{ieeetr}
+\bibliography{TCAM_bibliography}
+
+\end{document}

@@ -1,0 +1,52 @@
+\begin{thebibliography}{1}
+
+\bibitem{Ausas:2010}
+R.~F. Ausas, F.~S. Sousa, and G.~C. Buscaglia, ``{An improved finite element
+  space for discontinuous pressures},'' {\em Comput Methods Appl Mech Engrg},
+  vol.~199, no.~17-20, pp.~1019--1031, 2010.
+
+\bibitem{Chihara:1978}
+T.~S. Chihara, {\em An introduction to orthogonal polynomials}.
+\newblock Mathematics and its Applications Series, New York: Gordon and Breach,
+  1978.
+
+\bibitem{Leveque:1998}
+R.~J. Leveque, {\em Finite volume methods for hyperbolic problems}.
+\newblock Cambridge, 1998.
+
+\bibitem{Cordeiro:2013}
+D.~F. Cordeiro, F.~S. Sousa, A.~Castelo, and J.~M. N{\'o}brega, ``{Uma
+  t\'ecnica de corre\c c\~ao de interface para o m\'etodo ISPH},'' {\em TEMA -
+  Tend\^encias em Matem\'atica Aplicada e Computacional}, vol.~14, no.~3,
+  pp.~347--358, 2013.
+
+\bibitem{Courant:1943}
+R.~Courant, ``Variational methods for the solution of problems of equilibrium
+  and vibrations,'' {\em Bull Amer Math Soc}, vol.~49, pp.~1--23, 1943.
+
+\bibitem{Linhares:1968}
+O.~L. Linhares, {\em Sobre a racionaliza{\c c}{\~a}o de dois algoritmos
+  num{\'e}ricos}.
+\newblock PhD thesis, EESC, Universidade de S\~ao Paulo, S{\~a}o Carlos, SP,
+  1968.
+
+\bibitem{Gautschi:1981}
+W.~Gautschi, ``A survey of {G}auss-{C}hristoffel quadrature formulae,'' in {\em
+  E. B. Christofel: The influence of his work in mathematics and physics
+  series} (P.~L. Butzer and F.~Feher, eds.), (Basel), pp.~72--147, Birkh\"auser
+  Verlag, 1981.
+
+\bibitem{Jones:1986}
+W.~B. Jones, O.~Nj{\aa}stad, and W.~J. Thron, ``Schur fractions, {P}erron
+  {C}arath\'eodory fractions and {S}zeg\"{o} polynomials, a survey,'' in {\em
+  Analythic Theory of Continued Fractions II} (W.~J. Thron, ed.), vol.~1199,
+  (Berlin), pp.~127--158, Springer Verlag, 1986.
+
+\bibitem{Silva:2014}
+L.~M. Silva and A.~R.~L. Oliveira, ``Melhoria do desempenho da fatora{\c
+  c}{\~a}o controlada de {C}holesky no precondicionamento de sistemas lineares
+  oriundos dos m{\'e}todos de pontos interiores,'' in {\em Proceeding Series of
+  the Brazilian Society of Computational and Applied Mathematics}, vol.~3,
+  pp.~1--7, SBMAC, 2015.
+
+\end{thebibliography}

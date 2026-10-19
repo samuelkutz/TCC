@@ -1,0 +1,61 @@
+% ====================
+% Definições de Cores
+% ====================
+
+% Informa ao LaTeX que este é um arquivo de provide/package
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamercolorthemelabfluid}[2024/05/22 LabFluid Color Theme]
+
+% Cor principal do LABFLUID
+\definecolor{UniBlue}{RGB}{42,97,167}
+
+% Cores extras
+\definecolor{lightgray}{RGB}{240, 240, 240}
+\definecolor{lightorange}{RGB}{255, 245, 242}
+\definecolor{TextBlack}{RGB}{40,40,40}
+
+
+% ====================
+% Estrutura do Tema
+% ====================
+
+% Cores básicas
+\setbeamercolor{palette primary}{fg=TextBlack,bg=white}
+\setbeamercolor{palette secondary}{fg=TextBlack,bg=white}
+\setbeamercolor{palette tertiary}{bg=TextBlack,fg=white}
+\setbeamercolor{palette quaternary}{fg=TextBlack,bg=white}
+\setbeamercolor{structure}{fg=UniBlue}
+
+% <<< MUDANÇA PRINCIPAL AQUI >>>
+% Cabeçalho com fundo branco e texto azul
+\setbeamercolor{headline}{fg=UniBlue,bg=white}
+
+% Bloco Padrão
+\setbeamercolor{block title}{fg=UniBlue,bg=white}
+\setbeamercolor{block separator}{bg=black}
+\setbeamercolor{block body}{fg=black,bg=white}
+
+% Bloco de Alerta
+\setbeamercolor{block alerted title}{fg=UniBlue,bg=lightorange}
+\setbeamercolor{block alerted separator}{bg=black}
+\setbeamercolor{block alerted body}{fg=black,bg=lightorange}
+
+% Bloco de Exemplo
+\setbeamercolor{block example title}{fg=UniBlue,bg=lightgray}
+\setbeamercolor{block example separator}{bg=black}
+\setbeamercolor{block example body}{fg=black,bg=lightgray}
+
+% Título de seção dentro do bloco
+\setbeamercolor{heading}{fg=TextBlack}
+
+% Ícones de lista
+\setbeamercolor{item}{fg=UniBlue}
+
+% Bibliografia
+\setbeamercolor{bibliography item}{fg=TextBlack}
+\setbeamercolor{bibliography entry author}{fg=TextBlack}
+\setbeamercolor{bibliography entry title}{fg=TextBlack}
+\setbeamercolor{bibliography entry location}{fg=TextBlack}
+\setbeamercolor{bibliography entry note}{fg=TextBlack}
+
+\mode<all>

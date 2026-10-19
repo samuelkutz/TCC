@@ -1,0 +1,25 @@
+\begin{picture}(0,0)%
+\includegraphics{fig02}%
+\end{picture}%
+\setlength{\unitlength}{3947sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFontNFSS\undefined%
+\gdef\SetFigFontNFSS#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(24088,6999)(2575,-10087)
+\put(13951,-8836){\makebox(0,0)[rb]{\smash{{\SetFigFontNFSS{25}{30.0}{\rmdefault}{\mddefault}{\itdefault}{\color[rgb]{0,0,0}{$\Gamma$}}%
+}}}}
+\put(22426,-8761){\makebox(0,0)[rb]{\smash{{\SetFigFontNFSS{25}{30.0}{\rmdefault}{\mddefault}{\itdefault}{\color[rgb]{0,0,0}{$\Gamma$}}%
+}}}}
+\put(6001,-9136){\makebox(0,0)[rb]{\smash{{\SetFigFontNFSS{25}{30.0}{\rmdefault}{\mddefault}{\itdefault}{\color[rgb]{0,0,0}{$\Gamma$}}%
+}}}}
+\put(23322,-3511){\makebox(0,0)[b]{\smash{{\SetFigFontNFSS{34}{40.8}{\rmdefault}{\mddefault}{\itdefault}{\color[rgb]{0,0,0}{$N_C$}}%
+}}}}
+\put(15258,-3511){\makebox(0,0)[b]{\smash{{\SetFigFontNFSS{34}{40.8}{\rmdefault}{\mddefault}{\itdefault}{\color[rgb]{0,0,0}{$N_B$}}%
+}}}}
+\put(7012,-3511){\makebox(0,0)[b]{\smash{{\SetFigFontNFSS{34}{40.8}{\rmdefault}{\mddefault}{\itdefault}{\color[rgb]{0,0,0}{$N_A$}}%
+}}}}
+\end{picture}%
